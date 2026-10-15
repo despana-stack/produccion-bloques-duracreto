@@ -1,5 +1,5 @@
 // Service worker: permite instalar la app y abrirla rápido. Nunca guarda datos de producción.
-const CACHE = 'produccion-bloques-v1';
+const CACHE = 'produccion-bloques-v2';
 const APP = ['./', 'index.html', 'config.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(APP)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {
