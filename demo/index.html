@@ -239,6 +239,11 @@ td.r,th.r{text-align:right}
 /* Tema claro/oscuro */
 .thm{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid #4a4b45;background:transparent;color:#F2F2EE;display:grid;place-items:center;cursor:pointer;padding:0}
 .thm svg{width:17px;height:17px}
+.thm.on{border-color:#F9D600;color:#F9D600}
+.thm .dot{position:absolute;top:5px;right:6px;width:8px;height:8px;border-radius:50%;background:#C2372B;border:2px solid #12130F}
+.thm{position:relative}
+.top .out{white-space:nowrap}.top .out .sm{display:none}
+@media (max-width:440px){.top .out .lg{display:none}.top .out .sm{display:inline}.top .in{gap:10px}}
 .thm.login-thm{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:14px;border-color:var(--line);color:var(--fg);background:var(--surface);z-index:5}
 /* Aviso de paro */
 .tile-row{display:grid;grid-template-columns:minmax(0,1fr) 68px;gap:10px}
@@ -377,6 +382,7 @@ const ICON={
  sos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17V11a6 6 0 0112 0v6"/><path d="M4 17h16v3H4z"/><path d="M12 2v2M3.5 6.5l1.4 1.4M20.5 6.5l-1.4 1.4"/></svg>',
  trofeo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0z"/><path d="M17 5h3v2a3 3 0 01-3 3M7 5H4v2a3 3 0 003 3"/></svg>',
  corona:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18l-1.5-10-4.5 4-3-6-3 6-4.5-4z"/></svg>',
+ campana:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>',
  reloj:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
  hoja:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21c6 0 14-4 14-16C9 5 5 10 5 15v6z"/><path d="M5 21l7-7"/></svg>',
  rayo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>',
@@ -401,15 +407,15 @@ function render(){
   if(can('bd'))tabs.push(['bd','Bases de datos']);
   if(can('usr'))tabs.push(['usr','Usuarios y equipos']);
   if(!tabs.find(t=>t[0]===tab))tab=tabs[0][0];
-  $('#app').innerHTML=`<header class="top"><div class="in wrap"><img src="${LOGO_D}" alt="Duracreto"><div class="who"><b>${esc(team)}</b>${esc(S.nombre)}</div>${thmBtn()}<button class="out" id="logout">Cerrar sesión</button></div>
+  $('#app').innerHTML=`<header class="top"><div class="in wrap"><img src="${LOGO_D}" alt="Duracreto"><div class="who"><b>${esc(team)}</b>${esc(S.nombre)}</div>${pushBtn()}${thmBtn()}<button class="out" id="logout" aria-label="Cerrar sesión"><span class="lg">Cerrar sesión</span><span class="sm">Salir</span></button></div>
   ${tabs.length>1?`<nav class="tabs wrap" role="tablist">${tabs.map(t=>`<button role="tab" data-tab="${t[0]}" aria-selected="${t[0]===tab}">${t[1]}</button>`).join('')}</nav>`:''}</header><div id="alertas"></div>
   ${DEMO?`<div class="demobar wrap"><span><b>Modo demostración.</b> Lo que cargue aquí se queda solo en este dispositivo y no llega a la base de datos de la planta.</span><button id="demoReset">Reiniciar demo</button></div>`:''}<main class="wrap" id="main"></main>`;
-  $('#thm').onclick=cambiarTema;
+  $('#thm').onclick=cambiarTema;if($('#pushb'))$('#pushb').onclick=panelPush;
   if(DEMO)$('#demoReset').onclick=()=>{LOCAL={produccion:[],cortes:[],noconf:[],paros:[],alertas:[]};store.set(LS,LOCAL);loadDB();view='home';render();toast('Demostración reiniciada.')};
   $('#logout').onclick=()=>{if(ONLINE)api('logout').catch(()=>{});store.del(SS);S=null;view='home';render()};
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=async()=>{tab=b.dataset.tab;store.set(TAB,tab);view='home';if(ONLINE&&Date.now()-lastLoad>60000){pantallaCarga('Actualizando…');try{await cargarDatos()}catch(e){if(e.message==='sesion')return}}render()});
   if(tab==='registro')renderRegistro();else if(tab==='rep')renderRep();else if(tab==='dash')renderDash();else if(tab==='rank')renderRank();else if(tab==='bd')renderBD();else renderUsers();
-  pintarAlertas();
+  pintarAlertas();refrescarPush();
   window.scrollTo(0,0);
 }
 
@@ -770,6 +776,45 @@ function pintarAlertas(){if(!S)return;const L=DB.alertas||[];
 async function refrescarAlertas(){if(!ONLINE||!S||!(can('aviso')||can('alerta')))return;try{const j=await api('alertas');if(j.ok){DB.alertas=j.alertas;pintarAlertas()}}catch(e){}}
 setInterval(()=>{if(document.visibilityState==='visible')refrescarAlertas()},45000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refrescarAlertas()});
+
+/* ===================== Notificaciones push (Firebase) ===================== */
+const PTK='dc_bloques_push_token';let pushRefrescado=false,fbMsg=null;
+const esIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const instalada=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const pushPosible=()=>ONLINE&&!!window.FIREBASE&&!!window.FIREBASE_VAPID&&can('aviso');
+const pushSoportado=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+const pushActivo=()=>pushSoportado()&&Notification.permission==='granted'&&!!store.get(PTK);
+function pushBtn(){if(!pushPosible())return'';const on=pushActivo();return `<button class="thm ${on?'on':''}" id="pushb" aria-label="${on?'Avisos de paro activados en este teléfono':'Activar avisos de paro en este teléfono'}" title="${on?'Avisos activados':'Activar avisos'}">${ICON.campana}${on?'':'<span class="dot"></span>'}</button>`}
+function cargarScript(src){return new Promise((ok,no)=>{if(document.querySelector(`script[src="${src}"]`))return ok();const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('No se pudo cargar Firebase'));document.head.appendChild(s)})}
+async function firebaseMsg(){if(fbMsg)return fbMsg;const v='10.12.5';
+  await cargarScript(`https://www.gstatic.com/firebasejs/${v}/firebase-app-compat.js`);await cargarScript(`https://www.gstatic.com/firebasejs/${v}/firebase-messaging-compat.js`);
+  if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE);fbMsg=firebase.messaging();return fbMsg}
+async function obtenerTokenPush(){const reg=await navigator.serviceWorker.register('sw.js');await navigator.serviceWorker.ready;const m=await firebaseMsg();
+  return m.getToken({vapidKey:window.FIREBASE_VAPID,serviceWorkerRegistration:reg})}
+const nombreDisp=()=>{const u=navigator.userAgent;return (esIOS?'iPhone/iPad':/Android/.test(u)?'Android':/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Otro')+(instalada()?' · app instalada':' · navegador')};
+async function activarPush(){
+  if(esIOS&&!instalada())throw new Error('ios');
+  if(!pushSoportado())throw new Error('nosoporta');
+  const p=await Notification.requestPermission();if(p!=='granted')throw new Error('denegado');
+  const tk=await obtenerTokenPush();if(!tk)throw new Error('sintoken');
+  const j=await api('suscribir',{pushToken:tk,disp:nombreDisp()});if(!j.ok)throw new Error(j.error||'error');
+  store.set(PTK,tk);try{await api('probarPush')}catch(e){}}
+async function desactivarPush(){const tk=store.get(PTK);store.del(PTK);try{if(tk)await api('desuscribir',{pushToken:tk})}catch(e){}try{const m=await firebaseMsg();await m.deleteToken()}catch(e){}}
+async function refrescarPush(){if(pushRefrescado||!pushPosible()||!pushActivo())return;pushRefrescado=true;
+  try{const tk=await obtenerTokenPush();if(tk){if(tk!==store.get(PTK))store.set(PTK,tk);await api('suscribir',{pushToken:tk,disp:nombreDisp()})}}catch(e){}}
+function panelPush(){const md=$('#modal'),on=pushActivo(),den=pushSoportado()&&Notification.permission==='denied';
+  const cuerpo=on?`<p>Este teléfono recibe una notificación cada vez que un líder avisa que hay un paro, aunque la app esté cerrada.</p><button class="btn ghost" id="pPrueba">Enviar una prueba</button><button class="btn ghost" id="pOff" style="margin-top:8px">Desactivar en este teléfono</button>`
+   :esIOS&&!instalada()?`<p>En iPhone, los avisos solo funcionan con la app <b>instalada</b>: abra este enlace en Safari › Compartir › <b>Agregar a pantalla de inicio</b>. Luego abra la app desde el ícono y toque esta campana otra vez.</p>`
+   :den?`<p>Las notificaciones están bloqueadas para esta app. Actívelas en la configuración del navegador o del teléfono (Notificaciones › Bloques DC) y vuelva a tocar la campana.</p>`
+   :!pushSoportado()?`<p>Este navegador no permite notificaciones. En Android use Chrome; en iPhone, instale la app en la pantalla de inicio (iOS 16.4 o más reciente).</p>`
+   :`<p>Reciba una notificación en este teléfono cuando un líder avise que hay un paro, aunque la app esté cerrada. Solo hay que aceptarlo una vez.</p><button class="btn danger" id="pOn" style="background:var(--yellow);color:#12130F">Activar avisos</button>`;
+  md.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="pT"><div class="ic" style="background:var(--warn-bg);color:var(--warn)">${ICON.campana}</div><h2 id="pT">${on?'Avisos activados':'Avisos de paro'}</h2>${cuerpo}<button class="btn ghost" id="pX" style="margin-top:8px">Cerrar</button></div>`;
+  md.hidden=false;md.onclick=e=>{if(e.target===md)md.hidden=true};$('#pX').onclick=()=>md.hidden=true;
+  if($('#pOn'))$('#pOn').onclick=async()=>{const b=$('#pOn');b.disabled=true;b.textContent='Activando…';
+    try{await activarPush();md.hidden=true;toast('Avisos activados. Le enviamos una notificación de prueba.');render()}
+    catch(e){b.disabled=false;b.textContent='Activar avisos';toast({ios:'Primero instale la app en la pantalla de inicio.',denegado:'No se dio permiso para notificaciones.',nosoporta:'Este navegador no admite notificaciones.',red:'Sin conexión. Intente de nuevo.'}[e.message]||'No se pudo activar: '+e.message)}};
+  if($('#pPrueba'))$('#pPrueba').onclick=async()=>{try{const j=await api('probarPush');toast(j.ok&&j.enviados?'Prueba enviada. Debe llegar en unos segundos.':'No se pudo enviar: '+(j.error||'sin teléfonos registrados'))}catch(e){toast('Sin conexión.')}};
+  if($('#pOff'))$('#pOff').onclick=async()=>{await desactivarPush();md.hidden=true;toast('Avisos desactivados en este teléfono.');render()}}
 
 /* ===================== Ranking ===================== */
 let rankMes=null;
