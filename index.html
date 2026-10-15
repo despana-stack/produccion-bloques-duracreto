@@ -262,6 +262,11 @@ td.r,th.r{text-align:right}
 .alstate{margin-top:10px;border-radius:12px;padding:10px 14px;font-size:13px;display:flex;gap:10px;align-items:center}
 .alstate.on{background:var(--bad-bg);color:var(--bad);font-weight:600}
 .alstate.done{background:var(--ok-bg);color:var(--ok)}
+.alstate .btn{margin-left:auto;min-height:34px;font-size:12px;padding:0 12px;border-radius:999px;flex:none}
+.pill.parado{background:var(--bad);color:#fff;display:inline-flex;align-items:center;gap:6px}
+.pill.parado i{width:8px;height:8px;border-radius:50%;background:#fff;animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.25}}
+.sos.on{background:var(--ok);animation:none;box-shadow:none}
 .alertbar{background:var(--bad);color:#fff}
 .alertbar .in{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:6px;padding-block:10px}
 .alertbar .al{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:14px}
@@ -488,13 +493,14 @@ function renderRegistro(){
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{form={tipo:b.dataset.f,v:{}};view='form';render()});
   document.querySelectorAll('[data-hs]').forEach(b=>b.onclick=()=>{homeSel=b.dataset.hs;renderRegistro()});
   if($('#sos'))$('#sos').onclick=confirmarAviso;
+  pintarAlertas();
 }
 const teamChip=id=>`<span class="chip"><span class="dot" style="background:var(${TEAMCOL[id]})"></span>${EQ[id].nombre.replace('Equipo ','')}</span>`;
 
 const prodOptions=sel=>{const g={};SEED.productos.forEach(p=>(g[p.linea]=g[p.linea]||[]).push(p));return `<option value="">Seleccione el producto</option>`+Object.entries(g).map(([l,ps])=>`<optgroup label="${l}">${ps.map(p=>`<option value="${p.id}" ${sel===p.id?'selected':''}>${p.nombre}</option>`).join('')}</optgroup>`).join('')};
 const turnoOptions=sel=>`<option value="">Seleccione el turno</option>`+Object.entries(TURNOS).map(([k,t])=>`<option value="${k}" ${sel===k?'selected':''}>${t.lbl}</option>`).join('');
 const eqField=(id,sel,extra)=>S.equipo&&!extra?`<div class="field"><span class="lbl">Grupo</span><div class="fixedteam"><span class="chip"><span class="dot" style="background:var(${TEAMCOL[S.equipo]})"></span>${EQ[S.equipo].nombre}</span><span class="note">Líder: ${esc(EQ[S.equipo].lider)}</span></div></div>`:
- `<div class="field" data-k="${id}"><label for="${id}">${extra?'Grupo de origen':'Grupo'}</label><select class="in-ctl" id="${id}"><option value="">Seleccione el grupo</option>${SEED.equipos.map(e=>`<option value="${e.id}" ${sel===e.id?'selected':''}>${e.nombre}</option>`).join('')}${extra?`<option value="ND" ${sel==='ND'?'selected':''}>No identificado</option>`:''}</select></div>`;
+ `<div class="field" data-k="${id}"><label for="${id}">${extra?'Grupo de origen':'Grupo'}</label><select class="in-ctl" id="${id}"><option value="">Seleccione el grupo</option>${SEED.equipos.map(e=>`<option value="${e.id}" ${sel===e.id?'selected':''}>${e.nombre} - ${esc(e.lider)}</option>`).join('')}${extra?`<option value="ND" ${sel==='ND'?'selected':''}>No identificado</option>`:''}</select></div>`;
 const numField=(id,label,hint)=>`<div class="field" data-k="${id}"><label for="${id}">${label}</label><input class="in-ctl bigNum num" id="${id}" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="0">${hint?`<span class="hint">${hint}</span>`:''}</div>`;
 const photoField=(lbl='Foto del tablero de la máquina',hint='La foto es la evidencia de que el dato coincide con la pantalla de la máquina.')=>`<div class="field" data-k="foto"><span class="lbl">${lbl}</span><div class="photo" id="photo"><div class="btns"><label class="btn ghost small" for="fcam">Tomar foto</label><label class="btn ghost small" for="fgal">Elegir de galería</label></div>
  <input type="file" id="fcam" accept="image/*" capture="environment" hidden><input type="file" id="fgal" accept="image/*" hidden><img id="fprev" alt="Foto cargada" hidden><span class="hint" id="fhint">${hint}</span></div></div>`;
@@ -526,7 +532,7 @@ function renderForm(){
   document.querySelectorAll('.choice-grid').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('.choice');if(!b)return;g.querySelectorAll('.choice').forEach(x=>x.setAttribute('aria-pressed',x===b));form.v[g.id]=b.dataset.v}));
   ['fcam','fgal'].forEach(id=>{const i=$('#'+id);if(i)i.onchange=()=>i.files[0]&&loadPhoto(i.files[0])});
   const pr=$('#producto');if(pr&&t!=='nc')pr.onchange=checkUnits;
-  if(t==='paro'){const u=()=>{const a=$('#inicio').value,b=$('#fin').value;$('#dur').textContent=a&&b?`Duración: ${minutos(a,b)} minutos (${(minutos(a,b)/60).toFixed(1)} h)`:''};$('#inicio').oninput=u;$('#fin').oninput=u}
+  if(t==='paro'){const al=form.alerta||paroActivo(S.equipo);if(al&&!$('#inicio').value){$('#inicio').value=al.registro.slice(11);$('#turno').value=al.turno;$('#fecha').value=fechaTurnoAl(al)}const u=()=>{const a=$('#inicio').value,b=$('#fin').value;$('#dur').textContent=a&&b?`Duración: ${minutos(a,b)} minutos (${(minutos(a,b)/60).toFixed(1)} h)`:''};$('#inicio').oninput=u;$('#fin').oninput=u}
   $('#ff').onsubmit=e=>{e.preventDefault();submit()};
 }
 function checkUnits(){const box=$('#chk');if(!box)return;form.forzar=false;const p=PR[$('#producto').value],c=+$('#ciclos').value,u=+$('#unidades').value;
@@ -548,7 +554,9 @@ async function submit(){
   else if(t==='nc'){kind='noconf';rec={id:nextId(kind,'NC'),...base,fecha:val.fecha,fechaProd:val.fechaProd,equipo:val.equipo,producto:val.producto,cantidad:+val.cantidad,clase:val.clase,obs:g('obs'),foto:'Foto adjunta',fotoData:val.foto}}
   else{kind='paros';rec={id:nextId(kind,'PA'),...base,fecha:val.fecha,turno:val.turno,equipo:val.equipo,inicio:val.inicio,fin:val.fin,minutos:minutos(val.inicio,val.fin),causa:val.causa,comentario:val.comentario,causaRev:'',subcausa:''}}
   const btn=$('#send');btn.disabled=true;btn.textContent='Cargando…';
-  try{const saved=await addRec(kind,rec);form.rec=saved||rec;form.kind=kind;view='done';render()}
+  try{const saved=await addRec(kind,rec);form.rec=saved||rec;form.kind=kind;
+    if(kind==='paros'){if(ONLINE){try{const j=await api('alertas');if(j.ok)DB.alertas=j.alertas}catch(e){}}else{(LOCAL.alertas||[]).forEach(a=>{if(a.equipo===rec.equipo&&a.estado!=='Resuelta'){a.estado='Resuelta';a.reanudo=rec.fin}});store.set(LS,LOCAL);DB.alertas=LOCAL.alertas.slice()}}
+    view='done';render()}
   catch(e){btn.disabled=false;btn.textContent='Cargar';if(e.message!=='sesion')toast(e.message==='red'?'Sin conexión. Revise el internet y toque «Cargar» de nuevo.':'No se pudo guardar: '+e.message)}
 }
 function renderDone(){
@@ -713,21 +721,23 @@ function renderRep(){
   const PA=DB.paros.filter(r=>r.fecha===repDia),NC=DB.noconf.filter(r=>r.fechaProd===repDia),AV=(DB.alertas||[]).filter(r=>r.fecha===repDia);
   const estadoT=t=>{if(repDia!==T0)return ['warn','Sin reporte de cierre'];const h=new Date().getHours()+new Date().getMinutes()/60;
     if(t==='A'&&h<6||t==='B'&&h<14)return ['blue','Por iniciar'];if(t==='A'&&h<14||t==='B'&&h<22)return ['blue','En curso · sin cortes todavía'];return ['warn','Sin reporte de cierre']};
-  const turnoCard=t=>{const R=P.filter(r=>r.turno===t),X=VT[t],v=X.v,u=X.u,ix=X.teo?X.cy/X.teo:0;
+  const parado=t=>(DB.alertas||[]).filter(a=>a.turno===t&&a.estado!=='Resuelta'&&!a.reanudo&&msDesde(a.registro)<12*3600e3&&fechaTurnoAl(a)===repDia).sort((a,b)=>a.registro.localeCompare(b.registro)).pop();
+  const pilParo=a=>`<span class="pill parado" style="align-self:flex-start"><i></i>PARADO desde las ${a.registro.slice(11)} · ${hace(a.registro)}</span>`;
+  const turnoCard=t=>{const R=P.filter(r=>r.turno===t),X=VT[t],v=X.v,u=X.u,ix=X.teo?X.cy/X.teo:0,pq=R.length?null:parado(t);
     const lc=X.lc,pa=PA.filter(r=>r.turno===t).reduce((s,r)=>s+r.minutos,0);
-    const gid=(R[0]||lc||PA.find(r=>r.turno===t)||{}).equipo;const [c3,l3]=nivel(ix),pc=v/metaT;
+    const gid=(R[0]||lc||PA.find(r=>r.turno===t)||pq||{}).equipo;const [c3,l3]=nivel(ix),pc=v/metaT;
     return `<section class="card s4 tcard"><div class="th"><div><b>${TURNOS[t].lbl.split(' · ')[0]}</b><div class="note">${TURNOS[t].lbl.split(' · ')[1]}</div></div>${gid?teamChip(gid):''}</div>
-     ${X.vivo?`<span class="pill blue" style="align-self:flex-start">En curso · según corte de las ${lc.hora}</span>`:''}
+     ${pq&&X.vivo?pilParo(pq):X.vivo?`<span class="pill blue" style="align-self:flex-start">En curso · según corte de las ${lc.hora}</span>`:''}
      ${R.length||X.vivo?`<div class="big num">${fmt(v)} <span class="note" style="font-size:13px;font-weight:500">de ${fmt(metaT)}</span></div>
      <div class="bar" style="height:10px"><i style="width:${Math.min(100,pc*100)}%;background:var(--${scaleCol(pc)})"></i></div>
      <div class="kv num"><div><b style="color:var(--${c3})">${pct(ix,1)}</b>Índice · ${(s=>s[0].toUpperCase()+s.slice(1))(l3.replace('Rendimiento ',''))}</div><div><b>${fmt(u)}</b>Unidades reales${X.vivo?' (al corte)':''}</div>
      <div><b>${lc?lc.hora+' · '+pct(cidx(lc)):'–'}</b>Último corte</div><div><b>${pa} min</b>Paros</div></div>`:
-     `<span class="pill ${estadoT(t)[0]}" style="align-self:flex-start">${estadoT(t)[1]}</span><div class="kv num"><div><b>${lc?lc.hora+' · '+pct(cidx(lc)):'–'}</b>Último corte</div><div><b>${pa} min</b>Paros</div></div>`}</section>`};
+     `${pq?pilParo(pq):`<span class="pill ${estadoT(t)[0]}" style="align-self:flex-start">${estadoT(t)[1]}</span>`}<div class="kv num"><div><b>${lc?lc.hora+' · '+pct(cidx(lc)):'–'}</b>Último corte</div><div><b>${pa} min</b>Paros</div></div>`}</section>`};
   m.innerHTML=`<div class="rep">
    <div class="dnav"><button id="dprev" ${prev?'':'disabled'} aria-label="Día anterior">‹</button><select id="dsel" aria-label="Fecha del reporte">${dias.slice().reverse().map(d=>`<option value="${d}" ${d===repDia?'selected':''}>${['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][new Date(d+'T12:00').getDay()]} ${dmy(d)}</option>`).join('')}</select><button id="dnext" ${next?'':'disabled'} aria-label="Día siguiente">›</button>
     <span style="margin-left:auto;display:flex;gap:8px">${can('bd')?'<button class="btn small ghost" id="xlsd">Descargar Excel del día</button>':''}</span></div>
    <div class="grid">
-    <section class="card s12 kc" style="border-top-color:var(--${col})"><div class="kt" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><h3>Producción del día · ${dmy(repDia)}</h3><span style="display:flex;gap:6px;flex-wrap:wrap">${vivos.length?`<span class="pill blue">En curso · Turno ${vivos.join(' y ')} al último corte</span>`:''}<span class="pill ${col==='ok'?'ok':col==='blue'?'blue':col==='warn'?'warn':'bad'}">${pct(pd)} de la meta diaria</span></span></div>
+    <section class="card s12 kc" style="border-top-color:var(--${col})"><div class="kt" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><h3>Producción del día · ${dmy(repDia)}</h3><span style="display:flex;gap:6px;flex-wrap:wrap">${['A','B','C'].filter(t=>!P.some(r=>r.turno===t)&&parado(t)).map(t=>`<span class="pill parado"><i></i>Turno ${t} PARADO</span>`).join('')}${vivos.length?`<span class="pill blue">En curso · Turno ${vivos.join(' y ')} al último corte</span>`:''}<span class="pill ${col==='ok'?'ok':col==='blue'?'blue':col==='warn'?'warn':'bad'}">${pct(pd)} de la meta diaria</span></span></div>
      <div style="display:flex;flex-wrap:wrap;gap:12px 32px;align-items:flex-end;margin-top:8px">
       <div><div class="num" style="font-size:44px;font-weight:800;line-height:1">${fmt(tot)}</div><span class="note">de ${fmt(metaDia)} · equivalente Bloque 6"</span></div>
       <div class="tile-k"><span class="v num" style="font-size:22px">${fmt(real)}</span><span class="l">Unidades reales</span></div>
@@ -739,7 +749,7 @@ function renderRep(){
     ${['A','B','C'].map(turnoCard).join('')}
     <section class="card s12"><h3>Cortes del día</h3><p class="cap">Índice de rendimiento en cada muestreo. «Acumulado del día» = lo producido por los turnos anteriores del día + lo que marcaba este corte. El Turno C termina a las 6:00 am, por eso es el primero del día.</p>${C.length?`<div class="tbl"><table><thead><tr><th>Grupo</th><th>Turno</th><th>Hora</th><th class="r">Ciclos</th><th class="r">Unidades</th><th class="r">Acumulado del día</th><th>Índice</th></tr></thead><tbody>${['A','B','C'].flatMap(t=>C.filter(r=>r.turno===t)).map(r=>`<tr><td>${teamChip(r.equipo)}</td><td>${r.turno}</td><td class="num">${r.hora}</td><td class="r num">${fmt(r.ciclos)}</td><td class="r num">${fmt(r.unidades)}</td><td class="r num"><b>${fmt(acumCorte(r))}</b></td><td>${idxBar(cidx(r))}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">No hubo cortes este día.</p>'}</section>
     <section class="card s6"><h3>Paros del día</h3><p class="cap">${PA.length} ${PA.length===1?'paro':'paros'} · ${PA.reduce((s,r)=>s+r.minutos,0)} minutos${AV.length?` · ${AV.length} ${AV.length===1?'aviso':'avisos'} de paro`:''}</p>
-    ${AV.length?`<div class="recent" style="margin:0 0 10px">${lista(AV.map(a=>[`${a.registro.slice(11)} · ${EQ[a.equipo]?.nombre||a.equipo} · Turno ${a.turno}`,a.estado==='Atendida'?'Atendido'+(a.atendidaPor?' por '+esc(a.atendidaPor.split(' ')[0]):''):'Sin atender']))}</div>`:''}${PA.length?`<ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px">${PA.map(r=>`<li style="border-bottom:1px solid var(--line);padding-bottom:8px"><div style="display:flex;justify-content:space-between;gap:8px"><b>${CA[r.causa].nombre}</b><span class="num">${r.inicio}–${r.fin} · ${r.minutos} min</span></div><div class="note">${teamChip(r.equipo)} Turno ${r.turno} · ${esc(r.comentario)}</div></li>`).join('')}</ul>`:'<p class="note">Sin paros reportados.</p>'}</section>
+    ${AV.length?`<div class="recent" style="margin:0 0 10px">${lista(AV.map(a=>[`${a.registro.slice(11)} · ${EQ[a.equipo]?.nombre||a.equipo} · Turno ${a.turno}`,a.estado==='Resuelta'?'Reanudó'+(a.reanudo?' '+esc(a.reanudo):''):a.estado==='Atendida'?'Atendido'+(a.atendidaPor?' por '+esc(a.atendidaPor.split(' ')[0]):''):'Sin atender']))}</div>`:''}${PA.length?`<ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px">${PA.map(r=>`<li style="border-bottom:1px solid var(--line);padding-bottom:8px"><div style="display:flex;justify-content:space-between;gap:8px"><b>${CA[r.causa].nombre}</b><span class="num">${r.inicio}–${r.fin} · ${r.minutos} min</span></div><div class="note">${teamChip(r.equipo)} Turno ${r.turno} · ${esc(r.comentario)}</div></li>`).join('')}</ul>`:'<p class="note">Sin paros reportados.</p>'}</section>
     <section class="card s6"><h3>No conformes de este día</h3><p class="cap">Producto fabricado el ${dmy(repDia)} que calidad clasificó</p>${NC.length?'<div class="recent" style="margin-top:0">'+lista(NC.map(r=>[`${EQ[r.equipo]?.nombre||'No identificado'} · ${r.clase} · ${PR[r.producto].nombre}`,fmt(r.cantidad)+' u']))+'</div>':'<p class="note">Sin no conformes reportados para esta fecha.</p>'}</section>
    </div></div>`;
   $('#dsel').onchange=e=>{repDia=e.target.value;renderRep()};
@@ -749,19 +759,34 @@ function renderRep(){
 
 /* ===================== Avisos de paro ===================== */
 const ALVISTOS=new Set();let alPrimera=true;
+const msDesde=reg=>Date.now()-new Date(reg.replace(' ','T'));
+const fechaTurnoAl=a=>{if(a.turno==='C'&&a.registro.slice(11)>='12:00'){const d=new Date(a.registro.slice(0,10)+'T12:00');d.setDate(d.getDate()+1);return iso(d)}return a.fecha};
+function paroActivo(eq,turno){return (DB.alertas||[]).filter(a=>a.equipo===eq&&a.estado!=='Resuelta'&&!a.reanudo&&msDesde(a.registro)<12*3600e3&&(!turno||a.turno===turno)).sort((a,b)=>a.registro.localeCompare(b.registro)).pop()}
 function hace(reg){const d=new Date(reg.replace(' ','T'));const m=Math.max(0,Math.round((Date.now()-d)/60000));return m<1?'hace un momento':m<60?`hace ${m} min`:`hace ${Math.floor(m/60)} h ${m%60} min`}
-function confirmarAviso(){const md=$('#modal');const mio=(DB.alertas||[]).filter(a=>a.equipo===S.equipo&&a.estado!=='Atendida').pop();
+function confirmarAviso(){const md=$('#modal');const mio=paroActivo(S.equipo);
+  if(mio){md.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT"><div class="ic" style="background:var(--ok-bg);color:var(--ok)">${ICON.check.replace('width="52" height="52"','width="34" height="34"')}</div><h2 id="dlgT">¿Ya arrancó la producción?</h2>
+   <p>Su grupo está marcado como <b>parado</b> desde las ${mio.registro.slice(11)}. Si ya se resolvió, puede quitar el aviso o reportar el paro completo ahora.</p>
+   <button class="btn danger" id="alFin" style="background:var(--ok)">Sí, ya arrancamos</button><button class="btn ghost" id="alRep">Reportar el paro ahora</button><button class="btn ghost" id="alNo" style="margin-top:8px">Cancelar</button></div>`;
+    md.hidden=false;md.onclick=e=>{if(e.target===md)md.hidden=true};$('#alNo').onclick=()=>md.hidden=true;
+    $('#alRep').onclick=()=>{md.hidden=true;form={tipo:'paro',v:{},alerta:mio};view='form';render()};
+    $('#alFin').onclick=async()=>{const b=$('#alFin');b.disabled=true;b.textContent='Guardando…';
+      try{await resolverAviso(mio.id);md.hidden=true;toast('Listo. Su grupo vuelve a aparecer en producción. Recuerde reportar el paro.');renderRegistro()}
+      catch(e){b.disabled=false;b.textContent='Sí, ya arrancamos';if(e.message!=='sesion')toast('No se pudo guardar. Intente de nuevo.')}};return}
   md.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT"><div class="ic">${ICON.sos}</div><h2 id="dlgT">¿Quiere informar que hay un paro?</h2>
-   <p>${mio?`Ya hay un aviso de su grupo desde las ${mio.registro.slice(11)} sin atender. Puede enviar otro si es necesario.`:'Se avisará a jefes de planta y gerencia para que le apoyen. Cuando se resuelva, regístrelo en «Reportar paro».'}</p>
+   <p>Se avisará a jefes de planta y gerencia, y su turno aparecerá como <b>parado</b> hasta que toque este botón otra vez o reporte el paro.</p>
    <button class="btn danger" id="alSi">Sí, avisar</button><button class="btn ghost" id="alNo">Cancelar</button></div>`;
   md.hidden=false;md.onclick=e=>{if(e.target===md)md.hidden=true};$('#alNo').onclick=()=>md.hidden=true;
   $('#alSi').onclick=async()=>{const b=$('#alSi');b.disabled=true;b.textContent='Avisando…';
-    try{await enviarAviso();md.hidden=true;toast('Aviso enviado. Jefes y gerencia ya fueron notificados.');pintarAlertas()}
+    try{await enviarAviso();md.hidden=true;toast('Aviso enviado. Jefes y gerencia ya fueron notificados.');renderRegistro()}
     catch(e){b.disabled=false;b.textContent='Sí, avisar';if(e.message!=='sesion')toast(e.message==='red'?'Sin conexión. Revise el internet e intente de nuevo.':'No se pudo avisar: '+e.message)}}}
 async function enviarAviso(){const turno=EQ[S.equipo].turno;
   if(ONLINE){const j=await api('alerta',{turno});if(!j.ok)throw new Error(j.error||'error');DB.alertas=j.alertas;return}
   const rec={id:'AL-'+String((LOCAL.alertas.length||0)+1).padStart(4,'0'),registro:stamp(),fecha:todayISO(),turno,equipo:S.equipo,usuario:S.u,estado:'Activa',atendidaPor:'',atencion:''};
   LOCAL.alertas.push(rec);store.set(LS,LOCAL);DB.alertas=LOCAL.alertas.slice();ALVISTOS.add(rec.id)}
+async function resolverAviso(id,hora){
+  if(ONLINE){const j=await api('resolver',{id,hora});if(!j.ok)throw new Error(j.error||'error');DB.alertas=j.alertas}
+  else{const a=LOCAL.alertas.find(x=>x.id===id);if(a){a.estado='Resuelta';a.reanudo=hora||nowHM()}store.set(LS,LOCAL);DB.alertas=LOCAL.alertas.slice()}
+  pintarAlertas()}
 async function atenderAviso(id){
   if(ONLINE){const j=await api('atender',{id});if(!j.ok)throw new Error(j.error||'error');DB.alertas=j.alertas}
   else{const a=LOCAL.alertas.find(x=>x.id===id);if(a){a.estado='Atendida';a.atendidaPor=S.nombre;a.atencion=nowHM()}store.set(LS,LOCAL);DB.alertas=LOCAL.alertas.slice()}
@@ -770,16 +795,19 @@ function sonarAviso(){try{navigator.vibrate&&navigator.vibrate([300,120,300,120,
   try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const c=new A();[0,.28,.56].forEach(t=>{const o=c.createOscillator(),g=c.createGain();o.frequency.value=880;o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(.0001,c.currentTime+t);g.gain.exponentialRampToValueAtTime(.25,c.currentTime+t+.02);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+t+.22);o.start(c.currentTime+t);o.stop(c.currentTime+t+.24)})}catch(e){}}
 function pintarAlertas(){if(!S)return;const L=DB.alertas||[];
   const box=$('#alertas');
-  if(box&&can('aviso')){const act=L.filter(a=>a.estado!=='Atendida').sort((a,b)=>b.registro.localeCompare(a.registro));
+  if(box&&can('aviso')){const act=L.filter(a=>a.estado==='Activa'&&msDesde(a.registro)<12*3600e3).sort((a,b)=>b.registro.localeCompare(a.registro));
     const nuevos=act.filter(a=>!ALVISTOS.has(a.id));act.forEach(a=>ALVISTOS.add(a.id));
     if(nuevos.length&&!alPrimera){sonarAviso();toast(`Aviso de paro: ${EQ[nuevos[0].equipo]?.nombre||''} necesita apoyo.`)}
     box.innerHTML=act.length?`<div class="alertbar" role="alert"><div class="in wrap">${act.map(a=>`<div class="al">${ICON.paro}<span><b>${EQ[a.equipo]?.nombre||a.equipo} · Turno ${a.turno}</b> avisó que tiene un paro a las ${a.registro.slice(11)} (${hace(a.registro)}). Necesita apoyo o que alguien revise qué pasa.</span><button data-at="${a.id}">Ya lo estamos atendiendo</button></div>`).join('')}</div></div>`:'';
     box.querySelectorAll('[data-at]').forEach(b=>b.onclick=async()=>{b.disabled=true;b.textContent='Guardando…';try{await atenderAviso(b.dataset.at)}catch(e){b.disabled=false;b.textContent='Ya lo estamos atendiendo';if(e.message!=='sesion')toast('No se pudo guardar. Intente de nuevo.')}})}
   else if(box)box.innerHTML='';
   alPrimera=false;
-  const st=$('#alstate');if(st&&S.equipo){const mio=L.filter(a=>a.equipo===S.equipo&&a.fecha===todayISO()).sort((a,b)=>a.registro.localeCompare(b.registro)).pop();
-    st.innerHTML=!mio?'':mio.estado!=='Atendida'?`<div class="alstate on">${ICON.reloj.replace('<svg','<svg width="18" height="18"')}<span>Aviso de paro enviado a las ${mio.registro.slice(11)}. Esperando que jefatura lo atienda.</span></div>`
-      :`<div class="alstate done">${ICON.check.replace('width="52" height="52"','width="18" height="18"')}<span>Su aviso de las ${mio.registro.slice(11)} ya fue atendido${mio.atendidaPor?' por '+esc(mio.atendidaPor):''}${mio.atencion?' a las '+esc(mio.atencion):''}.</span></div>`}}
+  const st=$('#alstate');if(st&&S.equipo){const act=paroActivo(S.equipo);const ult=L.filter(a=>a.equipo===S.equipo&&msDesde(a.registro)<12*3600e3).sort((a,b)=>a.registro.localeCompare(b.registro)).pop();
+    const sb=$('#sos');if(sb){sb.classList.toggle('on',!!act);sb.setAttribute('aria-label',act?'Avisar que ya arrancó la producción':'Avisar a jefes y gerencia que hay un paro')}
+    st.innerHTML=act?`<div class="alstate on">${ICON.reloj.replace('<svg','<svg width="18" height="18"')}<span>Su turno aparece como <b>PARADO</b> desde las ${act.registro.slice(11)}. ${act.estado==='Atendida'?'Lo está atendiendo '+esc((act.atendidaPor||'jefatura').split(' ')[0])+'.':'Esperando que jefatura lo atienda.'}</span><button class="btn ghost" id="alstB">Ya arrancamos</button></div>`
+      :ult&&ult.estado==='Resuelta'?`<div class="alstate done">${ICON.check.replace('width="52" height="52"','width="18" height="18"')}<span>Producción reanudada${ult.reanudo?' a las '+esc(ult.reanudo):''}. ${PAROREP(ult)?'Paro reportado.':'Recuerde reportar el paro en «Reportar paro».'}</span></div>`:'';
+    if($('#alstB'))$('#alstB').onclick=confirmarAviso}}
+const PAROREP=a=>DB.paros.some(p=>p.equipo===a.equipo&&p.registro>=a.registro);
 async function refrescarAlertas(){if(!ONLINE||!S||!(can('aviso')||can('alerta')))return;try{const j=await api('alertas');if(j.ok){DB.alertas=j.alertas;pintarAlertas()}}catch(e){}}
 setInterval(()=>{if(document.visibilityState==='visible')refrescarAlertas()},45000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refrescarAlertas()});
