@@ -1,0 +1,16 @@
+{
+  "name": "Control de Producción · Duracreto",
+  "short_name": "Producción",
+  "description": "Registro de producción por turno y dashboard de la planta de bloques.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F4F1",
+  "theme_color": "#12130F",
+  "lang": "es",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
