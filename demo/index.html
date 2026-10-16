@@ -769,8 +769,8 @@ function renderRep(){
      ${R.length||X.vivo?`<div class="big num">${fmt(v)} <span class="note" style="font-size:13px;font-weight:500">de ${fmt(metaT)}</span></div>
      <div class="bar" style="height:10px"><i style="width:${Math.min(100,pc*100)}%;background:var(--${scaleCol(pc)})"></i></div>
      <div class="kv num"><div><b style="color:var(--${c3})">${pct(ix,1)}</b>Índice · ${(s=>s[0].toUpperCase()+s.slice(1))(l3.replace('Rendimiento ',''))}</div><div><b>${fmt(u)}</b>Unidades reales${X.vivo?' (al corte)':''}</div>
-     <div><b>${lc?lc.hora+' · '+pct(cidx(lc)):'–'}</b>Último corte</div><div><b>${pa} min</b>Paros</div></div>`:
-     `${pq?pilParo(pq):`<span class="pill ${estadoT(t)[0]}" style="align-self:flex-start">${estadoT(t)[1]}</span>`}<div class="kv num"><div><b>${lc?lc.hora+' · '+pct(cidx(lc)):'–'}</b>Último corte</div><div><b>${pa} min</b>Paros</div></div>`}</section>`};
+     <div><b>${lc?`${lc.hora} <span style="font-weight:400">· ${fmt(lc.unidades)} u</span>`:'–'}</b>Último corte</div><div><b>${pa} min</b>Paros</div></div>`:
+     `${pq?pilParo(pq):`<span class="pill ${estadoT(t)[0]}" style="align-self:flex-start">${estadoT(t)[1]}</span>`}<div class="kv num"><div><b>${lc?`${lc.hora} <span style="font-weight:400">· ${fmt(lc.unidades)} u</span>`:'–'}</b>Último corte</div><div><b>${pa} min</b>Paros</div></div>`}</section>`};
   m.innerHTML=`<div class="rep">
    <div class="dnav"><button id="dprev" ${prev?'':'disabled'} aria-label="Día anterior">‹</button><select id="dsel" aria-label="Fecha del reporte">${dias.slice().reverse().map(d=>`<option value="${d}" ${d===repDia?'selected':''}>${['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][new Date(d+'T12:00').getDay()]} ${dmy(d)}</option>`).join('')}</select><button id="dnext" ${next?'':'disabled'} aria-label="Día siguiente">›</button>
     <span style="margin-left:auto;display:flex;gap:8px">${can('bd')?'<button class="btn small ghost" id="xlsd">Descargar Excel del día</button>':''}</span></div>
