@@ -390,6 +390,12 @@ const dm=s=>{const [y,m,d]=s.split('-');return d+'/'+m};
 const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const eqv=r=>r.ciclos*CFG.baseEq;
+/* Limpieza/mantenimiento presupuestado: hasta 60 min por turno no castigan el índice de los cortes */
+const LIMP_MAX=60;
+const relT=(turno,hm)=>{const st={A:6,B:14,C:22}[turno];const [h,m]=String(hm||'0:0').split(':').map(Number);return((h*60+m)-st*60+1440)%1440};
+function limpiezaAntes(r){const fin=relT(r.turno,r.hora);let t=0;DB.paros.forEach(p=>{if(p.fecha!==r.fecha||p.turno!==r.turno||p.equipo!==r.equipo||(p.causaRev||p.causa)!=='MAN')return;const a=relT(p.turno,p.inicio),b=a+(+p.minutos||0);t+=Math.max(0,Math.min(b,fin)-a)});return Math.min(LIMP_MAX,t)}
+function horasEfC(r){const he=horasEf(r.turno,r.hora);return Math.max(0,Math.round((he-limpiezaAntes(r)/60)*100)/100)}
+function paroNeto(L){const g={};let tot=0;L.forEach(p=>{tot+=+p.minutos||0;if((p.causaRev||p.causa)==='MAN'){const k=p.fecha+p.turno+p.equipo;g[k]=(g[k]||0)+(+p.minutos||0)}});return tot-Object.values(g).reduce((s,v)=>s+Math.min(LIMP_MAX,v),0)}
 function horasEf(turno,hm){const st={A:6,B:14,C:22}[turno];const [h,m]=hm.split(':').map(Number);let e=((h+m/60)-st+24)%24;return Math.round(Math.min(CFG.horasTurno,e)*100)/100}
 function minutos(a,b){const [h1,m1]=a.split(':').map(Number),[h2,m2]=b.split(':').map(Number);let d=(h2*60+m2)-(h1*60+m1);return d<0?d+1440:d}
 function nivel(i){return i>=UMBRAL.bueno?['ok','Rendimiento óptimo']:i>=UMBRAL.aceptable?['warn','Por mejorar']:['bad','Rendimiento bajo']}
@@ -604,7 +610,7 @@ async function submit(){
 function renderDone(){
   const r=form.rec,k=form.kind,m=$('#main');let extra='',rows=[];
   const T={produccion:'Producción cargada',cortes:'Corte registrado',noconf:'Producto no conforme registrado',paros:'Paro registrado',consumos:'Consumo registrado'}[k];
-  if(k==='cortes'){const he=horasEf(r.turno,r.hora),teo=Math.round(CFG.ciclosHora*he),i=teo?r.ciclos/teo:0,[c,l]=nivel(i);
+  if(k==='cortes'){const he=horasEfC(r),teo=Math.round(CFG.ciclosHora*he),i=teo?r.ciclos/teo:0,[c,l]=nivel(i);
     extra=`<div class="gauge"><div class="note">Índice de productividad del turno a las ${r.hora}</div><div class="big num" style="color:var(--${c})">${pct(i)}</div><span class="pill ${c}">${l}</span><div class="bar" style="margin-top:14px;height:12px"><i style="width:${Math.min(100,i*100)}%;background:var(--${c})"></i></div><p class="note">${fmt(r.ciclos)} ciclos reales de ${fmt(teo)} teóricos en ${he} h efectivas</p></div>`}
   if(r.ciclos!=null)rows=[['Fecha',dmy(r.fecha)],['Turno',TURNOS[r.turno].lbl],['Grupo',EQ[r.equipo].nombre],['Producto',PR[r.producto].nombre],['Ciclos',fmt(r.ciclos)],['Unidades',fmt(r.unidades)]];
   else if(k==='consumos')rows=[['Fecha',dmy(r.fecha)],['Turno',TURNOS[r.turno].lbl],['Grupo',EQ[r.equipo].nombre],['Producto',PR[r.producto].nombre],...MATS.map(([id,l,u])=>[l,fmtQ(r[id])+' '+(u==='kg'?'kg':'L')])];
@@ -716,7 +722,7 @@ let corteDia=null;
 function renderCortes(){const C=DB.cortes.filter(r=>inF(r));const dias=[...new Set(C.map(r=>r.fecha))].sort();const box=$('#cortes');if(!dias.length){box.innerHTML='<p class="note">No hay cortes en el periodo.</p>';return}
   if(!dias.includes(corteDia))corteDia=dias[dias.length-1];
   const rows=C.filter(r=>r.fecha===corteDia).sort((a,b)=>ckT(a).localeCompare(ckT(b)));
-  box.innerHTML=`<div class="subtabs">${dias.slice(-7).map(d=>`<button data-cd="${d}" aria-pressed="${d===corteDia}">${dm(d)}</button>`).join('')}</div><div class="tbl"><table><thead><tr><th>Grupo</th><th>Turno</th><th>Hora</th><th class="r">Horas ef.</th><th class="r">Ciclos teóricos</th><th class="r">Ciclos reales</th><th class="r">Unidades</th><th>Índice</th></tr></thead><tbody>${rows.map(r=>{const he=horasEf(r.turno,r.hora),teo=Math.round(CFG.ciclosHora*he);return `<tr><td><span class="chip"><span class="dot" style="background:var(${TEAMCOL[r.equipo]})"></span>${EQ[r.equipo].nombre}</span></td><td>${r.turno}</td><td class="num">${r.hora}</td><td class="r num">${he}</td><td class="r num">${fmt(teo)}</td><td class="r num">${fmt(r.ciclos)}</td><td class="r num">${fmt(r.unidades)}</td><td>${idxBar(teo?r.ciclos/teo:0)}</td></tr>`}).join('')}</tbody></table></div>`;
+  box.innerHTML=`<div class="subtabs">${dias.slice(-7).map(d=>`<button data-cd="${d}" aria-pressed="${d===corteDia}">${dm(d)}</button>`).join('')}</div><div class="tbl"><table><thead><tr><th>Grupo</th><th>Turno</th><th>Hora</th><th class="r">Horas ef.</th><th class="r">Ciclos teóricos</th><th class="r">Ciclos reales</th><th class="r">Unidades</th><th>Índice</th></tr></thead><tbody>${rows.map(r=>{const he=horasEfC(r),teo=Math.round(CFG.ciclosHora*he);return `<tr><td><span class="chip"><span class="dot" style="background:var(${TEAMCOL[r.equipo]})"></span>${EQ[r.equipo].nombre}</span></td><td>${r.turno}</td><td class="num">${r.hora}</td><td class="r num">${he}</td><td class="r num">${fmt(teo)}</td><td class="r num">${fmt(r.ciclos)}</td><td class="r num">${fmt(r.unidades)}</td><td>${idxBar(teo?r.ciclos/teo:0)}</td></tr>`}).join('')}</tbody></table></div>`;
   box.querySelectorAll('[data-cd]').forEach(b=>b.onclick=()=>{corteDia=b.dataset.cd;renderCortes()})}
 
 function drawDash(c,PA,NC){
@@ -750,11 +756,11 @@ function renderRep(){
   const k=dias.indexOf(repDia),prev=dias[k-1],next=dias[k+1];
   const P=DB.produccion.filter(r=>r.fecha===repDia);
   const C=DB.cortes.filter(r=>r.fecha===repDia).sort((a,b)=>ckT(a).localeCompare(ckT(b)));
-  const cidx=r=>{const t=Math.round(CFG.ciclosHora*horasEf(r.turno,r.hora));return t?r.ciclos/t:0};
+  const cidx=r=>{const t=Math.round(CFG.ciclosHora*horasEfC(r));return t?r.ciclos/t:0};
   // Avance en vivo: turno cerrado = su reporte; turno sin cierre = su último corte (el corte no se suma a los anteriores del mismo turno)
   const VT={};['A','B','C'].forEach(t=>{const R=P.filter(r=>r.turno===t),lc=C.filter(r=>r.turno===t).pop();
     VT[t]=R.length?{v:R.reduce((s,r)=>s+eqv(r),0),u:R.reduce((s,r)=>s+r.unidades,0),cy:R.reduce((s,r)=>s+r.ciclos,0),teo:R.length*1260,vivo:false,lc}
-     :lc?{v:eqv(lc),u:lc.unidades,cy:lc.ciclos,teo:Math.round(CFG.ciclosHora*horasEf(lc.turno,lc.hora)),vivo:true,lc}:{v:0,u:0,cy:0,teo:0,vivo:false,lc:null}});
+     :lc?{v:eqv(lc),u:lc.unidades,cy:lc.ciclos,teo:Math.round(CFG.ciclosHora*horasEfC(lc)),vivo:true,lc}:{v:0,u:0,cy:0,teo:0,vivo:false,lc:null}});
   const vivos=['A','B','C'].filter(t=>VT[t].vivo);
   const tot=['A','B','C'].reduce((s,t)=>s+VT[t].v,0),real=['A','B','C'].reduce((s,t)=>s+VT[t].u,0),cy=['A','B','C'].reduce((s,t)=>s+VT[t].cy,0),teoD=['A','B','C'].reduce((s,t)=>s+VT[t].teo,0);
   const acumCorte=r=>{const k='ABC'.indexOf(r.turno);return ['A','B','C'].slice(0,k).reduce((s,t)=>s+VT[t].v,0)+eqv(r)};
@@ -903,7 +909,7 @@ let rankMes=null;
 function rankDatos(ym){const metaG=CFG.meta/3,hab=diasMes(ym).filter(habil),metaTurno=CFG.meta/hab.length/3;
   return SEED.equipos.map(e=>{const P=DB.produccion.filter(r=>r.equipo===e.id&&r.fecha.slice(0,7)===ym),v=P.reduce((s,r)=>s+eqv(r),0),u=P.reduce((s,r)=>s+r.unidades,0),cy=P.reduce((s,r)=>s+r.ciclos,0);
     const N=DB.noconf.filter(r=>r.equipo===e.id&&r.fechaProd.slice(0,7)===ym),des=N.filter(r=>r.clase==='Desecho').reduce((s,r)=>s+r.cantidad,0);
-    const pa=DB.paros.filter(r=>r.equipo===e.id&&r.fecha.slice(0,7)===ym).reduce((s,r)=>s+r.minutos,0);
+    const pa=paroNeto(DB.paros.filter(r=>r.equipo===e.id&&r.fecha.slice(0,7)===ym));
     const best=P.reduce((b,r)=>!b||eqv(r)>eqv(b)?r:b,null),enMeta=P.filter(r=>eqv(r)>=metaTurno).length;
     return {e,v,u,p:v/metaG,idx:P.length?cy/(P.length*1260):0,n:P.length,des,pdes:u?des/u:null,pa,best,enMeta}}).sort((a,b)=>b.v-a.v||b.idx-a.idx)}
 function contar(el){const to=+el.dataset.to,dec=+el.dataset.dec||0,suf=el.dataset.suf||'';if(matchMedia('(prefers-reduced-motion: reduce)').matches){el.textContent=(dec?to.toFixed(dec):fmt(to))+suf;return}
@@ -918,7 +924,7 @@ function renderRank(){const m=$('#main');const ms=monthsAvail();if(!rankMes||!ms
   const menciones=[];
   if(hay){const conP=D.filter(d=>d.n>0);
     const gana=(arr,f,menor)=>{const vals=arr.map(f).filter(v=>v!=null);if(!vals.length)return null;const b=menor?Math.min(...vals):Math.max(...vals);return arr.filter(d=>f(d)===b)};
-    const w1=gana(conP,d=>d.pa,true);menciones.push([ICON.reloj,'Menos tiempo de paro',w1,w1[0].pa?`${(w1[0].pa/60).toFixed(1)} h de paro en el mes`:'Sin paros registrados en el mes']);
+    const w1=gana(conP,d=>d.pa,true);menciones.push([ICON.reloj,'Menos tiempo de paro',w1,w1[0].pa?`${(w1[0].pa/60).toFixed(1)} h de paro en el mes (sin contar limpieza presupuestada)`:'Sin paros registrados en el mes']);
     const w2=gana(conP,d=>d.pdes,true);if(w2)menciones.push([ICON.hoja,'Menor desecho',w2,w2[0].des?`${pct(w2[0].pdes,2)} · ${fmt(w2[0].des)} u de desecho`:'Sin desecho reportado por calidad']);
     const w3=gana(conP,d=>eqv(d.best));const bt=w3[0].best;menciones.push([ICON.rayo,'Mejor turno del mes',w3,`${fmt(eqv(bt))} u el ${dmy(bt.fecha)} (Turno ${bt.turno})`]);
     const w4=gana(conP,d=>Math.round(d.idx*1000));menciones.push([ICON.diana,'Mejor índice de productividad',w4,`${pct(w4[0].idx,1)} en ${w4[0].n} turnos`]);
@@ -936,7 +942,7 @@ function renderRank(){const m=$('#main');const ms=monthsAvail();if(!rankMes||!ms
 let bdTab='produccion';
 const BDDEF={
  produccion:{n:'Producción',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Usuario','usuario'],['Producto',r=>PR[r.producto].nombre],['Ciclos','ciclos',1],['Unidades','unidades',1],['Eq. B6"',r=>eqv(r),1],['Índice',r=>pct(r.ciclos/1260,1)],['Foto','foto']]},
- cortes:{n:'Cortes',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Hora','hora'],['Horas ef.',r=>horasEf(r.turno,r.hora),1],['Ciclos teóricos',r=>Math.round(180*horasEf(r.turno,r.hora)),1],['Ciclos reales','ciclos',1],['Unidades','unidades',1],['Índice',r=>{const t=Math.round(180*horasEf(r.turno,r.hora));return pct(t?r.ciclos/t:0,1)}],['Foto','foto']]},
+ cortes:{n:'Cortes',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Hora','hora'],['Horas ef.',r=>horasEfC(r),1],['Ciclos teóricos',r=>Math.round(180*horasEfC(r)),1],['Ciclos reales','ciclos',1],['Unidades','unidades',1],['Índice',r=>{const t=Math.round(180*horasEfC(r));return pct(t?r.ciclos/t:0,1)}],['Foto','foto']]},
  noconf:{n:'No conformes',date:'fechaProd',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fechaProd)],['Grupo de origen',r=>EQ[r.equipo]?.nombre||'No identificado'],['Usuario','usuario'],['Producto',r=>PR[r.producto].nombre],['Cantidad','cantidad',1],['Clasificación','clase'],['Observación','obs'],['Foto','foto']]},
  consumos:{n:'Consumos',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo]?.nombre||''],['Usuario','usuario'],['Producto',r=>PR[r.producto]?.nombre||''],...MATS.map(([id,l,u])=>[`${l} (${u})`,id,1]),['Foto','foto']]},
  paros:{n:'Paros',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Inicio','inicio'],['Fin','fin'],['Minutos','minutos',1],['Categoría reportada',r=>CA[r.causa].nombre],['Comentario','comentario'],['Categoría revisada',r=>r.causaRev?CA[r.causaRev].nombre:'']]}
