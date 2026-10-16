@@ -106,6 +106,9 @@ textarea.in-ctl{min-height:96px;resize:vertical}
 .tile.t2 .ic{background:var(--orange);color:#12130F}
 .tile.t3 .ic{background:var(--surface2);color:var(--fg)}
 .tile.t4 .ic{background:var(--bad-bg);color:var(--bad)}
+.tile.t5{background:#F9D600;color:#12130F;border-color:#F9D600}.tile.t5 span{color:#3d3a1f}.tile.t5 .ic{background:#12130F;color:#F9D600}
+.uw{position:relative}.uw .in-ctl{padding-right:58px}.uw .u{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:700;color:var(--muted);pointer-events:none}
+.matgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.matgrid .field label{min-height:2.6em;display:flex;align-items:flex-end}
 .recent{margin-top:26px}
 .metacard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
 .metacard .mh{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
@@ -347,10 +350,10 @@ async function boot(){if(!ONLINE){if(!SEED){pantallaCarga('Falta configurar la d
 function initCat(){CFG=SEED.config;if(CFG.descansoDespuesDe==null)CFG.descansoDespuesDe=4;UMBRAL={bueno:CFG.umbralOptimo,aceptable:CFG.umbralMejorar};EQ=Object.fromEntries(SEED.equipos.map(e=>[e.id,e]));PR=Object.fromEntries(SEED.productos.map(p=>[p.id,p]));CA=Object.fromEntries(SEED.causas.map(c=>[c.id,c]))}
 const TURNOS={A:{ini:'06:00',fin:'14:00',lbl:'Turno A · 6:00 am a 2:00 pm'},B:{ini:'14:00',fin:'22:00',lbl:'Turno B · 2:00 pm a 10:00 pm'},C:{ini:'22:00',fin:'06:00',lbl:'Turno C · 10:00 pm a 6:00 am'}};
 const DEMO=!!window.DEMO;
-const ROLES={DEMO:{nom:'Demostración',perm:['prod','corte','paro','alerta','nc','rep','dash','aviso']},LIDER:{nom:'Líder de grupo',perm:['prod','corte','paro','alerta']},CALIDAD:{nom:'Control de calidad',perm:['nc']},SUPERVISOR:{nom:'Supervisión',perm:['rep','dash','bd','aviso']},GERENCIA:{nom:'Gerencia',perm:['rep','dash','aviso']},VISOR:{nom:'Consulta',perm:['rep','dash']},ADMIN:{nom:'Administrador',perm:['prod','corte','paro','alerta','nc','rep','dash','bd','usr','aviso']}};
+const ROLES={DEMO:{nom:'Demostración',perm:['prod','corte','paro','alerta','cons','nc','rep','dash','aviso']},LIDER:{nom:'Líder de grupo',perm:['prod','corte','paro','alerta','cons']},CALIDAD:{nom:'Control de calidad',perm:['nc']},SUPERVISOR:{nom:'Supervisión',perm:['rep','dash','bd','aviso']},GERENCIA:{nom:'Gerencia',perm:['rep','dash','aviso']},VISOR:{nom:'Consulta',perm:['rep','dash']},ADMIN:{nom:'Administrador',perm:['prod','corte','paro','alerta','cons','nc','rep','dash','bd','usr','aviso']}};
 const LS=DEMO?'dc_bloques_demo_registros':'dc_bloques_registros_v2', SS=DEMO?'dc_bloques_demo_sesion':'dc_bloques_sesion_v2', TAB='dc_bloques_tab';
 const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
-let LOCAL=store.get(LS)||{produccion:[],cortes:[],noconf:[],paros:[],alertas:[]};if(!LOCAL.alertas)LOCAL.alertas=[];
+let LOCAL=store.get(LS)||{produccion:[],cortes:[],noconf:[],paros:[],alertas:[],consumos:[]};if(!LOCAL.alertas)LOCAL.alertas=[];
 const THM='dc_bloques_tema';
 function temaActual(){return document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}
 function aplicarTema(){const t=store.get(THM);if(t)document.documentElement.dataset.theme=t;else delete document.documentElement.dataset.theme}
@@ -358,7 +361,7 @@ function cambiarTema(){const n=temaActual()==='dark'?'light':'dark';store.set(TH
 const thmBtn=(cls='')=>`<button class="thm ${cls}" id="thm" aria-label="${temaActual()==='dark'?'Cambiar a modo claro':'Cambiar a modo oscuro'}" title="${temaActual()==='dark'?'Modo claro':'Modo oscuro'}">${temaActual()==='dark'?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>'}</button>`;
 aplicarTema();
 const DB={};
-function loadDB(){if(ONLINE){for(const k of ['produccion','cortes','noconf','paros'])DB[k]=SEED[k].slice();DB.alertas=(SEED.alertas||[]).slice();return}for(const k of ['produccion','cortes','noconf','paros'])DB[k]=SEED[k].map(r=>({...r,migrado:true})).concat(LOCAL[k]||[]);DB.alertas=(LOCAL.alertas||[]).slice()}
+function loadDB(){if(ONLINE){for(const k of ['produccion','cortes','noconf','paros','consumos'])DB[k]=(SEED[k]||[]).slice();DB.alertas=(SEED.alertas||[]).slice();return}for(const k of ['produccion','cortes','noconf','paros','consumos'])DB[k]=(SEED[k]||[]).map(r=>({...r,migrado:true})).concat(LOCAL[k]||[]);DB.alertas=(LOCAL.alertas||[]).slice()}
 function nextId(kind,pre){const n=DB[kind].length+1;return pre+'-'+String(n).padStart(4,'0')}
 async function addRec(kind,rec){if(ONLINE){const j=await api('add',{kind,rec});if(!j.ok)throw new Error(j.error||'No se pudo guardar');DB[kind].push(j.rec);return j.rec}LOCAL[kind]=LOCAL[kind]||[];LOCAL[kind].push(rec);if(!store.set(LS,LOCAL)){delete rec.fotoData;LOCAL[kind][LOCAL[kind].length-1]=rec;store.set(LS,LOCAL)}DB[kind].push(rec);return rec}
 
@@ -400,6 +403,7 @@ const ICON={
  hoja:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21c6 0 14-4 14-16C9 5 5 10 5 15v6z"/><path d="M5 21l7-7"/></svg>',
  rayo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>',
  diana:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>',
+ cons:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9a7 3 0 0114 0v8l-3 4H8l-3-4z"/><path d="M5 13h14"/><path d="M12 2v3"/></svg>',
  check:'<svg viewBox="0 0 24 24" width="52" height="52" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>'
 };
 
@@ -424,7 +428,7 @@ function render(){
   ${tabs.length>1?`<nav class="tabs wrap" role="tablist">${tabs.map(t=>`<button role="tab" data-tab="${t[0]}" aria-selected="${t[0]===tab}">${t[1]}</button>`).join('')}</nav>`:''}</header><div id="alertas"></div>
   ${DEMO?`<div class="demobar wrap"><span><b>Modo demostración.</b> Lo que cargue aquí se queda solo en este dispositivo y no llega a la base de datos de la planta.</span><button id="demoReset">Reiniciar demo</button></div>`:''}<main class="wrap" id="main"></main>`;
   $('#thm').onclick=cambiarTema;if($('#pushb'))$('#pushb').onclick=panelPush;
-  if(DEMO)$('#demoReset').onclick=()=>{LOCAL={produccion:[],cortes:[],noconf:[],paros:[],alertas:[]};store.set(LS,LOCAL);loadDB();view='home';render();toast('Demostración reiniciada.')};
+  if(DEMO)$('#demoReset').onclick=()=>{LOCAL={produccion:[],cortes:[],noconf:[],paros:[],alertas:[],consumos:[]};store.set(LS,LOCAL);loadDB();view='home';render();toast('Demostración reiniciada.')};
   $('#logout').onclick=()=>{if(ONLINE)api('logout').catch(()=>{});store.del(SS);S=null;view='home';render()};
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=async()=>{tab=b.dataset.tab;store.set(TAB,tab);view='home';if(ONLINE&&Date.now()-lastLoad>60000){pantallaCarga('Actualizando…');try{await cargarDatos()}catch(e){if(e.message==='sesion')return}}render()});
   if(tab==='registro')renderRegistro();else if(tab==='rep')renderRep();else if(tab==='dash')renderDash();else if(tab==='rank')renderRank();else if(tab==='bd')renderBD();else renderUsers();
@@ -472,7 +476,7 @@ function renderRegistro(){
   if(view==='done')return renderDone();
   const m=$('#main');const eq=S.equipo?EQ[S.equipo]:null;
   const h=new Date().getHours();const sal=h<12?'Buenos días':h<19?'Buenas tardes':'Buenas noches';
-  const tiles=[['prod','t1','Reporte de producción','Al terminar el turno: ciclos, unidades y foto del tablero'],['corte','t2','Hacer corte','Muestreo durante el turno para medir el rendimiento'],['paro','t4','Reportar paro','Paros por fallas, energía, materiales o personal'],['nc','t3','Producto no conforme','Producto de segunda o desecho (Control de calidad)']].filter(t=>can(t[0]));
+  const tiles=[['prod','t1','Reporte de producción','Al terminar el turno: ciclos, unidades y foto del tablero'],['corte','t2','Hacer corte','Muestreo durante el turno para medir el rendimiento'],['paro','t4','Reportar paro','Paros por fallas, energía, materiales o personal'],['cons','t5','Reportar consumo','Materiales usados en el turno: cemento, arenas, grava, aditivo y agua'],['nc','t3','Producto no conforme','Producto de segunda o desecho (Control de calidad)']].filter(t=>can(t[0]));
   const tileB=t=>`<button class="tile ${t[1]}" data-f="${t[0]}"><div class="ic">${ICON[t[0]]}</div><div><b>${t[2]}</b><span>${t[3]}</span></div></button>`;
   const conSos=can('alerta')&&!!S.equipo;
   const tilesHTML=tiles.length?`<div class="tiles">${tiles.map(t=>t[0]==='paro'&&conSos?`<div class="tile-row">${tileB(t)}<button class="sos" id="sos" aria-label="Avisar a jefes y gerencia que hay un paro" title="Avisar que hay un paro">${ICON.sos}</button></div><div id="alstate"></div>`:tileB(t)).join('')}</div>`:'';
@@ -505,12 +509,15 @@ const turnoOptions=sel=>`<option value="">Seleccione el turno</option>`+Object.e
 const eqField=(id,sel,extra)=>S.equipo&&!extra?`<div class="field"><span class="lbl">Grupo</span><div class="fixedteam"><span class="chip"><span class="dot" style="background:var(${TEAMCOL[S.equipo]})"></span>${EQ[S.equipo].nombre}</span><span class="note">Líder: ${esc(EQ[S.equipo].lider)}</span></div></div>`:
  `<div class="field" data-k="${id}"><label for="${id}">${extra?'Grupo de origen':'Grupo'}</label><select class="in-ctl" id="${id}"><option value="">Seleccione el grupo</option>${SEED.equipos.map(e=>`<option value="${e.id}" ${sel===e.id?'selected':''}>${e.nombre} - ${esc(e.lider)}</option>`).join('')}${extra?`<option value="ND" ${sel==='ND'?'selected':''}>No identificado</option>`:''}</select></div>`;
 const numField=(id,label,hint)=>`<div class="field" data-k="${id}"><label for="${id}">${label}</label><input class="in-ctl bigNum num" id="${id}" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="0">${hint?`<span class="hint">${hint}</span>`:''}</div>`;
+const MATS=[['cemento','Cemento','kg'],['arenaSE','Arena Santa Elena','kg'],['arenaSJ','Arena San Jorge','kg'],['grava','Grava 3/8"','kg'],['aditivo','Aditivo','L'],['agua','Agua','L']];
+const numMat=s=>{s=String(s||'').trim();if(!s)return '';s=s.replace(/,(?=\d{3}(?!\d))/g,'').replace(',','.');return /^\d*\.?\d*$/.test(s)&&s!=='.'?s:'x'};
+const matField=([id,label,u])=>`<div class="field" data-k="${id}"><label for="${id}">${esc(label)}</label><div class="uw"><input class="in-ctl bigNum num" id="${id}" type="text" inputmode="decimal" autocomplete="off" placeholder="0" data-mat><span class="u">${u==='kg'?'kg':'litros'}</span></div></div>`;
 const photoField=(lbl='Foto del tablero de la máquina',hint='La foto es la evidencia de que el dato coincide con la pantalla de la máquina.')=>`<div class="field" data-k="foto"><span class="lbl">${lbl}</span><div class="photo" id="photo"><div class="btns"><label class="btn ghost small" for="fcam">Tomar foto</label><label class="btn ghost small" for="fgal">Elegir de galería</label></div>
  <input type="file" id="fcam" accept="image/*" capture="environment" hidden><input type="file" id="fgal" accept="image/*" hidden><img id="fprev" alt="Foto cargada" hidden><span class="hint" id="fhint">${hint}</span></div></div>`;
 
 function renderForm(){
   const t=form.tipo,m=$('#main');const eq=S.equipo?EQ[S.equipo]:null;const defT=eq?eq.turno:turnoSugerido();
-  const head={prod:['Reporte de producción','Cierre del turno'],corte:['Hacer corte','Muestreo de rendimiento · hora '+nowHM()],nc:['Producto no conforme','Control de calidad'],paro:['Reportar paro','Paro de producción']}[t];
+  const head={prod:['Reporte de producción','Cierre del turno'],corte:['Hacer corte','Muestreo de rendimiento · hora '+nowHM()],nc:['Producto no conforme','Control de calidad'],paro:['Reportar paro','Paro de producción'],cons:['Reportar consumo','Materiales usados en el turno']}[t];
   let body='';
   const fecha=`<div class="field" data-k="fecha"><label for="fecha">${t==='nc'?'Fecha de registro':'Fecha de producción'}</label><input class="in-ctl" type="date" id="fecha" value="${t==='nc'?todayISO():fechaJornada(defT)}"><span class="hint">${t==='nc'?'Hoy por defecto.':'El Turno C se reporta con la fecha del día en que inició (10:00 pm), aunque termine a las 6:00 am del día siguiente.'}</span></div>`;
   const turno=`<div class="field" data-k="turno"><label for="turno">Turno trabajado</label><select class="in-ctl" id="turno">${turnoOptions(defT)}</select></div>`;
@@ -518,6 +525,10 @@ function renderForm(){
     body=fecha+turno+eqField('equipo')+`<div class="field" data-k="producto"><label for="producto">Producto</label><select class="in-ctl" id="producto">${prodOptions('')}</select></div>`+
      numField('ciclos',t==='corte'?'Ciclos acumulados del turno':'Ciclos producidos','Copie el número que muestra la pantalla de la máquina.')+
      numField('unidades',t==='corte'?'Unidades acumuladas del turno':'Unidades producidas')+`<div id="chk"></div>`+photoField();
+  }else if(t==='cons'){
+    body=fecha+turno+eqField('equipo')+`<div class="field" data-k="producto"><label for="producto">Producto</label><select class="in-ctl" id="producto">${prodOptions('')}</select></div>`+
+     `<span class="lbl" style="display:block;margin:4px 0 8px">Cantidades usadas en el turno</span><div class="matgrid">${MATS.map(matField).join('')}</div><p class="note" style="margin:-4px 0 14px">Cemento, arenas y grava en kilogramos; aditivo y agua en litros. Escriba 0 si no se usó.</p>`+
+     photoField('Foto de respaldo','Tome la foto del registro, la báscula o el tablero donde aparecen las cantidades.');
   }else if(t==='nc'){
     body=fecha+`<div class="field" data-k="fechaProd"><label for="fechaProd">Fecha de producción del producto</label><input class="in-ctl" type="date" id="fechaProd" value="${iso(new Date(Date.now()-864e5))}"><span class="hint">¿Qué día se fabricó el producto defectuoso?</span></div>`+
      eqField('equipo','', true)+`<div class="field" data-k="producto"><label for="producto">Producto</label><select class="in-ctl" id="producto">${prodOptions('')}</select></div>`+
@@ -533,6 +544,7 @@ function renderForm(){
   $('#back').onclick=()=>{view='home';render()};
   if(t!=='nc'&&$('#turno')&&$('#fecha')){let manual=false;$('#fecha').addEventListener('input',()=>manual=true);$('#turno').addEventListener('change',()=>{if(!manual)$('#fecha').value=fechaJornada($('#turno').value)})}
   document.querySelectorAll('input[inputmode="numeric"]').forEach(i=>i.addEventListener('input',()=>{i.value=i.value.replace(/\D/g,'').slice(0,7);checkUnits()}));
+  document.querySelectorAll('input[data-mat]').forEach(i=>i.addEventListener('input',()=>{i.value=i.value.replace(/[^\d.,]/g,'').slice(0,12)}));
   document.querySelectorAll('.choice-grid').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('.choice');if(!b)return;g.querySelectorAll('.choice').forEach(x=>x.setAttribute('aria-pressed',x===b));form.v[g.id]=b.dataset.v}));
   ['fcam','fgal'].forEach(id=>{const i=$('#'+id);if(i)i.onchange=()=>i.files[0]&&loadPhoto(i.files[0])});
   const pr=$('#producto');if(pr&&t!=='nc')pr.onchange=checkUnits;
@@ -546,16 +558,19 @@ function loadPhoto(file){const rd=new FileReader();rd.onload=()=>{const img=new 
 async function submit(){
   const t=form.tipo,v=form.v,g=id=>{const e=$('#'+id);return e?e.value.trim():''};
   document.querySelectorAll('.field.err').forEach(f=>{f.classList.remove('err');f.querySelector('.errmsg')?.remove()});
-  const need={prod:['fecha','turno','equipo','producto','ciclos','unidades','foto'],corte:['fecha','turno','equipo','producto','ciclos','unidades','foto'],nc:['fecha','fechaProd','equipo','producto','cantidad','clase','foto'],paro:['fecha','turno','equipo','inicio','fin','causa','comentario']}[t];
-  const val={};need.forEach(k=>val[k]=k==='equipo'?(S.equipo&&t!=='nc'?S.equipo:g('equipo')):['foto','clase','causa'].includes(k)?v[k]:g(k));
+  const need={prod:['fecha','turno','equipo','producto','ciclos','unidades','foto'],corte:['fecha','turno','equipo','producto','ciclos','unidades','foto'],nc:['fecha','fechaProd','equipo','producto','cantidad','clase','foto'],paro:['fecha','turno','equipo','inicio','fin','causa','comentario'],cons:['fecha','turno','equipo','producto',...MATS.map(x=>x[0]),'foto']}[t];
+  const val={};need.forEach(k=>val[k]=t==='cons'&&MATS.some(x=>x[0]===k)?numMat(g(k)):k==='equipo'?(S.equipo&&t!=='nc'?S.equipo:g('equipo')):['foto','clase','causa'].includes(k)?v[k]:g(k));
   const bad=need.filter(k=>!val[k]||(['ciclos','unidades','cantidad'].includes(k)&&+val[k]<=0));
   if(t==='paro'&&val.inicio&&val.fin&&val.inicio===val.fin)bad.push('fin');
-  if(bad.length){bad.forEach(k=>{const f=document.querySelector(`[data-k="${k}"]`);if(f){f.classList.add('err');f.insertAdjacentHTML('beforeend',`<span class="errmsg">${k==='foto'?'Falta la foto.':'Este dato es obligatorio.'}</span>`)}});document.querySelector('.field.err')?.scrollIntoView({behavior:'smooth',block:'center'});toast('Faltan datos. Revise los campos marcados en rojo.');return}
+  const matIds=MATS.map(x=>x[0]);if(t==='cons')matIds.forEach(k=>{if(val[k]==='x'&&!bad.includes(k))bad.push(k)});
+  if(!bad.length&&t==='cons'&&!matIds.some(k=>+val[k]>0)){toast('Escriba al menos una cantidad mayor que cero.');return}
+  if(bad.length){bad.forEach(k=>{const f=document.querySelector(`[data-k="${k}"]`);if(f){f.classList.add('err');f.insertAdjacentHTML('beforeend',`<span class="errmsg">${k==='foto'?'Falta la foto.':matIds.includes(k)?(val[k]==='x'?'Revise el número: use punto para decimales.':'Escriba la cantidad (0 si no se usó).'):'Este dato es obligatorio.'}</span>`)}});document.querySelector('.field.err')?.scrollIntoView({behavior:'smooth',block:'center'});toast('Faltan datos. Revise los campos marcados en rojo.');return}
   if((t==='prod')&&$('#chk').innerHTML&&!form.forzar){form.forzar=true;toast('Los números no cuadran. Toque «Cargar» otra vez para confirmar.');return}
   if(t==='prod'){const dup=DB.produccion.find(r=>r.fecha===val.fecha&&r.turno===val.turno&&r.equipo===val.equipo&&r.producto===val.producto);if(dup&&!form.dup){form.dup=true;toast('Ya existe un reporte igual para esa fecha y turno. Toque «Cargar» otra vez si es correcto.');return}}
   let rec,kind;const base={registro:stamp(),usuario:S.u};
   if(t==='prod'||t==='corte'){kind=t==='prod'?'produccion':'cortes';rec={id:nextId(kind,t==='prod'?'PR':'CO'),...base,fecha:val.fecha,turno:val.turno,equipo:val.equipo,producto:val.producto,ciclos:+val.ciclos,unidades:+val.unidades,foto:'Foto adjunta',fotoData:val.foto};if(t==='corte')rec.hora=nowHM()}
   else if(t==='nc'){kind='noconf';rec={id:nextId(kind,'NC'),...base,fecha:val.fecha,fechaProd:val.fechaProd,equipo:val.equipo,producto:val.producto,cantidad:+val.cantidad,clase:val.clase,obs:g('obs'),foto:'Foto adjunta',fotoData:val.foto}}
+  else if(t==='cons'){kind='consumos';rec={id:nextId(kind,'CN'),...base,fecha:val.fecha,turno:val.turno,equipo:val.equipo,producto:val.producto,foto:'Foto adjunta',fotoData:val.foto};matIds.forEach(k=>rec[k]=Math.round(+val[k]*100)/100)}
   else{kind='paros';rec={id:nextId(kind,'PA'),...base,fecha:val.fecha,turno:val.turno,equipo:val.equipo,inicio:val.inicio,fin:val.fin,minutos:minutos(val.inicio,val.fin),causa:val.causa,comentario:val.comentario,causaRev:'',subcausa:''}}
   const btn=$('#send');btn.disabled=true;btn.textContent='Cargando…';
   try{const saved=await addRec(kind,rec);form.rec=saved||rec;form.kind=kind;
@@ -565,10 +580,11 @@ async function submit(){
 }
 function renderDone(){
   const r=form.rec,k=form.kind,m=$('#main');let extra='',rows=[];
-  const T={produccion:'Producción cargada',cortes:'Corte registrado',noconf:'Producto no conforme registrado',paros:'Paro registrado'}[k];
+  const T={produccion:'Producción cargada',cortes:'Corte registrado',noconf:'Producto no conforme registrado',paros:'Paro registrado',consumos:'Consumo registrado'}[k];
   if(k==='cortes'){const he=horasEf(r.turno,r.hora),teo=Math.round(CFG.ciclosHora*he),i=teo?r.ciclos/teo:0,[c,l]=nivel(i);
     extra=`<div class="gauge"><div class="note">Índice de productividad del turno a las ${r.hora}</div><div class="big num" style="color:var(--${c})">${pct(i)}</div><span class="pill ${c}">${l}</span><div class="bar" style="margin-top:14px;height:12px"><i style="width:${Math.min(100,i*100)}%;background:var(--${c})"></i></div><p class="note">${fmt(r.ciclos)} ciclos reales de ${fmt(teo)} teóricos en ${he} h efectivas</p></div>`}
   if(r.ciclos!=null)rows=[['Fecha',dmy(r.fecha)],['Turno',TURNOS[r.turno].lbl],['Grupo',EQ[r.equipo].nombre],['Producto',PR[r.producto].nombre],['Ciclos',fmt(r.ciclos)],['Unidades',fmt(r.unidades)]];
+  else if(k==='consumos')rows=[['Fecha',dmy(r.fecha)],['Turno',TURNOS[r.turno].lbl],['Grupo',EQ[r.equipo].nombre],['Producto',PR[r.producto].nombre],...MATS.map(([id,l,u])=>[l,fmtQ(r[id])+' '+(u==='kg'?'kg':'L')])];
   else if(k==='noconf')rows=[['Fecha de producción',dmy(r.fechaProd)],['Grupo de origen',EQ[r.equipo]?.nombre||'No identificado'],['Producto',PR[r.producto].nombre],['Cantidad',fmt(r.cantidad)],['Clasificación',r.clase]];
   else rows=[['Fecha',dmy(r.fecha)],['Turno',TURNOS[r.turno].lbl],['Paro',`${r.inicio} a ${r.fin} · ${r.minutos} min`],['Causa',CA[r.causa].nombre]];
   m.innerHTML=`<div class="col done"><div class="ok">${ICON.check}</div><h2>${T}</h2><p class="note">Su información quedó guardada con éxito el ${dmy(r.registro)} a las ${r.registro.slice(11)}.</p><span class="folio">Folio ${r.id}</span>${extra}
@@ -899,21 +915,23 @@ const BDDEF={
  produccion:{n:'Producción',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Usuario','usuario'],['Producto',r=>PR[r.producto].nombre],['Ciclos','ciclos',1],['Unidades','unidades',1],['Eq. B6"',r=>eqv(r),1],['Índice',r=>pct(r.ciclos/1260,1)],['Foto','foto']]},
  cortes:{n:'Cortes',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Hora','hora'],['Horas ef.',r=>horasEf(r.turno,r.hora),1],['Ciclos teóricos',r=>Math.round(180*horasEf(r.turno,r.hora)),1],['Ciclos reales','ciclos',1],['Unidades','unidades',1],['Índice',r=>{const t=Math.round(180*horasEf(r.turno,r.hora));return pct(t?r.ciclos/t:0,1)}],['Foto','foto']]},
  noconf:{n:'No conformes',date:'fechaProd',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fechaProd)],['Grupo de origen',r=>EQ[r.equipo]?.nombre||'No identificado'],['Usuario','usuario'],['Producto',r=>PR[r.producto].nombre],['Cantidad','cantidad',1],['Clasificación','clase'],['Observación','obs'],['Foto','foto']]},
+ consumos:{n:'Consumos',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo]?.nombre||''],['Usuario','usuario'],['Producto',r=>PR[r.producto]?.nombre||''],...MATS.map(([id,l,u])=>[`${l} (${u})`,id,1]),['Foto','foto']]},
  paros:{n:'Paros',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Inicio','inicio'],['Fin','fin'],['Minutos','minutos',1],['Categoría reportada',r=>CA[r.causa].nombre],['Comentario','comentario'],['Categoría revisada',r=>r.causaRev?CA[r.causaRev].nombre:'']]}
 };
+const fmtQ=v=>(+v||0).toLocaleString('es-HN',{maximumFractionDigits:2});
 const cell=(r,c)=>typeof c[1]==='function'?c[1](r):r[c[1]];
 function renderBD(){initF();const m=$('#main'),d=BDDEF[bdTab];const rows=DB[bdTab].filter(r=>inF(r,d.date)).sort((a,b)=>b.registro.localeCompare(a.registro));
   m.innerHTML=filtersHTML()+`<div class="subtabs">${Object.entries(BDDEF).map(([k,v])=>`<button data-bt="${k}" aria-pressed="${k===bdTab}">${v.n} (${DB[k].filter(r=>inF(r,v.date)).length})</button>`).join('')}</div>
-  <section class="card"><div class="tbl"><table><thead><tr>${d.cols.map(c=>`<th class="${c[2]?'r':''}">${c[0]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${d.cols.map(c=>{if(c[1]==='foto')return `<td>${r.fotoData?`<img class="thumb" src="${r.fotoData}" alt="Foto ${r.id}" data-ph="${r.id}">`:/^https?:/.test(r.foto||'')?`<a href="${esc(r.foto)}" target="_blank" rel="noopener">Ver foto</a>`:`<span class="note">${esc(r.foto)}</span>`}</td>`;const v=cell(r,c);return `<td class="${c[2]?'r num':''}">${esc(c[2]&&typeof v==='number'?fmt(v):v)}</td>`}).join('')}</tr>`).join('')||`<tr><td colspan="${d.cols.length}" class="note">Sin registros en el periodo.</td></tr>`}</tbody></table></div>
+  <section class="card"><div class="tbl"><table><thead><tr>${d.cols.map(c=>`<th class="${c[2]?'r':''}">${c[0]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${d.cols.map(c=>{if(c[1]==='foto')return `<td>${r.fotoData?`<img class="thumb" src="${r.fotoData}" alt="Foto ${r.id}" data-ph="${r.id}">`:/^https?:/.test(r.foto||'')?`<a href="${esc(r.foto)}" target="_blank" rel="noopener">Ver foto</a>`:`<span class="note">${esc(r.foto)}</span>`}</td>`;const v=cell(r,c);return `<td class="${c[2]?'r num':''}">${esc(c[2]&&typeof v==='number'?(Number.isInteger(v)?fmt(v):fmtQ(v)):v)}</td>`}).join('')}</tr>`).join('')||`<tr><td colspan="${d.cols.length}" class="note">Sin registros en el periodo.</td></tr>`}</tbody></table></div>
   ${bdTab==='paros'&&can('usr')?'<p class="note" style="margin-top:10px">La reclasificación de causas se hará en la hoja de Google (columnas «Categoría revisada» y «Subcategoría»).</p>':''}</section>`;
   bindFilters(renderBD);document.querySelectorAll('[data-bt]').forEach(b=>b.onclick=()=>{bdTab=b.dataset.bt;renderBD()});
   document.querySelectorAll('[data-ph]').forEach(i=>i.onclick=()=>{const md=$('#modal');md.innerHTML=`<img src="${i.src}" alt="Foto del tablero">`;md.hidden=false;md.onclick=()=>md.hidden=true});
 }
 function renderUsers(){const m=$('#main');
-  m.innerHTML=`<div class="grid"><section class="card s12"><h3>Usuarios</h3><p class="cap">Cada líder entra una sola vez; la sesión queda guardada en su teléfono hasta que toque «Cerrar sesión».</p><div class="tbl"><table><thead><tr><th>Usuario</th><th>Nombre</th><th>Cargo</th><th>Correo</th><th>Rol</th><th>Puede usar</th></tr></thead><tbody>${SEED.usuarios.map(u=>`<tr><td><b>${u.u}</b></td><td>${esc(u.nombre)}</td><td>${esc(u.cargo||'')}</td><td>${esc(u.email||'–')}</td><td>${ROLES[u.rol].nom}</td><td>${ROLES[u.rol].perm.map(p=>({prod:'Producción',corte:'Corte',paro:'Paros',nc:'No conformes',rep:'Reporte del día',dash:'Dashboard',bd:'Bases y Excel',usr:'Usuarios',alerta:'Avisar paro',aviso:'Recibe avisos de paro'}[p])).join(' · ')}</td></tr>`).join('')}</tbody></table></div></section>
+  m.innerHTML=`<div class="grid"><section class="card s12"><h3>Usuarios</h3><p class="cap">Cada líder entra una sola vez; la sesión queda guardada en su teléfono hasta que toque «Cerrar sesión».</p><div class="tbl"><table><thead><tr><th>Usuario</th><th>Nombre</th><th>Cargo</th><th>Correo</th><th>Rol</th><th>Puede usar</th></tr></thead><tbody>${SEED.usuarios.map(u=>`<tr><td><b>${u.u}</b></td><td>${esc(u.nombre)}</td><td>${esc(u.cargo||'')}</td><td>${esc(u.email||'–')}</td><td>${ROLES[u.rol].nom}</td><td>${ROLES[u.rol].perm.map(p=>({prod:'Producción',corte:'Corte',paro:'Paros',nc:'No conformes',rep:'Reporte del día',dash:'Dashboard',bd:'Bases y Excel',usr:'Usuarios',alerta:'Avisar paro',aviso:'Recibe avisos de paro',cons:'Consumos'}[p])).join(' · ')}</td></tr>`).join('')}</tbody></table></div></section>
   ${SEED.equipos.map(e=>`<section class="card s4 team"><div class="hd"><span class="sw" style="background:var(${TEAMCOL[e.id]})"></span><div><b>${e.nombre}</b><div class="note">${e.grupo} · Turno asignado ${TURNOS[e.turno].lbl}</div></div></div><ol style="margin:0;padding-left:20px;font-size:14px">${e.integrantes.map((n,i)=>`<li>${esc(n)}${i===0?' <span class="chip">Líder</span>':''}</li>`).join('')}</ol></section>`).join('')}
   <section class="card s12"><h3>Registros de este navegador</h3><p class="cap">Borra lo cargado desde este navegador y deja solo el histórico.</p><button class="btn small ghost" id="reset">Borrar registros de este navegador</button></section></div>`;
-  if(ONLINE){const rs=$('#reset');rs.closest('section').remove()}else $('#reset').onclick=()=>{LOCAL={produccion:[],cortes:[],noconf:[],paros:[],alertas:[]};store.set(LS,LOCAL);loadDB();toast('Registros borrados.')};
+  if(ONLINE){const rs=$('#reset');rs.closest('section').remove()}else $('#reset').onclick=()=>{LOCAL={produccion:[],cortes:[],noconf:[],paros:[],alertas:[],consumos:[]};store.set(LS,LOCAL);loadDB();toast('Registros borrados.')};
 }
 
 /* ===================== Exportar ===================== */
