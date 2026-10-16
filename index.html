@@ -37,7 +37,7 @@
   --hero-a:#2E2913; --hero-b:#23211A; --hero-c:#1A1B17; --hero-line:#5A4E1C; --hero-track:#3A3626; --hero-chip:#24251F; --ok:#4CC27F; --blue:#6EA2F5; --blue-bg:#16253F; --warn:#F2B33D; --bad:#F06B5E; --ok-bg:#16301F; --warn-bg:#33270F; --bad-bg:#3A1A16; color-scheme:dark}
 *{box-sizing:border-box}[hidden]{display:none!important}
 html,body{background:var(--bg);color:var(--fg)}
-body{font-family:var(--font);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{overscroll-behavior-y:contain;font-family:var(--font);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
 h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
 button,input,select,textarea{font:inherit;color:inherit}
 .num{font-variant-numeric:tabular-nums}
@@ -252,6 +252,9 @@ td.r,th.r{text-align:right}
 .thm.on{border-color:#F9D600;color:#F9D600}
 .thm .dot{position:absolute;top:5px;right:6px;width:8px;height:8px;border-radius:50%;background:#C2372B;border:2px solid #12130F}
 .thm{position:relative}
+.ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:60;width:42px;height:42px;margin-left:-21px;border-radius:50%;background:var(--surface);color:var(--muted);border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.18);display:grid;place-items:center;opacity:0;transform:translateY(-60px);pointer-events:none}
+.ptr svg{width:20px;height:20px}.ptr.listo{background:#F9D600;color:#12130F;border-color:#F9D600}.ptr.vuelve{transition:transform .25s,opacity .25s}.ptr.spin svg{animation:girar .8s linear infinite}
+.thm.ref svg{transition:transform .3s}.thm.ref.spin svg{animation:girar .8s linear infinite}@keyframes girar{to{transform:rotate(360deg)}}
 .top .out{white-space:nowrap}.top .out .sm{display:none}
 @media (max-width:440px){.top .out .lg{display:none}.top .out .sm{display:inline}.top .in{gap:10px}}
 .thm.login-thm{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:14px;border-color:var(--line);color:var(--fg);background:var(--surface);z-index:5}
@@ -334,6 +337,7 @@ td.r,th.r{text-align:right}
 </head>
 <body>
 <div id="app"></div>
+<div id="ptr" class="ptr" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 11-2.34-5.66"/><path d="M20 4v5h-5"/></svg></div>
 <div id="toast" class="toast" hidden></div>
 <div id="modal" class="modal" hidden></div>
 
@@ -431,10 +435,10 @@ function render(){
   if(can('bd'))tabs.push(['bd','Bases de datos']);
   if(can('usr'))tabs.push(['usr','Usuarios y equipos']);
   if(!tabs.find(t=>t[0]===tab))tab=tabs[0][0];
-  $('#app').innerHTML=`<header class="top"><div class="in wrap"><img src="${LOGO_D}" alt="Duracreto"><div class="who"><b>${esc(team)}</b>${esc(S.nombre)}</div>${pushBtn()}${thmBtn()}<button class="out" id="logout" aria-label="Cerrar sesión"><span class="lg">Cerrar sesión</span><span class="sm">Salir</span></button></div>
+  $('#app').innerHTML=`<header class="top"><div class="in wrap"><img src="${LOGO_D}" alt="Duracreto"><div class="who"><b>${esc(team)}</b>${esc(S.nombre)}</div><button class="thm ref" id="refb" aria-label="Actualizar" title="Actualizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 11-2.34-5.66"/><path d="M20 4v5h-5"/></svg></button>${pushBtn()}${thmBtn()}<button class="out" id="logout" aria-label="Cerrar sesión"><span class="lg">Cerrar sesión</span><span class="sm">Salir</span></button></div>
   ${tabs.length>1?`<nav class="tabs wrap" role="tablist">${tabs.map(t=>`<button role="tab" data-tab="${t[0]}" aria-selected="${t[0]===tab}">${t[1]}</button>`).join('')}</nav>`:''}</header><div id="alertas"></div>
   ${DEMO?`<div class="demobar wrap"><span><b>Modo demostración.</b> Lo que cargue aquí se queda solo en este dispositivo y no llega a la base de datos de la planta.</span><button id="demoReset">Reiniciar demo</button></div>`:''}<main class="wrap" id="main"></main>`;
-  $('#thm').onclick=cambiarTema;if($('#pushb'))$('#pushb').onclick=panelPush;
+  $('#thm').onclick=cambiarTema;$('#refb').onclick=actualizarTodo;if($('#pushb'))$('#pushb').onclick=panelPush;
   if(DEMO)$('#demoReset').onclick=()=>{LOCAL={produccion:[],cortes:[],noconf:[],paros:[],alertas:[],consumos:[]};store.set(LS,LOCAL);loadDB();view='home';render();toast('Demostración reiniciada.')};
   $('#logout').onclick=()=>{if(ONLINE)api('logout').catch(()=>{});store.del(SS);S=null;view='home';render()};
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=async()=>{tab=b.dataset.tab;store.set(TAB,tab);view='home';if(ONLINE&&Date.now()-lastLoad>60000){pantallaCarga('Actualizando…');try{await cargarDatos()}catch(e){if(e.message==='sesion')return}}render()});
@@ -442,6 +446,18 @@ function render(){
   pintarAlertas();refrescarPush();
   window.scrollTo(0,0);
 }
+
+/* Deslizar hacia abajo para actualizar (teléfono) */
+(function(){const UM=90;let y0=null,x0=0,d=0;const el=()=>document.getElementById('ptr');
+  const libre=()=>S&&view!=='form'&&document.getElementById('modal').hidden&&window.scrollY<=0;
+  addEventListener('touchstart',e=>{if(e.touches.length!==1||!libre()){y0=null;return}y0=e.touches[0].clientY;x0=e.touches[0].clientX;d=0},{passive:true});
+  addEventListener('touchmove',e=>{if(y0==null)return;const dy=e.touches[0].clientY-y0,dx=Math.abs(e.touches[0].clientX-x0);if(dy<=0||dx>dy||window.scrollY>0){d=0;const p=el();p.style.opacity=0;p.style.transform='translateY(-60px)';return}
+    d=Math.min(140,dy*.5);const p=el();p.classList.remove('vuelve');p.style.opacity=Math.min(1,d/50);p.style.transform=`translateY(${d}px) rotate(${d*3}deg)`;p.classList.toggle('listo',d>=UM)},{passive:true});
+  addEventListener('touchend',()=>{if(y0==null)return;y0=null;const p=el();if(d>=UM){p.classList.add('vuelve','spin');p.style.transform=`translateY(${UM*.7}px)`;setTimeout(()=>location.reload(),250)}else{p.classList.add('vuelve');p.style.opacity=0;p.style.transform='translateY(-60px)'}d=0},{passive:true});
+})();
+let refAviso=0;
+function actualizarTodo(){if(view==='form'&&Date.now()-refAviso>4000){refAviso=Date.now();toast('Toque otra vez para actualizar. Se borrará lo que lleva escrito en el formulario.');return}
+  $('#refb').classList.add('spin');setTimeout(()=>location.reload(),150)}
 
 function renderLogin(){
   $('#app').innerHTML=`${thmBtn('login-thm')}<div class="login wrap"><form class="card" id="lf" novalidate>
