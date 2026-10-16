@@ -317,6 +317,14 @@ td.r,th.r{text-align:right}
 .ment .mh{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 .ment .mh svg{width:18px;height:18px;color:var(--accent-ink)}
 .ment b.v{font-size:22px}
+/* Botón de información */
+.ih{display:flex;align-items:center;gap:8px;margin-bottom:10px;position:relative}
+.ih h3{margin:0}
+.info{position:relative;display:inline-block}
+.info summary{list-style:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--muted);color:var(--muted);font-size:12px;font-weight:700;font-style:italic;font-family:Georgia,serif;display:grid;place-items:center;cursor:pointer;user-select:none}
+.info summary::-webkit-details-marker{display:none}
+.info[open] summary{background:var(--fg);color:var(--surface);border-color:var(--fg)}
+.info .ib{position:absolute;left:-8px;top:28px;z-index:15;width:min(340px,80vw);background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.5;box-shadow:0 8px 24px rgba(0,0,0,.15)}
 .demo-flag{background:var(--warn-bg);border-radius:10px;padding:8px 12px;font-size:12px;margin-bottom:14px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -459,8 +467,10 @@ function metaBar(eqId){const ym=todayISO().slice(0,7),meta=eqId?CFG.meta/3:CFG.m
   return `<section class="metacard"><div class="mh"><span class="lbl">Meta de ${MESES[+ym.slice(5)-1].toLowerCase()} · ${eqId?EQ[eqId].nombre:'planta completa'}</span><span class="pill ${c}">${l}</span></div>
    <div class="mpct num" style="color:var(--${c})">${pct(p,1)}</div><div class="mbar" role="img" aria-label="Avance ${pct(p,1)}"><i style="width:${Math.max(2,Math.min(100,p*100))}%;background:var(--${c})"></i></div>
    <div class="mf num"><span><b>${fmt(v)}</b> de ${fmt(meta)}</span><span>Faltan <b>${fmt(Math.max(0,meta-v))}</b></span></div><p class="note" style="margin:6px 0 0">Unidades equivalentes a Bloque de 6"</p></section>`}
-const corteKey=r=>r.fecha+'CAB'.indexOf(r.turno)+((r.turno==='C'&&r.hora<'12:00')?'1':'0')+r.hora;
-const ckT=r=>'CAB'.indexOf(r.turno)+((r.turno==='C'&&r.hora<'12:00')?'1':'0')+r.hora;
+const corteKey=r=>r.fecha+'ABC'.indexOf(r.turno)+((r.turno==='C'&&r.hora<'12:00')?'1':'0')+r.hora;
+const ckT=r=>'ABC'.indexOf(r.turno)+((r.turno==='C'&&r.hora<'12:00')?'1':'0')+r.hora;
+/* Jornada: el Turno C pertenece al día en que inicia (10:00 pm). Después de medianoche sigue siendo la jornada de ayer. */
+function fechaJornada(turno){const d=new Date();if(turno==='C'&&d.getHours()<12)d.setDate(d.getDate()-1);return iso(d)}
 function ultimoCorte(eqId){return DB.cortes.filter(r=>r.equipo===eqId).sort((a,b)=>corteKey(b).localeCompare(corteKey(a)))[0]}
 function ultimos3(eqId){const g={};DB.produccion.filter(r=>!eqId||r.equipo===eqId).forEach(r=>g[r.fecha]=(g[r.fecha]||0)+r.unidades);return Object.keys(g).sort().reverse().slice(0,3).map(d=>[d,g[d]])}
 const lista=rows=>rows.length?`<ul>${rows.map(r=>`<li><span>${r[0]}</span><b class="num">${r[1]}</b></li>`).join('')}</ul>`:'<p class="note">Sin registros todavía.</p>';
@@ -509,7 +519,7 @@ function renderForm(){
   const t=form.tipo,m=$('#main');const eq=S.equipo?EQ[S.equipo]:null;const defT=eq?eq.turno:turnoSugerido();
   const head={prod:['Reporte de producción','Cierre del turno'],corte:['Hacer corte','Muestreo de rendimiento · hora '+nowHM()],nc:['Producto no conforme','Control de calidad'],paro:['Reportar paro','Paro de producción']}[t];
   let body='';
-  const fecha=`<div class="field" data-k="fecha"><label for="fecha">${t==='nc'?'Fecha de registro':'Fecha de producción'}</label><input class="in-ctl" type="date" id="fecha" value="${todayISO()}"><span class="hint">${t==='nc'?'Hoy por defecto.':'Hoy por defecto. El Turno C se reporta con la fecha en que termina (6:00 am).'}</span></div>`;
+  const fecha=`<div class="field" data-k="fecha"><label for="fecha">${t==='nc'?'Fecha de registro':'Fecha de producción'}</label><input class="in-ctl" type="date" id="fecha" value="${t==='nc'?todayISO():fechaJornada(defT)}"><span class="hint">${t==='nc'?'Hoy por defecto.':'El Turno C se reporta con la fecha del día en que inició (10:00 pm), aunque termine a las 6:00 am del día siguiente.'}</span></div>`;
   const turno=`<div class="field" data-k="turno"><label for="turno">Turno trabajado</label><select class="in-ctl" id="turno">${turnoOptions(defT)}</select></div>`;
   if(t==='prod'||t==='corte'){
     body=fecha+turno+eqField('equipo')+`<div class="field" data-k="producto"><label for="producto">Producto</label><select class="in-ctl" id="producto">${prodOptions('')}</select></div>`+
@@ -528,6 +538,7 @@ function renderForm(){
   }
   m.innerHTML=`<div class="col"><div class="formhead"><button id="back" aria-label="Volver">←</button><div><h2>${head[0]}</h2><p>${head[1]}</p></div></div><form id="ff" novalidate>${body}<button class="btn primary" type="submit" id="send">Cargar</button></form></div>`;
   $('#back').onclick=()=>{view='home';render()};
+  if(t!=='nc'&&$('#turno')&&$('#fecha')){let manual=false;$('#fecha').addEventListener('input',()=>manual=true);$('#turno').addEventListener('change',()=>{if(!manual)$('#fecha').value=fechaJornada($('#turno').value)})}
   document.querySelectorAll('input[inputmode="numeric"]').forEach(i=>i.addEventListener('input',()=>{i.value=i.value.replace(/\D/g,'').slice(0,7);checkUnits()}));
   document.querySelectorAll('.choice-grid').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('.choice');if(!b)return;g.querySelectorAll('.choice').forEach(x=>x.setAttribute('aria-pressed',x===b));form.v[g.id]=b.dataset.v}));
   ['fcam','fgal'].forEach(id=>{const i=$('#'+id);if(i)i.onchange=()=>i.files[0]&&loadPhoto(i.files[0])});
@@ -640,7 +651,7 @@ function renderDash(){
      <div class="tile-k"><span class="v num" style="font-size:24px">${tmr==null?'–':Math.round(tmr)+' min'}</span><span class="l">TMR · tiempo medio de reparación</span></div></div></section>
    <section class="card s6"><h3>Desempeño por turno</h3><p class="cap">Los grupos rotan de turno; esta vista mide el horario, no al grupo.</p><div class="tbl">${turnoTable(c)}</div></section>
    <section class="card s6"><h3>Producción real por producto</h3><p class="cap">Unidades reales tal como las reporta la máquina</p><div class="tbl">${productTable(c)}</div></section>
-   <section class="card s12"><h3>Cortes de rendimiento</h3><p class="cap">Muestreos durante el turno. Índice = ciclos acumulados ÷ (180 ciclos/h × horas efectivas). El turno tiene 7 h de producción y 1 h final de limpieza y engrase; no se descuenta tiempo de comida (horas efectivas = tiempo desde el inicio del turno, máximo 7 h). Verde: óptimo (80 % o más). Ámbar: por mejorar (65 a 80 %). Rojo: bajo.</p><div id="cortes"></div></section>
+   <section class="card s12"><div class="ih"><h3>Cortes de rendimiento</h3>${info('Muestreos durante el turno. Índice = ciclos acumulados ÷ (180 ciclos/h × horas efectivas). El turno tiene 7 h de producción y 1 h final de limpieza y engrase; no se descuenta tiempo de comida (horas efectivas = tiempo desde el inicio del turno, máximo 7 h). Verde: óptimo (80 % o más). Ámbar: por mejorar (65 a 80 %). Rojo: bajo.')}</div><div id="cortes"></div></section>
    <section class="card s6"><h3>Producto no conforme por grupo</h3><p class="cap">Por fecha de producción del lote</p><div class="chartbox sm"><canvas id="chNC"></canvas></div></section>
    <section class="card s6 soon"><span class="tag">Próximamente</span><h3>Inventario mínimo y días de cobertura</h3><p class="cap" style="margin:4px 0 0">Se activará cuando conectemos existencias de producto terminado y despachos (ventas SAP). Mostrará unidades en patio por producto, inventario mínimo y cuántos días de venta cubre.</p></section>
   </div>`;
@@ -672,7 +683,7 @@ function productTable(c){const g={};c.P.forEach(r=>{const k=r.producto;g[k]=g[k]
 let corteDia=null;
 function renderCortes(){const C=DB.cortes.filter(r=>inF(r));const dias=[...new Set(C.map(r=>r.fecha))].sort();const box=$('#cortes');if(!dias.length){box.innerHTML='<p class="note">No hay cortes en el periodo.</p>';return}
   if(!dias.includes(corteDia))corteDia=dias[dias.length-1];
-  const rows=C.filter(r=>r.fecha===corteDia).sort((a,b)=>'CAB'.indexOf(a.turno)-'CAB'.indexOf(b.turno)||((a.hora<'06:00'?'1':'0')+a.hora).localeCompare((b.hora<'06:00'?'1':'0')+b.hora));
+  const rows=C.filter(r=>r.fecha===corteDia).sort((a,b)=>ckT(a).localeCompare(ckT(b)));
   box.innerHTML=`<div class="subtabs">${dias.slice(-7).map(d=>`<button data-cd="${d}" aria-pressed="${d===corteDia}">${dm(d)}</button>`).join('')}</div><div class="tbl"><table><thead><tr><th>Grupo</th><th>Turno</th><th>Hora</th><th class="r">Horas ef.</th><th class="r">Ciclos teóricos</th><th class="r">Ciclos reales</th><th class="r">Unidades</th><th>Índice</th></tr></thead><tbody>${rows.map(r=>{const he=horasEf(r.turno,r.hora),teo=Math.round(CFG.ciclosHora*he);return `<tr><td><span class="chip"><span class="dot" style="background:var(${TEAMCOL[r.equipo]})"></span>${EQ[r.equipo].nombre}</span></td><td>${r.turno}</td><td class="num">${r.hora}</td><td class="r num">${he}</td><td class="r num">${fmt(teo)}</td><td class="r num">${fmt(r.ciclos)}</td><td class="r num">${fmt(r.unidades)}</td><td>${idxBar(teo?r.ciclos/teo:0)}</td></tr>`}).join('')}</tbody></table></div>`;
   box.querySelectorAll('[data-cd]').forEach(b=>b.onclick=()=>{corteDia=b.dataset.cd;renderCortes()})}
 
@@ -713,14 +724,15 @@ function renderRep(){
      :lc?{v:eqv(lc),u:lc.unidades,cy:lc.ciclos,teo:Math.round(CFG.ciclosHora*horasEf(lc.turno,lc.hora)),vivo:true,lc}:{v:0,u:0,cy:0,teo:0,vivo:false,lc:null}});
   const vivos=['A','B','C'].filter(t=>VT[t].vivo);
   const tot=['A','B','C'].reduce((s,t)=>s+VT[t].v,0),real=['A','B','C'].reduce((s,t)=>s+VT[t].u,0),cy=['A','B','C'].reduce((s,t)=>s+VT[t].cy,0),teoD=['A','B','C'].reduce((s,t)=>s+VT[t].teo,0);
-  const acumCorte=r=>{const k='CAB'.indexOf(r.turno);return ['C','A','B'].slice(0,k).reduce((s,t)=>s+VT[t].v,0)+eqv(r)};
+  const acumCorte=r=>{const k='ABC'.indexOf(r.turno);return ['A','B','C'].slice(0,k).reduce((s,t)=>s+VT[t].v,0)+eqv(r)};
   const ym=repDia.slice(0,7),hab=diasMes(ym).filter(habil),metaDia=CFG.meta/hab.length,metaT=metaDia/3,pd=tot/metaDia,col=scaleCol(pd);
   const prevTot=prev?DB.produccion.filter(r=>r.fecha===prev).reduce((s,r)=>s+eqv(r),0):null,dl=prevTot?(tot-prevTot)/prevTot:null;
   const acum=DB.produccion.filter(r=>r.fecha.slice(0,7)===ym&&r.fecha<=repDia).reduce((s,r)=>s+eqv(r),0)+vivos.reduce((s,t)=>s+VT[t].v,0);
   const idx=teoD?cy/teoD:0,[ic,il]=nivel(idx);
   const PA=DB.paros.filter(r=>r.fecha===repDia),NC=DB.noconf.filter(r=>r.fechaProd===repDia),AV=(DB.alertas||[]).filter(r=>r.fecha===repDia);
-  const estadoT=t=>{if(repDia!==T0)return ['warn','Sin reporte de cierre'];const h=new Date().getHours()+new Date().getMinutes()/60;
-    if(t==='A'&&h<6||t==='B'&&h<14)return ['blue','Por iniciar'];if(t==='A'&&h<14||t==='B'&&h<22)return ['blue','En curso · sin cortes todavía'];return ['warn','Sin reporte de cierre']};
+  const estadoT=t=>{const h=new Date().getHours()+new Date().getMinutes()/60;const ayer=fechaJornada('C')!==T0;
+    if(repDia===T0){if(t==='A'&&h<6||t==='B'&&h<14||t==='C'&&h<22)return ['blue','Por iniciar'];if(t==='A'&&h<14||t==='B'&&h<22||t==='C')return ['blue','En curso · sin cortes todavía']}
+    if(t==='C'&&ayer&&repDia===fechaJornada('C')&&h<6)return ['blue','En curso · sin cortes todavía'];return ['warn','Sin reporte de cierre']};
   const parado=t=>(DB.alertas||[]).filter(a=>a.turno===t&&a.estado!=='Resuelta'&&!a.reanudo&&msDesde(a.registro)<12*3600e3&&fechaTurnoAl(a)===repDia).sort((a,b)=>a.registro.localeCompare(b.registro)).pop();
   const pilParo=a=>`<span class="pill parado" style="align-self:flex-start"><i></i>PARADO desde las ${a.registro.slice(11)} · ${hace(a.registro)}</span>`;
   const turnoCard=t=>{const R=P.filter(r=>r.turno===t),X=VT[t],v=X.v,u=X.u,ix=X.teo?X.cy/X.teo:0,pq=R.length?null:parado(t);
@@ -747,7 +759,7 @@ function renderRep(){
      <div class="bar" style="height:12px;margin-top:14px"><i style="width:${Math.min(100,pd*100)}%;background:var(--${col})"></i></div>
      ${vivos.length?`<p class="note" style="margin:8px 0 0">Mientras un turno no cierra, se toma lo que marcó su último corte. Al cerrar, se reemplaza por el reporte de producción.</p>`:''}</section>
     ${['A','B','C'].map(turnoCard).join('')}
-    <section class="card s12"><h3>Cortes del día</h3><p class="cap">Índice de rendimiento en cada muestreo. «Acumulado del día» = lo producido por los turnos anteriores del día + lo que marcaba este corte. El Turno C termina a las 6:00 am, por eso es el primero del día.</p>${C.length?`<div class="tbl"><table><thead><tr><th>Grupo</th><th>Turno</th><th>Hora</th><th class="r">Ciclos</th><th class="r">Unidades</th><th class="r">Acumulado del día</th><th>Índice</th></tr></thead><tbody>${['A','B','C'].flatMap(t=>C.filter(r=>r.turno===t)).map(r=>`<tr><td>${teamChip(r.equipo)}</td><td>${r.turno}</td><td class="num">${r.hora}</td><td class="r num">${fmt(r.ciclos)}</td><td class="r num">${fmt(r.unidades)}</td><td class="r num"><b>${fmt(acumCorte(r))}</b></td><td>${idxBar(cidx(r))}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">No hubo cortes este día.</p>'}</section>
+    <section class="card s12"><div class="ih"><h3>Cortes del día</h3>${info('Índice de rendimiento en cada muestreo. «Acumulado del día» = lo producido por los turnos anteriores del día + lo que marcaba este corte. La jornada va en orden A, B y C; el Turno C cuenta para el día en que inicia.')}</div>${C.length?`<div class="tbl"><table><thead><tr><th>Grupo</th><th>Turno</th><th>Hora</th><th class="r">Ciclos</th><th class="r">Unidades</th><th class="r">Acumulado del día</th><th>Índice</th></tr></thead><tbody>${['A','B','C'].flatMap(t=>C.filter(r=>r.turno===t)).map(r=>`<tr><td>${teamChip(r.equipo)}</td><td>${r.turno}</td><td class="num">${r.hora}</td><td class="r num">${fmt(r.ciclos)}</td><td class="r num">${fmt(r.unidades)}</td><td class="r num"><b>${fmt(acumCorte(r))}</b></td><td>${idxBar(cidx(r))}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">No hubo cortes este día.</p>'}</section>
     <section class="card s6"><h3>Paros del día</h3><p class="cap">${PA.length} ${PA.length===1?'paro':'paros'} · ${PA.reduce((s,r)=>s+r.minutos,0)} minutos${AV.length?` · ${AV.length} ${AV.length===1?'aviso':'avisos'} de paro`:''}</p>
     ${AV.length?`<div class="recent" style="margin:0 0 10px">${lista(AV.map(a=>[`${a.registro.slice(11)} · ${EQ[a.equipo]?.nombre||a.equipo} · Turno ${a.turno}`,a.estado==='Resuelta'?'Reanudó'+(a.reanudo?' '+esc(a.reanudo):''):a.estado==='Atendida'?'Atendido'+(a.atendidaPor?' por '+esc(a.atendidaPor.split(' ')[0]):''):'Sin atender']))}</div>`:''}${PA.length?`<ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px">${PA.map(r=>`<li style="border-bottom:1px solid var(--line);padding-bottom:8px"><div style="display:flex;justify-content:space-between;gap:8px"><b>${CA[r.causa].nombre}</b><span class="num">${r.inicio}–${r.fin} · ${r.minutos} min</span></div><div class="note">${teamChip(r.equipo)} Turno ${r.turno} · ${esc(r.comentario)}</div></li>`).join('')}</ul>`:'<p class="note">Sin paros reportados.</p>'}</section>
     <section class="card s6"><h3>No conformes de este día</h3><p class="cap">Producto fabricado el ${dmy(repDia)} que calidad clasificó</p>${NC.length?'<div class="recent" style="margin-top:0">'+lista(NC.map(r=>[`${EQ[r.equipo]?.nombre||'No identificado'} · ${r.clase} · ${PR[r.producto].nombre}`,fmt(r.cantidad)+' u']))+'</div>':'<p class="note">Sin no conformes reportados para esta fecha.</p>'}</section>
@@ -757,10 +769,12 @@ function renderRep(){
   if($('#xlsd'))$('#xlsd').onclick=()=>{initF();const keep={...F};F={...F,desde:repDia,hasta:repDia,eq:'',tu:''};exportXLSX().finally(()=>{F=keep})};
 }
 
+const info=txt=>`<details class="info"><summary aria-label="Más información" title="Más información">i</summary><div class="ib">${txt}</div></details>`;
+document.addEventListener('click',e=>{document.querySelectorAll('details.info[open]').forEach(d=>{if(!d.contains(e.target))d.removeAttribute('open')})});
 /* ===================== Avisos de paro ===================== */
 const ALVISTOS=new Set();let alPrimera=true;
 const msDesde=reg=>Date.now()-new Date(reg.replace(' ','T'));
-const fechaTurnoAl=a=>{if(a.turno==='C'&&a.registro.slice(11)>='12:00'){const d=new Date(a.registro.slice(0,10)+'T12:00');d.setDate(d.getDate()+1);return iso(d)}return a.fecha};
+const fechaTurnoAl=a=>{const f=a.registro.slice(0,10);if(a.turno==='C'&&a.registro.slice(11)<'12:00'){const d=new Date(f+'T12:00');d.setDate(d.getDate()-1);return iso(d)}return f};
 function paroActivo(eq,turno){return (DB.alertas||[]).filter(a=>a.equipo===eq&&a.estado!=='Resuelta'&&!a.reanudo&&msDesde(a.registro)<12*3600e3&&(!turno||a.turno===turno)).sort((a,b)=>a.registro.localeCompare(b.registro)).pop()}
 function hace(reg){const d=new Date(reg.replace(' ','T'));const m=Math.max(0,Math.round((Date.now()-d)/60000));return m<1?'hace un momento':m<60?`hace ${m} min`:`hace ${Math.floor(m/60)} h ${m%60} min`}
 function confirmarAviso(){const md=$('#modal');const mio=paroActivo(S.equipo);
