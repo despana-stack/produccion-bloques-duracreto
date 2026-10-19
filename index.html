@@ -116,6 +116,14 @@ textarea.in-ctl{min-height:96px;resize:vertical}
 .tile.t4 .ic{background:var(--bad-bg);color:var(--bad)}
 .tile.t5{background:#F9D600;color:#12130F;border-color:#F9D600}.tile.t5 span{color:#3d3a1f}.tile.t5 .ic{background:#12130F;color:#F9D600}
 .uw{position:relative}.uw .in-ctl{padding-right:58px}.uw .u{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:700;color:var(--muted);pointer-events:none}
+.tolvas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.tolvas .tv label{font-size:12.5px;font-weight:700;color:var(--muted);display:block;margin-bottom:4px}.tolvas select{font-size:14px;padding-left:8px;padding-right:22px}
+@media(max-width:420px){.tolvas{grid-template-columns:1fr}}
+.lch{font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:18px 0 8px}
+.lcbox{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:4px 14px;margin-bottom:14px}
+.lcrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px dashed var(--line);font-size:15px}.lcrow:last-child{border-bottom:0}.lcrow b{font-size:18px;white-space:nowrap}
+.lcrow.duda{flex-direction:column;align-items:stretch;background:var(--warn-bg);margin:6px -14px;padding:12px 14px;border-radius:12px;border-bottom:0}.lcrow small{display:block;font-size:12.5px;color:var(--muted);font-weight:500;margin-top:2px}
+.lcrow .choice-grid{grid-template-columns:1fr 1fr;margin-top:8px}.lcrow .choice{text-align:center;font-size:17px;font-weight:800}
+.lcfoto{width:100%;border-radius:14px;margin:0 0 14px;border:1px solid var(--line)}
 .matgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.matgrid .field label{min-height:2.6em;display:flex;align-items:flex-end}
 .recent{margin-top:26px}
 .metacard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px}
@@ -574,8 +582,8 @@ function renderForm(){
      numField('unidades',t==='corte'?'Unidades acumuladas del turno':'Unidades producidas')+`<div id="chk"></div>`+photoField();
   }else if(t==='cons'){
     body=fecha+turno+eqField('equipo')+`<div class="field" data-k="producto"><label for="producto">Producto</label><select class="in-ctl" id="producto">${prodOptions('')}</select></div>`+
-     `<span class="lbl" style="display:block;margin:4px 0 8px">Cantidades usadas en el turno</span><div class="matgrid">${MATS.map(matField).join('')}</div><p class="note" style="margin:-4px 0 14px">Cemento, arenas y grava en kilogramos; aditivo y agua en litros. Escriba 0 si no se usó.</p>`+
-     photoField('Foto de respaldo','Tome la foto del registro, la báscula o el tablero donde aparecen las cantidades.');
+     `<div class="field" data-k="tolvas"><span class="lbl">¿Qué agregado hay en cada tolva?</span><div class="tolvas">${[1,2,3].map(n=>`<div class="tv"><label for="tv${n}">Tolva ${n}</label><select class="in-ctl" id="tv${n}"></select></div>`).join('')}</div></div>`+
+     photoField('Foto de la pantalla de consumo','La app lee de la foto el cemento, las tolvas, el agua y el aditivo (columna «Real»). Tómela de frente, que se vea toda la tabla.');
   }else if(t==='nc'){
     body=fecha+`<div class="field" data-k="fechaProd"><label for="fechaProd">Fecha de producción del producto</label><input class="in-ctl" type="date" id="fechaProd" value="${iso(new Date(Date.now()-864e5))}"><span class="hint">¿Qué día se fabricó el producto defectuoso?</span></div>`+
      eqField('equipo','', true)+`<div class="field" data-k="producto"><label for="producto">Producto</label><select class="in-ctl" id="producto">${prodOptions('')}</select></div>`+
@@ -587,7 +595,7 @@ function renderForm(){
      `<div class="field" data-k="causa"><span class="lbl">Causa principal</span><div class="choice-grid" id="causa">${SEED.causas.map(c=>`<button type="button" class="choice" data-v="${c.id}" aria-pressed="false">${c.nombre}<small>${c.desc}</small></button>`).join('')}</div></div>`+
      `<div class="field" data-k="comentario"><label for="comentario">Explique qué pasó</label><textarea class="in-ctl" id="comentario" placeholder="Ej. se rompió la balinera del vibrador; se esperó al mecánico"></textarea></div>`;
   }
-  m.innerHTML=`<div class="col"><div class="formhead"><button id="back" aria-label="Volver">←</button><div><h2>${head[0]}</h2><p>${head[1]}</p></div></div><form id="ff" novalidate>${body}<button class="btn primary" type="submit" id="send">Cargar</button></form></div>`;
+  m.innerHTML=`<div class="col"><div class="formhead"><button id="back" aria-label="Volver">←</button><div><h2>${head[0]}</h2><p>${head[1]}</p></div></div><form id="ff" novalidate>${body}<button class="btn primary" type="submit" id="send">${t==='cons'?'Verificar':'Cargar'}</button></form></div>`;
   $('#back').onclick=()=>{view='home';render()};
   if(t!=='nc'&&$('#turno')&&$('#fecha')){let manual=false;$('#fecha').addEventListener('input',()=>manual=true);$('#turno').addEventListener('change',()=>{if(!manual)$('#fecha').value=fechaJornada($('#turno').value)})}
   document.querySelectorAll('input[inputmode="numeric"]').forEach(i=>i.addEventListener('input',()=>{i.value=i.value.replace(/\D/g,'').slice(0,7);checkUnits()}));
@@ -596,13 +604,70 @@ function renderForm(){
   ['fcam','fgal'].forEach(id=>{const i=$('#'+id);if(i)i.onchange=()=>i.files[0]&&loadPhoto(i.files[0])});
   const pr=$('#producto');if(pr&&t!=='nc')pr.onchange=checkUnits;
   if(t==='paro'){const al=form.alerta||paroActivo(S.equipo);if(al&&!$('#inicio').value){$('#inicio').value=al.registro.slice(11);$('#turno').value=al.turno;$('#fecha').value=fechaTurnoAl(al)}const u=()=>{const a=$('#inicio').value,b=$('#fin').value;$('#dur').textContent=a&&b?`Duración: ${minutos(a,b)} minutos (${(minutos(a,b)/60).toFixed(1)} h)`:''};$('#inicio').oninput=u;$('#fin').oninput=u}
+  if(t==='cons'){pintarTolvas();const pv=form.prev;if(pv){['fecha','turno','producto'].forEach(k=>{if(pv[k]&&$('#'+k))$('#'+k).value=pv[k]})}
+    if(form.v.foto){const pi=$('#fprev');pi.src=form.v.foto;pi.hidden=false;$('#fhint').textContent='Foto lista. Puede cambiarla con los botones de arriba.'}}
   $('#ff').onsubmit=e=>{e.preventDefault();submit()};
 }
+/* ---------- Consumo: tolvas + lectura de la foto ---------- */
+const AGR=[['arenaSE','Arena Santa Elena'],['arenaSJ','Arena San Jorge'],['grava','Grava 3/8"']],AGN=Object.fromEntries(AGR);
+const TVK=()=>'dc_tolvas_'+(S&&S.u);
+function pintarTolvas(){if(!form.tolvas)form.tolvas=(store.get(TVK())||[]).slice(0,3);const o=form.tolvas;
+  const t1=$('#tv1'),t2=$('#tv2'),t3=$('#tv3');
+  t1.innerHTML=`<option value="">Seleccione…</option>`+AGR.map(([k,n])=>`<option value="${k}" ${o[0]===k?'selected':''}>${esc(n)}</option>`).join('');
+  const r2=AGR.filter(([k])=>k!==o[0]);t2.disabled=!o[0];
+  t2.innerHTML=o[0]?`<option value="">Seleccione…</option>`+r2.map(([k,n])=>`<option value="${k}" ${o[1]===k?'selected':''}>${esc(n)}</option>`).join(''):`<option value="">Primero la tolva 1</option>`;
+  const r3=o[0]&&o[1]?AGR.filter(([k])=>k!==o[0]&&k!==o[1]):[];if(r3.length)o[2]=r3[0][0];else o.length=Math.min(o.length,2);
+  t3.disabled=true;t3.innerHTML=r3.length?`<option>${esc(r3[0][1])}</option>`:`<option>Se completa sola</option>`;
+  t1.onchange=()=>{form.tolvas=[t1.value].filter(Boolean);pintarTolvas()};t2.onchange=()=>{form.tolvas=[o[0],t2.value].filter(Boolean);pintarTolvas()}}
+const LCF=[['cemento','Cemento','kg'],['t1','Tolva 1','kg'],['t2','Tolva 2','kg'],['t3','Tolva 3','kg'],['agua','Agua','L'],['aditivo','Aditivo','L']];
+async function verificarConsumo(){const g=id=>{const e=$('#'+id);return e?e.value.trim():''};
+  document.querySelectorAll('.field.err').forEach(f=>{f.classList.remove('err');f.querySelector('.errmsg')?.remove()});
+  const val={fecha:g('fecha'),turno:g('turno'),producto:g('producto'),foto:form.v.foto},o=form.tolvas||[];
+  const bad=['fecha','turno','producto','foto'].filter(k=>!val[k]);if(o.length<3)bad.push('tolvas');
+  if(bad.length){bad.forEach(k=>{const f=document.querySelector(`[data-k="${k}"]`);if(f){f.classList.add('err');f.insertAdjacentHTML('beforeend',`<span class="errmsg">${k==='foto'?'Falta la foto.':k==='tolvas'?'Indique el agregado de cada tolva.':'Este dato es obligatorio.'}</span>`)}});document.querySelector('.field.err')?.scrollIntoView({behavior:'smooth',block:'center'});toast('Faltan datos. Revise los campos marcados en rojo.');return}
+  store.set(TVK(),o);form.prev={fecha:val.fecha,turno:val.turno,producto:val.producto};
+  const btn=$('#send');btn.disabled=true;btn.textContent='Leyendo la foto…';
+  let res;
+  try{if(ONLINE){res=await api('leerConsumo',{rec:{fecha:val.fecha,turno:val.turno,fotoData:val.foto}});if(!res.ok)throw new Error(res.error||'error')}
+    else{const c=3000+Math.round(Math.random()*6000);res={id:'demo',lectura:{legible:true,fechaOk:true,cemento:{v:c},t1:{v:Math.round(c*4.6)},t2:{v:Math.round(c*5.1),opciones:[Math.round(c*5.1),Math.round(c*5.1)-100]},t3:{v:Math.round(c*3.1)},agua:{v:Math.round(c*.2)},aditivo:{faltante:true}}}}}
+  catch(e){btn.disabled=false;btn.textContent='Verificar';if(e.message!=='sesion')toast(e.message==='red'?'Sin conexión. Revise el internet e intente de nuevo.':'No se pudo leer la foto: '+e.message);return}
+  form.lect=res;form.val=val;form.eleg={};form.dig={};renderLectura()}
+function renderLectura(){const m=$('#main'),r=form.lect.lectura||{},val=form.val,o=form.tolvas;const eq=EQ[S.equipo]||{};
+  const fv=x=>Number.isInteger(+x)?fmt(+x):fmtQ(+x);
+  const volver=`<button class="btn ghost" id="lcBack" style="margin-top:10px">Volver y cambiar la foto</button>`;
+  let cuerpo;
+  if(!r.legible||!form.lect.id)cuerpo=`<div class="verifbox duda"><b class="t">No pudimos leer la foto</b>Tome otra foto de la pantalla de consumo: de frente, más cerca, sin reflejos y que se vea toda la tabla.</div>${volver}`;
+  else if(r.fechaOk===false)cuerpo=`<div class="verifbox"><b class="t">La fecha no coincide</b>La foto es del <b>${dmy(r.fechaFoto)}</b> y el reporte es del <b>${dmy(val.fecha)}</b> (Turno ${val.turno}). Revise la fecha o tome la foto correcta.</div>${volver}`;
+  else{const fila=([k,l,u])=>{const x=r[k]||{faltante:true},nm=k[0]==='t'?`${l} · ${esc(AGN[o[+k[1]-1]])}`:l;
+      if(x.opciones)return `<div class="lcrow duda"><span>${nm}<small>No se lee claro. Mire la pantalla y toque el número correcto:</small></span><div class="choice-grid lc" data-c="${k}">${x.opciones.map(v=>`<button type="button" class="choice" data-v="${v}" aria-pressed="${form.eleg[k]==v}">${fv(v)} ${u}</button>`).join('')}</div></div>`;
+      if(x.faltante)return `<div class="lcrow duda"><span>${nm}<small>No se pudo leer. Escriba el número que muestra la pantalla:</small></span><div class="uw"><input class="in-ctl bigNum num" data-dig="${k}" inputmode="decimal" placeholder="0" value="${form.dig[k]??''}"><span class="u">${u==='kg'?'kg':'litros'}</span></div></div>`;
+      return `<div class="lcrow"><span>${nm}</span><b class="num">${fv(x.v)} ${u}</b></div>`};
+    cuerpo=`<div class="summary">${[['Fecha',dmy(val.fecha)],['Turno',TURNOS[val.turno].lbl],['Grupo',eq.nombre||''],['Producto',PR[val.producto].nombre]].map(x=>`<div><span class="note">${x[0]}</span><b>${esc(x[1])}</b></div>`).join('')}</div>
+      <h3 class="lch">Leído de la foto</h3><div class="lcbox">${LCF.map(fila).join('')}</div>
+      <img class="lcfoto" src="${val.foto}" alt="Foto de la pantalla de consumo">
+      <button class="btn primary" id="lcOk">Cargar</button>${volver}`}
+  m.innerHTML=`<div class="col"><div class="formhead"><button id="back" aria-label="Volver">←</button><div><h2>Revise el consumo</h2><p>Compare con la pantalla antes de cargar</p></div></div>${cuerpo}</div>`;
+  const atras=()=>{view='form';renderForm()};$('#back').onclick=atras;if($('#lcBack'))$('#lcBack').onclick=atras;
+  m.querySelectorAll('.choice-grid.lc').forEach(gr=>gr.onclick=e=>{const b=e.target.closest('.choice');if(!b)return;form.eleg[gr.dataset.c]=+b.dataset.v;gr.querySelectorAll('.choice').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+  m.querySelectorAll('[data-dig]').forEach(i=>i.oninput=()=>{i.value=i.value.replace(/[^\d.,]/g,'').slice(0,10);form.dig[i.dataset.dig]=i.value});
+  if($('#lcOk'))$('#lcOk').onclick=()=>{
+    const falta=LCF.filter(([k])=>{const x=r[k]||{faltante:true};return x.opciones?form.eleg[k]==null:x.faltante?(numMat(form.dig[k])===''||numMat(form.dig[k])==='x'):false});
+    if(falta.length){toast('Complete: '+falta.map(x=>x[1]).join(', '));return}
+    const md=$('#modal');md.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="cT"><div class="ic" style="background:var(--warn-bg);color:var(--warn)">${ICON.cons}</div><h2 id="cT">¿Los datos son correctos?</h2><p>Revise que coincidan con la pantalla. <b>Una vez cargados no se podrán cambiar.</b></p><button class="btn primary" id="cSi">Sí, cargar</button><button class="btn ghost" id="cNo">Revisar otra vez</button></div>`;
+    md.hidden=false;md.onclick=e=>{if(e.target===md)md.hidden=true};$('#cNo').onclick=()=>md.hidden=true;
+    $('#cSi').onclick=async()=>{const b=$('#cSi');b.disabled=true;b.textContent='Cargando…';
+      const dig=Object.fromEntries(Object.entries(form.dig).map(([k,v])=>[k,+numMat(v)]));
+      const rec={id:nextId('consumos','CN'),registro:stamp(),usuario:S.u,fecha:val.fecha,turno:val.turno,equipo:S.equipo,producto:val.producto,foto:'Foto adjunta',fotoData:val.foto,lecturaId:form.lect.id,elegidos:form.eleg,digitados:dig,tolvas:o.slice()};
+      if(!ONLINE){const vv=k=>{const x=r[k];return x.opciones?form.eleg[k]:x.faltante?dig[k]:x.v};rec.cemento=vv('cemento');rec.agua=vv('agua');rec.aditivo=vv('aditivo');o.forEach((mat,i)=>rec[mat]=vv('t'+(i+1)));rec.ordenTolvas=o.map((mat,i)=>'T'+(i+1)+': '+AGN[mat]).join(' · ');rec.verif='Coincide'}
+      try{const saved=await addRec('consumos',rec);md.hidden=true;form.rec=saved||rec;form.kind='consumos';view='done';render()}
+      catch(e){b.disabled=false;b.textContent='Sí, cargar';md.hidden=true;if(e.message!=='sesion')toast('No se pudo guardar: '+e.message)}}}}
+
 function checkUnits(){const box=$('#chk');if(!box)return;form.forzar=false;const p=PR[$('#producto').value],c=+$('#ciclos').value,u=+$('#unidades').value;
   if(p&&p.upc&&c&&u){const exp=c*p.upc;if(Math.abs(u-exp)/exp>0.05){box.innerHTML=`<div class="warnbox">Revise los números: con ${fmt(c)} ciclos de ${p.nombre} se esperan unas <b>${fmt(exp)}</b> unidades (${p.upc} por ciclo). Si el tablero muestra ${fmt(u)}, puede cargar de todas formas.</div>`;return}}box.innerHTML=''}
 function loadPhoto(file){const rd=new FileReader();rd.onload=()=>{const img=new Image();img.onload=()=>{const s=Math.min(1,1400/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=img.width*s;c.height=img.height*s;c.getContext('2d').drawImage(img,0,0,c.width,c.height);form.v.foto=c.toDataURL('image/jpeg',.72);const p=$('#fprev');p.src=form.v.foto;p.hidden=false;$('#fhint').textContent='Foto lista. Puede cambiarla con los botones de arriba.';$('[data-k="foto"]').classList.remove('err')};img.src=rd.result};rd.readAsDataURL(file)}
 
 async function submit(){
+  if(form.tipo==='cons')return verificarConsumo();
   const t=form.tipo,v=form.v,g=id=>{const e=$('#'+id);return e?e.value.trim():''};
   document.querySelectorAll('.field.err').forEach(f=>{f.classList.remove('err');f.querySelector('.errmsg')?.remove()});
   const need={prod:['fecha','turno','equipo','producto','ciclos','unidades','foto'],corte:['fecha','turno','equipo','producto','ciclos','unidades','foto'],nc:['fecha','fechaProd','equipo','producto','cantidad','clase','foto'],paro:['fecha','turno','equipo','inicio','fin','causa','comentario'],cons:['fecha','turno','equipo','producto',...MATS.map(x=>x[0]),'foto']}[t];
@@ -648,7 +713,8 @@ function renderDone(){
   else if(k==='consumos')rows=[['Fecha',dmy(r.fecha)],['Turno',TURNOS[r.turno].lbl],['Grupo',EQ[r.equipo].nombre],['Producto',PR[r.producto].nombre],...MATS.map(([id,l,u])=>[l,fmtQ(r[id])+' '+(u==='kg'?'kg':'L')])];
   else if(k==='noconf')rows=[['Fecha de producción',dmy(r.fechaProd)],['Grupo de origen',EQ[r.equipo]?.nombre||'No identificado'],['Producto',PR[r.producto].nombre],['Cantidad',fmt(r.cantidad)],['Clasificación',r.clase]];
   else rows=[['Fecha',dmy(r.fecha)],['Turno',TURNOS[r.turno].lbl],['Paro',`${r.inicio} a ${r.fin} · ${r.minutos} min`],['Causa',CA[r.causa].nombre]];
-  if(r.verif)rows.push(['Foto',r.verif==='Coincide'?'Verificada ✓':'Por revisar']);
+  if(k==='consumos'&&r.ordenTolvas)rows.push(['Tolvas',r.ordenTolvas]);
+  if(r.verif)rows.push(['Foto',r.verif==='Coincide'?(k==='consumos'?'Datos leídos de la foto ✓':'Verificada ✓'):'Por revisar']);
   m.innerHTML=`<div class="col done"><div class="ok">${ICON.check}</div><h2>${T}</h2><p class="note">Su información quedó guardada con éxito el ${dmy(r.registro)} a las ${r.registro.slice(11)}.</p><span class="folio">Folio ${r.id}</span>${extra}
    <div class="summary">${rows.map(x=>`<div><span class="note">${x[0]}</span><b class="num">${esc(x[1])}</b></div>`).join('')}</div>
    <button class="btn primary" id="home">Volver al inicio</button></div>`;
