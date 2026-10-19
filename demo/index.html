@@ -154,6 +154,14 @@ table.qc td{white-space:normal;vertical-align:middle}
 .filters label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .filters select,.filters input{min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);padding:6px 10px;font-size:14px}
 .filters .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.msel{position:relative}.msel summary{list-style:none;min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);padding:9px 34px 6px 10px;font-size:14px;cursor:pointer;white-space:nowrap;min-width:190px;position:relative}
+.msel summary::-webkit-details-marker{display:none}.msel summary::after{content:'';position:absolute;right:12px;top:16px;border:5px solid transparent;border-top-color:var(--muted)}
+.msel[open] summary{border-color:var(--fg)}
+.msel .mp{position:absolute;z-index:30;top:calc(100% + 6px);left:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:8px;min-width:260px}
+.msel .ma{display:flex;gap:6px;padding:2px 2px 8px;border-bottom:1px solid var(--line);margin-bottom:6px}.msel .ma button{flex:1;border:1px solid var(--line);background:var(--surface2);color:var(--fg);border-radius:8px;padding:7px 6px;font:600 12.5px var(--font);cursor:pointer}
+.msel .mp label{display:flex;align-items:center;gap:10px;padding:7px 6px;border-radius:8px;font-size:14px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--fg);cursor:pointer}.msel .mp label:hover{background:var(--surface2)}
+.msel .mp input{width:18px;height:18px;min-height:0;accent-color:#12130F;margin:0}
+.dlg .btn+.btn{margin-top:8px}.dlg .opt{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;font:inherit}.dlg .opt b{display:block;font-size:15.5px}.dlg .opt span{font-size:13px;color:var(--muted)}.dlg .opt:hover{border-color:var(--fg)}
 .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
 .card h3{font-size:15px;margin-bottom:2px}
@@ -267,6 +275,7 @@ td.r,th.r{text-align:right}
 @keyframes blink{50%{opacity:.25}}
 .sos.on{background:var(--ok);animation:none;box-shadow:none}
 .alertbar{background:var(--bad);color:#fff}
+.alertbar.rec{background:#F9D600;color:#12130F}.alertbar.rec button{background:#12130F;color:#F9D600}.alertbar.rec button.ghost{background:transparent;color:#12130F;border:1px solid #12130F}
 .alertbar .in{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:6px;padding-block:10px}
 .alertbar .al{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:14px}
 .alertbar .al svg{width:22px;height:22px;flex:none}
@@ -351,7 +360,12 @@ async function cargarDatos(){const j=await api('data');SEED=j.seed;initCat();loa
 function pantallaCarga(msg){$('#app').innerHTML=`<div class="login wrap"><div style="text-align:center"><img src="${temaActual()==='dark'?LOGO_D:LOGO_L}" alt="Duracreto" style="width:160px;margin:0 auto 18px;display:block"><p class="note" style="font-size:14px">${msg}</p></div></div>`}
 async function boot(){if(!ONLINE){if(!SEED){pantallaCarga('Falta configurar la dirección del servidor en config.js.');return}initCat();loadDB();render();return}if(!S||!S.token){S=null;render();return}
   pantallaCarga('Cargando información…');try{await cargarDatos();render()}catch(e){if(e.message!=='sesion')pantallaCarga('No hay conexión. Revise el internet y vuelva a abrir la app.')}}
-function initCat(){CFG=SEED.config;if(CFG.descansoDespuesDe==null)CFG.descansoDespuesDe=4;UMBRAL={bueno:CFG.umbralOptimo,aceptable:CFG.umbralMejorar};EQ=Object.fromEntries(SEED.equipos.map(e=>[e.id,e]));PR=Object.fromEntries(SEED.productos.map(p=>[p.id,p]));CA=Object.fromEntries(SEED.causas.map(c=>[c.id,c]))}
+function initCat(){CFG=SEED.config;if(CFG.descansoDespuesDe==null)CFG.descansoDespuesDe=4;UMBRAL={bueno:CFG.umbralOptimo,aceptable:CFG.umbralMejorar};EQ=Object.fromEntries(SEED.equipos.map(e=>[e.id,e]));PR=Object.fromEntries(SEED.productos.map(p=>[p.id,p]));CA=Object.fromEntries(SEED.causas.map(c=>[c.id,c]));aplicarRotacion()}
+/* Rotación semanal de turnos (lunes 6:00 am): A → B → C → A. Semana base 12-oct-2026: Grupo 1 = C, Grupo 2 = A, Grupo 3 = B */
+const ROT={base:'2026-10-12',orden:['A','B','C'],ini:{E1:'C',E2:'A',E3:'B'}};
+function semanaRot(d=new Date()){const x=new Date(d.getTime()-6*3600e3);const b=new Date(ROT.base+'T00:00:00');const lun=new Date(x.getFullYear(),x.getMonth(),x.getDate()-((x.getDay()+6)%7));return Math.round((lun-b)/(7*864e5))}
+function turnoRot(id,d){const i0=ROT.orden.indexOf(ROT.ini[id]);if(i0<0)return null;const w=semanaRot(d);return ROT.orden[(((i0+w)%3)+3)%3]}
+function aplicarRotacion(){Object.values(EQ).forEach(e=>{const t=turnoRot(e.id);if(t)e.turno=t})}
 const TURNOS={A:{ini:'06:00',fin:'14:00',lbl:'Turno A · 6:00 am a 2:00 pm'},B:{ini:'14:00',fin:'22:00',lbl:'Turno B · 2:00 pm a 10:00 pm'},C:{ini:'22:00',fin:'06:00',lbl:'Turno C · 10:00 pm a 6:00 am'}};
 const DEMO=!!window.DEMO;
 const ROLES={DEMO:{nom:'Demostración',perm:['prod','corte','paro','alerta','cons','nc','rep','dash','aviso']},LIDER:{nom:'Líder de grupo',perm:['prod','corte','paro','alerta','cons']},CALIDAD:{nom:'Control de calidad',perm:['nc']},SUPERVISOR:{nom:'Supervisión',perm:['rep','dash','bd','aviso']},GERENCIA:{nom:'Gerencia',perm:['rep','dash','aviso']},VISOR:{nom:'Consulta',perm:['rep','dash']},ADMIN:{nom:'Administrador',perm:['prod','corte','paro','alerta','cons','nc','rep','dash','bd','usr','aviso']}};
@@ -435,14 +449,14 @@ function render(){
   if(can('usr'))tabs.push(['usr','Usuarios y equipos']);
   if(!tabs.find(t=>t[0]===tab))tab=tabs[0][0];
   $('#app').innerHTML=`<header class="top"><div class="in wrap"><img src="${LOGO_D}" alt="Duracreto"><div class="who"><b>${esc(team)}</b>${esc(S.nombre)}</div><button class="thm ref" id="refb" aria-label="Actualizar" title="Actualizar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 11-2.34-5.66"/><path d="M20 4v5h-5"/></svg></button>${pushBtn()}${thmBtn()}<button class="out" id="logout" aria-label="Cerrar sesión"><span class="lg">Cerrar sesión</span><span class="sm">Salir</span></button></div>
-  ${tabs.length>1?`<nav class="tabs wrap" role="tablist">${tabs.map(t=>`<button role="tab" data-tab="${t[0]}" aria-selected="${t[0]===tab}">${t[1]}</button>`).join('')}</nav>`:''}</header><div id="alertas"></div>
+  ${tabs.length>1?`<nav class="tabs wrap" role="tablist">${tabs.map(t=>`<button role="tab" data-tab="${t[0]}" aria-selected="${t[0]===tab}">${t[1]}</button>`).join('')}</nav>`:''}</header><div id="alertas"></div><div id="recorda"></div>
   ${DEMO?`<div class="demobar wrap"><span><b>Modo demostración.</b> Lo que cargue aquí se queda solo en este dispositivo y no llega a la base de datos de la planta.</span><button id="demoReset">Reiniciar demo</button></div>`:''}<main class="wrap" id="main"></main>`;
   $('#thm').onclick=cambiarTema;$('#refb').onclick=actualizarTodo;if($('#pushb'))$('#pushb').onclick=panelPush;
   if(DEMO)$('#demoReset').onclick=()=>{LOCAL={produccion:[],cortes:[],noconf:[],paros:[],alertas:[],consumos:[]};store.set(LS,LOCAL);loadDB();view='home';render();toast('Demostración reiniciada.')};
   $('#logout').onclick=()=>{if(ONLINE)api('logout').catch(()=>{});store.del(SS);S=null;view='home';render()};
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=async()=>{tab=b.dataset.tab;store.set(TAB,tab);view='home';if(ONLINE&&Date.now()-lastLoad>60000){pantallaCarga('Actualizando…');try{await cargarDatos()}catch(e){if(e.message==='sesion')return}}render()});
   if(tab==='registro')renderRegistro();else if(tab==='rep')renderRep();else if(tab==='dash')renderDash();else if(tab==='rank')renderRank();else if(tab==='bd')renderBD();else renderUsers();
-  pintarAlertas();refrescarPush();
+  pintarAlertas();refrescarPush();pintarRecordatorio();
   window.scrollTo(0,0);
 }
 
@@ -481,7 +495,10 @@ function renderLogin(){
 /* ===================== Registro (app móvil) ===================== */
 let homeSel='';
 function metaColor(p){return p>=.85?['ok','Por cumplir']:p>=.5?['blue','Más de la mitad']:p>=.25?['warn','A medias']:['bad','Lejos de la meta']}
-function metaBar(eqId){const ym=todayISO().slice(0,7),meta=eqId?CFG.meta/3:CFG.meta;
+/* Meta (desde 19-oct): 15,120 unidades eq. B6" por turno (1,260 ciclos × 12) × 3 turnos × días hábiles del mes */
+const metaTurnoU=()=>CFG.metaTurno||15120;
+function metaMes(ym){return metaTurnoU()*3*diasMes(ym).filter(habil).length}
+function metaBar(eqId){const ym=todayISO().slice(0,7),meta=eqId?metaMes(ym)/3:metaMes(ym);
   const v=DB.produccion.filter(r=>r.fecha.slice(0,7)===ym&&(!eqId||r.equipo===eqId)).reduce((s,r)=>s+eqv(r),0),p=v/meta,[c,l]=metaColor(p);
   return `<section class="metacard"><div class="mh"><span class="lbl">Meta de ${MESES[+ym.slice(5)-1].toLowerCase()} · ${eqId?EQ[eqId].nombre:'planta completa'}</span><span class="pill ${c}">${l}</span></div>
    <div class="mpct num" style="color:var(--${c})">${pct(p,1)}</div><div class="mbar" role="img" aria-label="Avance ${pct(p,1)}"><i style="width:${Math.max(2,Math.min(100,p*100))}%;background:var(--${c})"></i></div>
@@ -604,7 +621,7 @@ function renderDone(){
   const r=form.rec,k=form.kind,m=$('#main');let extra='',rows=[];
   const T={produccion:'Producción cargada',cortes:'Corte registrado',noconf:'Producto no conforme registrado',paros:'Paro registrado',consumos:'Consumo registrado'}[k];
   if(k==='cortes'){const he=horasEfC(r),teo=Math.round(CFG.ciclosHora*he),i=teo?r.ciclos/teo:0,[c,l]=nivel(i);
-    extra=`<div class="gauge"><div class="note">Índice de productividad del turno a las ${r.hora}</div><div class="big num" style="color:var(--${c})">${pct(i)}</div><span class="pill ${c}">${l}</span><div class="bar" style="margin-top:14px;height:12px"><i style="width:${Math.min(100,i*100)}%;background:var(--${c})"></i></div><p class="note">${fmt(r.ciclos)} ciclos reales de ${fmt(teo)} teóricos en ${he} h efectivas</p></div>`}
+    extra=`<div class="gauge"><div class="note">Índice de productividad del turno a las ${r.hora}</div><div class="big num" style="color:var(--${c})">${pct(i)}</div><span class="pill ${c}">${l}</span><div class="bar" style="margin-top:14px;height:12px"><i style="width:${Math.min(100,i*100)}%;background:var(--${c})"></i></div><p class="note">${fmt(r.ciclos)} ciclos producidos de ${fmt(teo)} teóricos en ${he} h efectivas</p></div>`}
   if(r.ciclos!=null)rows=[['Fecha',dmy(r.fecha)],['Turno',TURNOS[r.turno].lbl],['Grupo',EQ[r.equipo].nombre],['Producto',PR[r.producto].nombre],['Ciclos',fmt(r.ciclos)],['Unidades',fmt(r.unidades)]];
   else if(k==='consumos')rows=[['Fecha',dmy(r.fecha)],['Turno',TURNOS[r.turno].lbl],['Grupo',EQ[r.equipo].nombre],['Producto',PR[r.producto].nombre],...MATS.map(([id,l,u])=>[l,fmtQ(r[id])+' '+(u==='kg'?'kg':'L')])];
   else if(k==='noconf')rows=[['Fecha de producción',dmy(r.fechaProd)],['Grupo de origen',EQ[r.equipo]?.nombre||'No identificado'],['Producto',PR[r.producto].nombre],['Cantidad',fmt(r.cantidad)],['Clasificación',r.clase]];
@@ -621,16 +638,26 @@ let F=null;
 function monthsAvail(){const s=new Set(DB.produccion.map(r=>r.fecha.slice(0,7)));s.add(todayISO().slice(0,7));return [...s].sort().reverse()}
 function initF(){if(F)return;const ym=monthsAvail()[0];F={mes:ym,desde:ym+'-01',hasta:diasMes(ym).slice(-1)[0],eq:'',tu:''}}
 function inF(r,dateKey='fecha'){const d=r[dateKey];return d>=F.desde&&d<=F.hasta&&(!F.eq||r.equipo===F.eq)&&(!F.tu||!r.turno||r.turno===F.tu)}
-function filtersHTML(extra=''){const ms=monthsAvail();return `<div class="filters"><div class="f"><label for="fm">Mes</label><select id="fm">${ms.map(m=>`<option value="${m}" ${m===F.mes?'selected':''}>${MESES[+m.slice(5)-1]} ${m.slice(0,4)}</option>`).join('')}</select></div>
+const inCat=r=>!F.cat||F.cat.includes(r.causa);
+function catLabel(){if(!F.cat)return 'Todas';if(!F.cat.length)return 'Ninguna';if(F.cat.length===1)return CA[F.cat[0]]?.nombre||F.cat[0];return F.cat.length+' de '+SEED.causas.length+' categorías'}
+function catHTML(){return `<div class="f"><label>Categoría reportada</label><details class="msel" id="fcat" ${catOpen?'open':''}><summary>${esc(catLabel())}</summary><div class="mp"><div class="ma"><button type="button" data-ca="all">Seleccionar todas</button><button type="button" data-ca="none">Quitar todas</button></div>${SEED.causas.map(c=>`<label><input type="checkbox" value="${c.id}" ${!F.cat||F.cat.includes(c.id)?'checked':''}>${esc(c.nombre)}</label>`).join('')}</div></details></div>`}
+let catOpen=false;
+function filtrosOriginales(){return !(F.eq||F.tu||F.cat||F.desde!==F.mes+'-01'||F.hasta!==diasMes(F.mes).slice(-1)[0])}
+function filtersHTML(extra='',pre=''){const ms=monthsAvail();return `<div class="filters"><div class="f"><label for="fm">Mes</label><select id="fm">${ms.map(m=>`<option value="${m}" ${m===F.mes?'selected':''}>${MESES[+m.slice(5)-1]} ${m.slice(0,4)}</option>`).join('')}</select></div>
   <div class="f"><label for="fd">Desde</label><input type="date" id="fd" value="${F.desde}"></div><div class="f"><label for="fh">Hasta</label><input type="date" id="fh" value="${F.hasta}"></div>
   <div class="f"><label for="fe">Grupo</label><select id="fe"><option value="">Todos</option>${SEED.equipos.map(e=>`<option value="${e.id}" ${F.eq===e.id?'selected':''}>${e.nombre}</option>`).join('')}</select></div>
   <div class="f"><label for="ft">Turno</label><select id="ft"><option value="">Todos</option>${['A','B','C'].map(t=>`<option ${F.tu===t?'selected':''}>${t}</option>`).join('')}</select></div>
-  <div class="sp">${extra}<button class="btn small ghost" id="xls">Descargar Excel</button></div></div>`}
-function bindFilters(rr){$('#fm').onchange=e=>{const m=e.target.value;F.mes=m;F.desde=m+'-01';F.hasta=diasMes(m).slice(-1)[0];rr()};$('#fd').onchange=e=>{F.desde=e.target.value;rr()};$('#fh').onchange=e=>{F.hasta=e.target.value;rr()};$('#fe').onchange=e=>{F.eq=e.target.value;rr()};$('#ft').onchange=e=>{F.tu=e.target.value;rr()};$('#xls').onclick=exportXLSX}
+  ${pre}<div class="sp">${extra}<button class="btn small ghost" id="fclr" ${filtrosOriginales()?'disabled style="opacity:.5"':''} title="Volver a todo el mes, todos los grupos y turnos">Limpiar filtros</button><button class="btn small ghost" id="xls">Descargar Excel</button></div></div>`}
+function bindFilters(rr){$('#fm').onchange=e=>{const m=e.target.value;F.mes=m;F.desde=m+'-01';F.hasta=diasMes(m).slice(-1)[0];rr()};$('#fd').onchange=e=>{F.desde=e.target.value;rr()};$('#fh').onchange=e=>{F.hasta=e.target.value;rr()};$('#fe').onchange=e=>{F.eq=e.target.value;rr()};$('#ft').onchange=e=>{F.tu=e.target.value;rr()};$('#xls').onclick=elegirExcel;
+  $('#fclr').onclick=()=>{F={mes:F.mes,desde:F.mes+'-01',hasta:diasMes(F.mes).slice(-1)[0],eq:'',tu:'',cat:null};catOpen=false;rr();toast('Filtros restablecidos.')};
+  const fc=$('#fcat');if(fc){fc.ontoggle=()=>{catOpen=fc.open};
+    fc.querySelectorAll('[data-ca]').forEach(b=>b.onclick=e=>{e.preventDefault();F.cat=b.dataset.ca==='all'?null:[];rr()});
+    fc.querySelectorAll('input[type=checkbox]').forEach(i=>i.onchange=()=>{const v=[...fc.querySelectorAll('input:checked')].map(x=>x.value);F.cat=v.length===SEED.causas.length?null:v;rr()})}}
+document.addEventListener('click',e=>{const fc=document.getElementById('fcat');if(fc&&fc.open&&e.target.isConnected&&!fc.contains(e.target)){fc.open=false;catOpen=false}});
 
 function calc(){
   const ym=F.mes,dias=diasMes(ym),hab=dias.filter(habil),share=(F.eq||F.tu)?1/3:1;
-  const meta=CFG.meta*share,equi=CFG.equilibrio*share,metaDia=meta/hab.length;
+  const meta=metaMes(ym)*share,equi=CFG.equilibrio*share,metaDia=meta/hab.length;
   const P=DB.produccion.filter(r=>inF(r)),Pm=DB.produccion.filter(r=>r.fecha.slice(0,7)===ym&&(!F.eq||r.equipo===F.eq)&&(!F.tu||r.turno===F.tu));
   const tot=Pm.reduce((s,r)=>s+eqv(r),0),totSel=P.reduce((s,r)=>s+eqv(r),0),realSel=P.reduce((s,r)=>s+r.unidades,0),cicSel=P.reduce((s,r)=>s+r.ciclos,0);
   const t=todayISO(),lim=t.slice(0,7)===ym?t:(t>ym?dias.slice(-1)[0]:dias[0]);const conDato=Pm.map(r=>r.fecha).filter(d=>d<=lim).sort();const corte=conDato.length?conDato[conDato.length-1]:lim;
@@ -665,12 +692,12 @@ function renderDash(){
     <div class="prog" role="img" aria-label="Avance ${pct(pM)} de la meta; a la fecha se esperaba ${pct(pH)}"><div class="fill" style="width:${Math.max(1,Math.min(100,pM*100))}%;background:var(--${bc})"></div>
      <div class="mk top" style="left:${pH*100}%"><span>Hoy deberíamos ir: ${fmt(esp)}</span></div><div class="mk eq" style="left:${c.equi/c.meta*100}%"><span>Equilibrio ${fmt(c.equi)}</span></div><div class="mk" style="left:calc(100% - 2px)"></div></div>
    </section>
-   ${tile('Unidades reales en el periodo',fmt(c.realSel),`${fmt(c.cicSel)} ciclos · ${c.turnos} turnos reportados`,'line')}
-   ${tile('Índice de productividad',pct(c.idx,1),'Ciclos reales ÷ teóricos (1,260 por turno)',ic,[ic,il])}
+   ${tile('Unidades producidas en el periodo',fmt(c.realSel),`${fmt(c.cicSel)} ciclos · ${c.turnos} turnos reportados`,'line')}
+   ${tile('Índice de productividad',pct(c.idx,1),'Ciclos producidos ÷ teóricos (1,260 por turno)',ic,[ic,il])}
    ${tile('Tiempo de paro',(minP/60).toFixed(1)+' h',`${PA.length} paros · TMEF ${tmef==null?'–':tmef.toFixed(1)+' h'} · TMR ${tmr==null?'–':Math.round(tmr)+' min'}`,'line')}
    ${tile('Desperdicio (desecho)',pct(pDes,2),`${fmt(des)} u de desecho · ${fmt(seg)} u de segunda aparte (se venden)${dMax==null?' · meta por definir':' · meta ≤ '+pct(dMax,1)}`,dB?dB[0]:'line',dB)}
    <section class="card s7"><h3>Producción acumulada contra la meta</h3><p class="cap">Equivalente Bloque 6". La meta y el equilibrio avanzan solo en días hábiles (sin domingos ni feriados).</p>
-    <div class="legend"><span><i style="background:var(--accent)"></i>Real</span><span><i style="background:var(--fg)"></i>Meta ${fmt(c.meta)}</span><span><i style="background:var(--brandgray)"></i>Equilibrio ${fmt(c.equi)}</span></div><div class="chartbox"><canvas id="chCum"></canvas></div></section>
+    <div class="legend"><span><i style="background:var(--accent)"></i>Producción</span><span><i style="background:var(--fg)"></i>Meta ${fmt(c.meta)}</span><span><i style="background:var(--brandgray)"></i>Equilibrio ${fmt(c.equi)}</span></div><div class="chartbox"><canvas id="chCum"></canvas></div></section>
    <section class="card s5"><h3>Producción por grupo</h3><p class="cap">Equivalente Bloque 6" en el periodo · línea negra = lo esperado a la fecha</p>
     <div class="legend"><span><i style="background:var(--fg);height:10px;width:10px"></i>Primera</span><span><i style="background:var(--gold);height:10px;width:10px"></i>Segunda</span></div>${groupBars(c)}</section>
    <section class="card s7"><h3>Producción diaria por grupo</h3><p class="cap">Meta diaria de planta: ${fmt(c.metaDia)} unidades por día hábil</p>
@@ -681,7 +708,7 @@ function renderDash(){
      <div class="tile-k"><span class="v num" style="font-size:24px">${tmef==null?'–':tmef.toFixed(1)+' h'}</span><span class="l">TMEF · tiempo medio entre fallas</span></div>
      <div class="tile-k"><span class="v num" style="font-size:24px">${tmr==null?'–':Math.round(tmr)+' min'}</span><span class="l">TMR · tiempo medio de reparación</span></div></div></section>
    <section class="card s6"><h3>Desempeño por turno</h3><p class="cap">Los grupos rotan de turno; esta vista mide el horario, no al grupo.</p><div class="tbl">${turnoTable(c)}</div></section>
-   <section class="card s6"><h3>Producción real por producto</h3><p class="cap">Unidades reales tal como las reporta la máquina</p><div class="tbl">${productTable(c)}</div></section>
+   <section class="card s6"><h3>Producción por producto</h3><p class="cap">Unidades producidas tal como las reporta la máquina</p><div class="tbl">${productTable(c)}</div></section>
    <section class="card s12"><div class="ih"><h3>Cortes de rendimiento</h3>${info('Muestreos durante el turno. Índice = ciclos acumulados ÷ (180 ciclos/h × horas efectivas). El turno tiene 7 h de producción y 1 h final de limpieza y engrase; no se descuenta tiempo de comida (horas efectivas = tiempo desde el inicio del turno, máximo 7 h). Verde: óptimo (80 % o más). Ámbar: por mejorar (65 a 80 %). Rojo: bajo.')}</div><div id="cortes"></div></section>
    <section class="card s6"><h3>Producto no conforme por grupo</h3><p class="cap">Por fecha de producción del lote</p><div class="chartbox sm"><canvas id="chNC"></canvas></div></section>
    <section class="card s6 soon"><span class="tag">Próximamente</span><h3>Inventario mínimo y días de cobertura</h3><p class="cap" style="margin:4px 0 0">Se activará cuando conectemos existencias de producto terminado y despachos (ventas SAP). Mostrará unidades en patio por producto, inventario mínimo y cuántos días de venta cubre.</p></section>
@@ -689,7 +716,7 @@ function renderDash(){
   bindFilters(renderDash);drawDash(c,PA,NC);renderCortes();
 }
 function groupBars(c){
-  const habR=c.hab.filter(d=>d>=F.desde&&d<=F.hasta&&d<=c.corte).length,espG=CFG.meta/3/c.hab.length*habR;
+  const habR=c.hab.filter(d=>d>=F.desde&&d<=F.hasta&&d<=c.corte).length,espG=metaMes(c.ym)/3/c.hab.length*habR;
   const rows=SEED.equipos.filter(e=>!F.eq||F.eq===e.id).map(e=>{const P=c.P.filter(r=>r.equipo===e.id),v=P.reduce((s,r)=>s+eqv(r),0),cy=P.reduce((s,r)=>s+r.ciclos,0);
    const N=ncIn(e.id,F.desde,F.hasta),sg=N.filter(r=>r.clase==='Segunda').reduce((s,r)=>s+r.cantidad,0),ds=N.filter(r=>r.clase==='Desecho').reduce((s,r)=>s+r.cantidad,0);
    const pa=DB.paros.filter(r=>r.equipo===e.id&&r.fecha>=F.desde&&r.fecha<=F.hasta&&(!F.tu||r.turno===F.tu)).reduce((s,r)=>s+r.minutos,0);
@@ -697,7 +724,7 @@ function groupBars(c){
   const mx=Math.max(espG,...rows.map(r=>r.v))*1.08||1;
   return rows.map(r=>{const [ic]=nivel(r.idx);return `<div class="gb"><div class="gt"><b>${r.e.nombre}</b><span class="num"><b>${fmt(r.v)}</b> u · ${pct(espG?r.v/espG:0)} de lo esperado</span></div>
    <div class="gbar" role="img" aria-label="${r.e.nombre}: ${fmt(r.v)} de ${fmt(espG)} esperadas"><i style="width:${r.prim/mx*100}%;background:var(--fg)"></i><i style="width:${r.sg/mx*100}%;background:var(--gold)"></i><span class="pm" style="left:${espG/mx*100}%"></span></div>
-   <div class="gs num"><span>Segunda <b>${fmt(r.sg)}</b></span><span>Desecho <b>${pct(r.v?r.ds/r.v:0,2)}</b></span><span>Paro <b>${(r.pa/60).toFixed(1)} h</b></span><span>Índice <b style="color:var(--${ic})">${pct(r.idx,1)}</b></span></div></div>`}).join('')+`<p class="note" style="margin:8px 0 0">Esperado a la fecha por grupo: ${fmt(espG)} (250,000 al mes ÷ días hábiles).</p>`}
+   <div class="gs num"><span>Segunda <b>${fmt(r.sg)}</b></span><span>Desecho <b>${pct(r.v?r.ds/r.v:0,2)}</b></span><span>Paro <b>${(r.pa/60).toFixed(1)} h</b></span><span>Índice <b style="color:var(--${ic})">${pct(r.idx,1)}</b></span></div></div>`}).join('')+`<p class="note" style="margin:8px 0 0">Esperado a la fecha por grupo: ${fmt(espG)} (${fmt(metaTurnoU())} por turno × días hábiles).</p>`}
 function pareto(PA){const by={};PA.forEach(r=>{const k=r.causaRev||r.causa;by[k]=(by[k]||0)+r.minutos});const ks=Object.keys(by).sort((a,b)=>by[b]-by[a]),tot=ks.reduce((s,k)=>s+by[k],0),mx=by[ks[0]]||1;let acc=0;
   if(!ks.length)return '<p class="note">Sin paros en el periodo.</p>';
   return `<div class="tbl"><table class="pareto"><thead><tr><th>Causa</th><th></th><th class="r">Min</th><th class="r">Acum.</th></tr></thead><tbody>${ks.map(k=>{const prev=acc;acc+=by[k];const red=prev/tot<.8;return `<tr><td style="white-space:normal">${CA[k]?.nombre||k}</td><td class="pb"><div class="bar" style="height:12px"><i style="width:${by[k]/mx*100}%;background:var(${red?'--bad':'--brandgray'})"></i></div></td><td class="r num">${fmt(by[k])}</td><td class="r num">${pct(acc/tot)}</td></tr>`}).join('')}</tbody></table></div>`}
@@ -710,12 +737,12 @@ function turnoTable(c){const rows=['A','B','C'].map(t=>{const P=c.P.filter(r=>r.
   return `<table><thead><tr><th>Turno</th><th class="r">Turnos</th><th class="r">Unid. eq. B6"</th><th class="r">Promedio/turno</th><th>Índice</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td class="r num">${r[1]}</td><td class="r num">${fmt(r[2])}</td><td class="r num">${fmt(r[3])}</td><td>${idxBar(r[4])}</td></tr>`).join('')}</tbody></table>`}
 function idxBar(i){const [c]=nivel(i);return `<div class="idxbar"><div class="bar"><i style="width:${Math.min(100,i*100)}%;background:var(--${c})"></i></div><b class="num" style="color:var(--${c});min-width:46px;text-align:right">${pct(i,1)}</b></div>`}
 function productTable(c){const g={};c.P.forEach(r=>{const k=r.producto;g[k]=g[k]||{u:0,c:0};g[k].u+=r.unidades;g[k].c+=r.ciclos});const rows=Object.entries(g);
-  return rows.length?`<table><thead><tr><th>Línea</th><th>Producto</th><th class="r">Unidades reales</th><th class="r">Ciclos</th><th class="r">Eq. Bloque 6"</th></tr></thead><tbody>${rows.map(([k,v])=>`<tr><td>${PR[k].linea}</td><td>${PR[k].nombre}</td><td class="r num">${fmt(v.u)}</td><td class="r num">${fmt(v.c)}</td><td class="r num">${fmt(v.c*12)}</td></tr>`).join('')}</tbody></table>`:'<p class="note">Sin producción en el periodo.</p>'}
+  return rows.length?`<table><thead><tr><th>Línea</th><th>Producto</th><th class="r">Unidades producidas</th><th class="r">Ciclos</th><th class="r">Eq. Bloque 6"</th></tr></thead><tbody>${rows.map(([k,v])=>`<tr><td>${PR[k].linea}</td><td>${PR[k].nombre}</td><td class="r num">${fmt(v.u)}</td><td class="r num">${fmt(v.c)}</td><td class="r num">${fmt(v.c*12)}</td></tr>`).join('')}</tbody></table>`:'<p class="note">Sin producción en el periodo.</p>'}
 let corteDia=null;
 function renderCortes(){const C=DB.cortes.filter(r=>inF(r));const dias=[...new Set(C.map(r=>r.fecha))].sort();const box=$('#cortes');if(!dias.length){box.innerHTML='<p class="note">No hay cortes en el periodo.</p>';return}
   if(!dias.includes(corteDia))corteDia=dias[dias.length-1];
   const rows=C.filter(r=>r.fecha===corteDia).sort((a,b)=>ckT(a).localeCompare(ckT(b)));
-  box.innerHTML=`<div class="subtabs">${dias.slice(-7).map(d=>`<button data-cd="${d}" aria-pressed="${d===corteDia}">${dm(d)}</button>`).join('')}</div><div class="tbl"><table><thead><tr><th>Grupo</th><th>Turno</th><th>Hora</th><th class="r">Horas ef.</th><th class="r">Ciclos teóricos</th><th class="r">Ciclos reales</th><th class="r">Unidades</th><th>Índice</th></tr></thead><tbody>${rows.map(r=>{const he=horasEfC(r),teo=Math.round(CFG.ciclosHora*he);return `<tr><td><span class="chip"><span class="dot" style="background:var(${TEAMCOL[r.equipo]})"></span>${EQ[r.equipo].nombre}</span></td><td>${r.turno}</td><td class="num">${r.hora}</td><td class="r num">${he}</td><td class="r num">${fmt(teo)}</td><td class="r num">${fmt(r.ciclos)}</td><td class="r num">${fmt(r.unidades)}</td><td>${idxBar(teo?r.ciclos/teo:0)}</td></tr>`}).join('')}</tbody></table></div>`;
+  box.innerHTML=`<div class="subtabs">${dias.slice(-7).map(d=>`<button data-cd="${d}" aria-pressed="${d===corteDia}">${dm(d)}</button>`).join('')}</div><div class="tbl"><table><thead><tr><th>Grupo</th><th>Turno</th><th>Hora</th><th class="r">Horas ef.</th><th class="r">Ciclos teóricos</th><th class="r">Ciclos producidos</th><th class="r">Unidades</th><th>Índice</th></tr></thead><tbody>${rows.map(r=>{const he=horasEfC(r),teo=Math.round(CFG.ciclosHora*he);return `<tr><td><span class="chip"><span class="dot" style="background:var(${TEAMCOL[r.equipo]})"></span>${EQ[r.equipo].nombre}</span></td><td>${r.turno}</td><td class="num">${r.hora}</td><td class="r num">${he}</td><td class="r num">${fmt(teo)}</td><td class="r num">${fmt(r.ciclos)}</td><td class="r num">${fmt(r.unidades)}</td><td>${idxBar(teo?r.ciclos/teo:0)}</td></tr>`}).join('')}</tbody></table></div>`;
   box.querySelectorAll('[data-cd]').forEach(b=>b.onclick=()=>{corteDia=b.dataset.cd;renderCortes()})}
 
 function drawDash(c,PA,NC){
@@ -725,7 +752,7 @@ function drawDash(c,PA,NC){
   const days=c.dias;let cum=0,mc=0,ec=0;const real=[],meta=[],equi=[];
   days.forEach(d=>{const inS=d>=F.desde&&d<=F.hasta;const v=c.Pm.filter(r=>r.fecha===d).reduce((s,r)=>s+eqv(r),0);cum+=v;if(habil(d)){mc+=c.metaDia;ec+=c.equi/c.hab.length}real.push(d<=c.corte?cum:null);meta.push(mc);equi.push(ec)});
   charts.cum=new Chart($('#chCum'),{type:'line',data:{labels:days.map(d=>+d.slice(8)),datasets:[
-    {label:'Real',data:real,borderColor:ac,backgroundColor:ac+'33',fill:true,borderWidth:3,pointRadius:0,tension:.15},
+    {label:'Producción',data:real,borderColor:ac,backgroundColor:ac+'33',fill:true,borderWidth:3,pointRadius:0,tension:.15},
     {label:'Meta',data:meta,borderColor:fg,borderDash:[6,4],borderWidth:1.5,pointRadius:0},
     {label:'Equilibrio',data:equi,borderColor:cssv('--brandgray'),borderDash:[3,3],borderWidth:1.5,pointRadius:0}]},
     options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>'Día '+i[0].label,label:i=>i.dataset.label+': '+fmt(i.raw)}}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:16}},y:{grid,ticks:{...tick,callback:v=>v>=1000?(v/1000)+'k':v},border:{display:false}}}}});
@@ -757,7 +784,7 @@ function renderRep(){
   const vivos=['A','B','C'].filter(t=>VT[t].vivo);
   const tot=['A','B','C'].reduce((s,t)=>s+VT[t].v,0),real=['A','B','C'].reduce((s,t)=>s+VT[t].u,0),cy=['A','B','C'].reduce((s,t)=>s+VT[t].cy,0),teoD=['A','B','C'].reduce((s,t)=>s+VT[t].teo,0);
   const acumCorte=r=>{const k='ABC'.indexOf(r.turno);return ['A','B','C'].slice(0,k).reduce((s,t)=>s+VT[t].v,0)+eqv(r)};
-  const ym=repDia.slice(0,7),hab=diasMes(ym).filter(habil),metaDia=CFG.meta/hab.length,metaT=metaDia/3,pd=tot/metaDia,col=scaleCol(pd);
+  const ym=repDia.slice(0,7),hab=diasMes(ym).filter(habil),metaDia=metaMes(ym)/hab.length,metaT=metaDia/3,pd=tot/metaDia,col=scaleCol(pd);
   const prevTot=prev?DB.produccion.filter(r=>r.fecha===prev).reduce((s,r)=>s+eqv(r),0):null,dl=prevTot?(tot-prevTot)/prevTot:null;
   const acum=DB.produccion.filter(r=>r.fecha.slice(0,7)===ym&&r.fecha<=repDia).reduce((s,r)=>s+eqv(r),0)+vivos.reduce((s,t)=>s+VT[t].v,0);
   const idx=teoD?cy/teoD:0,[ic,il]=nivel(idx);
@@ -774,7 +801,7 @@ function renderRep(){
      ${pq&&X.vivo?pilParo(pq):X.vivo?`<span class="pill blue" style="align-self:flex-start">En curso · según corte de las ${lc.hora}</span>`:''}
      ${R.length||X.vivo?`<div class="big num">${fmt(v)} <span class="note" style="font-size:13px;font-weight:500">de ${fmt(metaT)}</span></div>
      <div class="bar" style="height:10px"><i style="width:${Math.min(100,pc*100)}%;background:var(--${scaleCol(pc)})"></i></div>
-     <div class="kv num"><div><b style="color:var(--${c3})">${pct(ix,1)}</b>Índice · ${(s=>s[0].toUpperCase()+s.slice(1))(l3.replace('Rendimiento ',''))}</div><div><b>${fmt(u)}</b>Unidades reales${X.vivo?' (al corte)':''}</div>
+     <div class="kv num"><div><b style="color:var(--${c3})">${pct(ix,1)}</b>Índice · ${(s=>s[0].toUpperCase()+s.slice(1))(l3.replace('Rendimiento ',''))}</div><div><b>${fmt(u)}</b>Unidades producidas${X.vivo?' (al corte)':''}</div>
      <div><b>${lc?`${lc.hora} <span style="font-weight:400">· ${fmt(lc.unidades)} u</span>`:'–'}</b>Último corte</div><div><b>${pa} min</b>Paros</div></div>`:
      `${pq?pilParo(pq):`<span class="pill ${estadoT(t)[0]}" style="align-self:flex-start">${estadoT(t)[1]}</span>`}<div class="kv num"><div><b>${lc?`${lc.hora} <span style="font-weight:400">· ${fmt(lc.unidades)} u</span>`:'–'}</b>Último corte</div><div><b>${pa} min</b>Paros</div></div>`}</section>`};
   m.innerHTML=`<div class="rep">
@@ -784,10 +811,10 @@ function renderRep(){
     <section class="card s12 kc" style="border-top-color:var(--${col})"><div class="kt" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><h3>Producción del día · ${dmy(repDia)}</h3><span style="display:flex;gap:6px;flex-wrap:wrap">${['A','B','C'].filter(t=>!P.some(r=>r.turno===t)&&parado(t)).map(t=>`<span class="pill parado"><i></i>Turno ${t} PARADO</span>`).join('')}${vivos.length?`<span class="pill blue">En curso · Turno ${vivos.join(' y ')} al último corte</span>`:''}<span class="pill ${col==='ok'?'ok':col==='blue'?'blue':col==='warn'?'warn':'bad'}">${pct(pd)} de la meta diaria</span></span></div>
      <div style="display:flex;flex-wrap:wrap;gap:12px 32px;align-items:flex-end;margin-top:8px">
       <div><div class="num" style="font-size:44px;font-weight:800;line-height:1">${fmt(tot)}</div><span class="note">de ${fmt(metaDia)} · equivalente Bloque 6"</span></div>
-      <div class="tile-k"><span class="v num" style="font-size:22px">${fmt(real)}</span><span class="l">Unidades reales</span></div>
+      <div class="tile-k"><span class="v num" style="font-size:22px">${fmt(real)}</span><span class="l">Unidades producidas</span></div>
       <div class="tile-k"><span class="v num" style="font-size:22px;color:var(--${ic})">${pct(idx,1)}</span><span class="l">Índice del día</span></div>
       <div class="tile-k"><span class="v num delta" style="font-size:22px;color:var(--${dl==null?'fg':dl>=0?'ok':'bad'})">${dl==null?'–':(dl>=0?'+':'')+pct(dl,1)}</span><span class="l">vs ${prev?dmy(prev):'día anterior'}</span></div>
-      <div class="tile-k"><span class="v num" style="font-size:22px">${fmt(acum)}</span><span class="l">Acumulado del mes · ${pct(acum/CFG.meta,1)} de la meta</span></div></div>
+      <div class="tile-k"><span class="v num" style="font-size:22px">${fmt(acum)}</span><span class="l">Acumulado del mes · ${pct(acum/metaMes(ym),1)} de la meta</span></div></div>
      <div class="bar" style="height:12px;margin-top:14px"><i style="width:${Math.min(100,pd*100)}%;background:var(--${col})"></i></div>
      ${vivos.length?`<p class="note" style="margin:8px 0 0">Mientras un turno no cierra, se toma lo que marcó su último corte. Al cerrar, se reemplaza por el reporte de producción.</p>`:''}</section>
     ${['A','B','C'].map(turnoCard).join('')}
@@ -798,7 +825,7 @@ function renderRep(){
    </div></div>`;
   $('#dsel').onchange=e=>{repDia=e.target.value;renderRep()};
   if(prev)$('#dprev').onclick=()=>{repDia=prev;renderRep()};if(next)$('#dnext').onclick=()=>{repDia=next;renderRep()};
-  if($('#xlsd'))$('#xlsd').onclick=()=>{initF();const keep={...F};F={...F,desde:repDia,hasta:repDia,eq:'',tu:''};exportXLSX().finally(()=>{F=keep})};
+  if($('#xlsd'))$('#xlsd').onclick=()=>{initF();const keep={...F};F={...F,desde:repDia,hasta:repDia,eq:'',tu:'',cat:null};exportXLSX('filtrado').finally(()=>{F=keep})};
 }
 
 const info=txt=>`<details class="info"><summary aria-label="Más información" title="Más información">i</summary><div class="ib">${txt}</div></details>`;
@@ -856,6 +883,26 @@ function pintarAlertas(){if(!S)return;const L=DB.alertas||[];
 const PAROREP=a=>DB.paros.some(p=>p.equipo===a.equipo&&p.registro>=a.registro);
 async function refrescarAlertas(){if(!ONLINE||!S||!(can('aviso')||can('alerta')))return;try{const j=await api('alertas');if(j.ok){DB.alertas=j.alertas;pintarAlertas()}}catch(e){}}
 setInterval(()=>{if(document.visibilityState==='visible')refrescarAlertas()},45000);
+
+/* Recordatorio de corte para líderes: 3 cortes por turno, a las 2, 4 y 6 h del inicio; aviso desde 10 min antes */
+const REC_ANTES=10,REC_DESPUES=20,REC_K='dc_rec_vistos';
+const turnoAhora=()=>turnoSugerido();
+function corteToca(){if(!S||!can('corte')||!S.equipo||!EQ[S.equipo])return null;const t=turnoAhora();if(EQ[S.equipo].turno!==t)return null;
+  const rel=relT(t,nowHM()),fecha=fechaJornada(t);
+  for(const k of [2,4,6]){const T=k*60;if(rel>=T-REC_ANTES&&rel<=T+REC_DESPUES){
+    const hecho=DB.cortes.some(c=>c.equipo===S.equipo&&c.fecha===fecha&&c.turno===t&&relT(t,c.hora)>=T-30);
+    if(hecho)return null;const st={A:6,B:14,C:22}[t],h=(st+k)%24;return {id:fecha+t+k,hora:pad(h)+':00',faltan:T-rel,turno:t}}}
+  return null}
+function recVistos(){return store.get(REC_K)||{}}
+function pintarRecordatorio(){const box=$('#recorda');if(!box)return;const r=corteToca();
+  if(!r||recVistos()[r.id]==='x'||view==='form'){box.innerHTML='';return}
+  const txt=r.faltan>0?`Faltan <b>${r.faltan} min</b> para el corte de las <b>${r.hora}</b>. Prepárese para tomar la foto del tablero.`:`Es hora del corte de las <b>${r.hora}</b>. Haga el corte ahora.`;
+  box.innerHTML=`<div class="alertbar rec" role="status"><div class="in wrap"><div class="al">${ICON.corte}<span>${txt}</span><button id="recG">Hacer corte</button><button class="ghost" id="recX">Entendido</button></div></div></div>`;
+  $('#recG').onclick=()=>{form={tipo:'corte',v:{}};view='form';render()};
+  $('#recX').onclick=()=>{const v=recVistos();v[r.id]='x';store.set(REC_K,v);box.innerHTML=''};
+  const v=recVistos();if(!v[r.id]){v[r.id]=1;store.set(REC_K,v);sonarAviso();
+    try{if('Notification' in window&&Notification.permission==='granted'&&navigator.serviceWorker)navigator.serviceWorker.ready.then(g=>g.showNotification('Recordatorio de corte',{body:`Corte de las ${r.hora} · ${EQ[S.equipo].nombre}`,icon:'icons/icon-192.png',tag:'corte-'+r.id}))}catch(e){}}}
+setInterval(pintarRecordatorio,30000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refrescarAlertas()});
 
 /* ===================== Notificaciones push (Firebase) ===================== */
@@ -899,7 +946,7 @@ function panelPush(){const md=$('#modal'),on=pushActivo(),den=pushSoportado()&&N
 
 /* ===================== Ranking ===================== */
 let rankMes=null;
-function rankDatos(ym){const metaG=CFG.meta/3,hab=diasMes(ym).filter(habil),metaTurno=CFG.meta/hab.length/3;
+function rankDatos(ym){const metaG=metaMes(ym)/3,hab=diasMes(ym).filter(habil),metaTurno=metaTurnoU();
   return SEED.equipos.map(e=>{const P=DB.produccion.filter(r=>r.equipo===e.id&&r.fecha.slice(0,7)===ym),v=P.reduce((s,r)=>s+eqv(r),0),u=P.reduce((s,r)=>s+r.unidades,0),cy=P.reduce((s,r)=>s+r.ciclos,0);
     const N=DB.noconf.filter(r=>r.equipo===e.id&&r.fechaProd.slice(0,7)===ym),des=N.filter(r=>r.clase==='Desecho').reduce((s,r)=>s+r.cantidad,0);
     const pa=paroNeto(DB.paros.filter(r=>r.equipo===e.id&&r.fecha.slice(0,7)===ym));
@@ -912,7 +959,7 @@ function renderRank(){const m=$('#main');const ms=monthsAvail();if(!rankMes||!ms
   const hay=D.some(d=>d.n>0);
   const col=(d,pos)=>{const[ic]=nivel(d.idx);return `<div class="pcol p${pos}" style="--tc:var(${TEAMCOL[d.e.id]})">${pos===1&&hay?`<div class="crown">${ICON.corona}</div>`:''}<div class="medal">${pos}</div>
     <div class="who"><b>${esc(d.e.nombre)}</b><span>Líder ${esc(d.e.lider.split(' ')[0])}</span><span>Turno ${d.e.turno}</span></div>
-    <div class="pblock"><span class="float"><i>Índice</i><b style="color:var(--${ic})">${pct(d.idx,1)}</b></span><span class="pp num" data-to="${(d.p*100).toFixed(1)}" data-dec="1" data-suf="%">0%</span><span class="pu num">${fmt(d.v)} de ${fmt(CFG.meta/3)}</span><span class="pos">${pos}</span></div></div>`};
+    <div class="pblock"><span class="float"><i>Índice</i><b style="color:var(--${ic})">${pct(d.idx,1)}</b></span><span class="pp num" data-to="${(d.p*100).toFixed(1)}" data-dec="1" data-suf="%">0%</span><span class="pu num">${fmt(d.v)} de ${fmt(metaMes(rankMes)/3)}</span><span class="pos">${pos}</span></div></div>`};
   const lid=D[0];
   const menciones=[];
   if(hay){const conP=D.filter(d=>d.n>0);
@@ -923,7 +970,7 @@ function renderRank(){const m=$('#main');const ms=monthsAvail();if(!rankMes||!ms
     const w4=gana(conP,d=>Math.round(d.idx*1000));menciones.push([ICON.diana,'Mejor índice de productividad',w4,`${pct(w4[0].idx,1)} en ${w4[0].n} turnos`]);
     const w5=gana(conP,d=>d.enMeta);if(w5[0].enMeta)menciones.push([ICON.trofeo,'Más turnos en meta',w5,`${w5[0].enMeta} ${w5[0].enMeta===1?'turno alcanzó':'turnos alcanzaron'} su meta del turno`])}
   m.innerHTML=`<div class="rank"><div class="dnav"><h2 style="font-size:20px;margin-right:auto">Ranking de grupos</h2><select id="rkm" aria-label="Mes">${ms.map(x=>`<option value="${x}" ${x===rankMes?'selected':''}>${MESES[+x.slice(5)-1]} ${x.slice(0,4)}</option>`).join('')}</select></div>
-   <section class="card" style="padding-top:44px"><p class="cap" style="text-align:center;margin-top:-26px">Avance de ${mesN.toLowerCase()} contra la meta de cada grupo (${fmt(CFG.meta/3)} unidades eq. Bloque 6")</p>
+   <section class="card" style="padding-top:44px"><p class="cap" style="text-align:center;margin-top:-26px">Avance de ${mesN.toLowerCase()} contra la meta de cada grupo (${fmt(metaMes(rankMes)/3)} unidades eq. Bloque 6")</p>
     ${hay?`<div class="podium">${col(D[1],2)}${col(D[0],1)}${col(D[2],3)}</div>
     <div class="gap">${D.slice(1).map((d,i)=>`<div><span>${i+2}.º ${esc(d.e.nombre)}</span><b class="num">a ${fmt(lid.v-d.v)} u del primer lugar</b></div>`).join('')}</div>`:'<p class="note" style="text-align:center">Todavía no hay reportes de producción en este mes.</p>'}</section>
    ${menciones.length?`<h3 style="font-size:14px;margin:22px 0 10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Menciones del mes</h3><div class="ment">${menciones.map(([ic,t,ws,txt])=>`<section class="card"><div class="mh">${ic}${t}</div>${ws.map(d=>`<div class="tm"><i style="background:var(${TEAMCOL[d.e.id]})"></i>${esc(d.e.nombre)}</div>`).join('')}${ws.length>1?'<span class="pill blue" style="align-self:flex-start">Empate</span>':''}<span class="note">${txt}</span></section>`).join('')}</div>`:''}
@@ -935,15 +982,16 @@ function renderRank(){const m=$('#main');const ms=monthsAvail();if(!rankMes||!ms
 let bdTab='produccion';
 const BDDEF={
  produccion:{n:'Producción',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Usuario','usuario'],['Producto',r=>PR[r.producto].nombre],['Ciclos','ciclos',1],['Unidades','unidades',1],['Eq. B6"',r=>eqv(r),1],['Índice',r=>pct(r.ciclos/1260,1)],['Foto','foto']]},
- cortes:{n:'Cortes',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Hora','hora'],['Horas ef.',r=>horasEfC(r),1],['Ciclos teóricos',r=>Math.round(180*horasEfC(r)),1],['Ciclos reales','ciclos',1],['Unidades','unidades',1],['Índice',r=>{const t=Math.round(180*horasEfC(r));return pct(t?r.ciclos/t:0,1)}],['Foto','foto']]},
+ cortes:{n:'Cortes',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Hora','hora'],['Horas ef.',r=>horasEfC(r),1],['Ciclos teóricos',r=>Math.round(180*horasEfC(r)),1],['Ciclos producidos','ciclos',1],['Unidades','unidades',1],['Índice',r=>{const t=Math.round(180*horasEfC(r));return pct(t?r.ciclos/t:0,1)}],['Foto','foto']]},
  noconf:{n:'No conformes',date:'fechaProd',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fechaProd)],['Grupo de origen',r=>EQ[r.equipo]?.nombre||'No identificado'],['Usuario','usuario'],['Producto',r=>PR[r.producto].nombre],['Cantidad','cantidad',1],['Clasificación','clase'],['Observación','obs'],['Foto','foto']]},
  consumos:{n:'Consumos',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo]?.nombre||''],['Usuario','usuario'],['Producto',r=>PR[r.producto]?.nombre||''],...MATS.map(([id,l,u])=>[`${l} (${u})`,id,1]),['Foto','foto']]},
  paros:{n:'Paros',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Inicio','inicio'],['Fin','fin'],['Minutos','minutos',1],['Categoría reportada',r=>CA[r.causa].nombre],['Comentario','comentario'],['Categoría revisada',r=>r.causaRev?CA[r.causaRev].nombre:'']]}
 };
 const fmtQ=v=>(+v||0).toLocaleString('es-HN',{maximumFractionDigits:2});
 const cell=(r,c)=>typeof c[1]==='function'?c[1](r):r[c[1]];
-function renderBD(){initF();const m=$('#main'),d=BDDEF[bdTab];const rows=DB[bdTab].filter(r=>inF(r,d.date)).sort((a,b)=>b.registro.localeCompare(a.registro));
-  m.innerHTML=filtersHTML()+`<div class="subtabs">${Object.entries(BDDEF).map(([k,v])=>`<button data-bt="${k}" aria-pressed="${k===bdTab}">${v.n} (${DB[k].filter(r=>inF(r,v.date)).length})</button>`).join('')}</div>
+const inBD=(k,r)=>inF(r,BDDEF[k].date)&&(k!=='paros'||inCat(r));
+function renderBD(){initF();const m=$('#main'),d=BDDEF[bdTab];const rows=DB[bdTab].filter(r=>inBD(bdTab,r)).sort((a,b)=>b.registro.localeCompare(a.registro));
+  m.innerHTML=filtersHTML('',bdTab==='paros'?catHTML():'')+`<div class="subtabs">${Object.entries(BDDEF).map(([k,v])=>`<button data-bt="${k}" aria-pressed="${k===bdTab}">${v.n} (${DB[k].filter(r=>inBD(k,r)).length})</button>`).join('')}</div>
   <section class="card"><div class="tbl"><table><thead><tr>${d.cols.map(c=>`<th class="${c[2]?'r':''}">${c[0]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${d.cols.map(c=>{if(c[1]==='foto')return `<td>${r.fotoData?`<img class="thumb" src="${r.fotoData}" alt="Foto ${r.id}" data-ph="${r.id}">`:/^https?:/.test(r.foto||'')?`<a href="${esc(r.foto)}" target="_blank" rel="noopener">Ver foto</a>`:`<span class="note">${esc(r.foto)}</span>`}</td>`;const v=cell(r,c);return `<td class="${c[2]?'r num':''}">${esc(c[2]&&typeof v==='number'?(Number.isInteger(v)?fmt(v):fmtQ(v)):v)}</td>`}).join('')}</tr>`).join('')||`<tr><td colspan="${d.cols.length}" class="note">Sin registros en el periodo.</td></tr>`}</tbody></table></div>
   ${bdTab==='paros'&&can('usr')?'<p class="note" style="margin-top:10px">La reclasificación de causas se hará en la hoja de Google (columnas «Categoría revisada» y «Subcategoría»).</p>':''}</section>`;
   bindFilters(renderBD);document.querySelectorAll('[data-bt]').forEach(b=>b.onclick=()=>{bdTab=b.dataset.bt;renderBD()});
@@ -957,14 +1005,24 @@ function renderUsers(){const m=$('#main');
 }
 
 /* ===================== Exportar ===================== */
-async function exportXLSX(){
+function elegirExcel(){const md=$('#modal');const desc=`${dmy(F.desde)} a ${dmy(F.hasta)} · ${F.eq?EQ[F.eq].nombre:'todos los grupos'} · ${F.tu?'Turno '+F.tu:'todos los turnos'}${F.cat?' · paros: '+catLabel().toLowerCase():''}`;
+  md.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="xT" style="text-align:left"><h2 id="xT" style="text-align:center">Descargar Excel</h2><p style="text-align:center">¿Qué información quiere descargar?</p>
+   <button class="opt" id="xF"><b>Solo lo filtrado</b><span>${esc(desc)}</span></button>
+   <button class="opt" id="xA"><b>Toda la base de datos</b><span>Todos los registros de producción, cortes, no conformes, consumos y paros, sin filtros</span></button>
+   <button class="btn ghost" id="xX">Cancelar</button></div>`;
+  md.hidden=false;md.onclick=e=>{if(e.target===md)md.hidden=true};$('#xX').onclick=()=>md.hidden=true;
+  $('#xF').onclick=()=>{md.hidden=true;exportXLSX('filtrado')};$('#xA').onclick=()=>{md.hidden=true;exportXLSX('todo')}}
+async function exportXLSX(modo='filtrado'){
   if(!window.XLSX){toast('No se pudo cargar el generador de Excel.');return}
-  const wb=XLSX.utils.book_new(),c=calc();
+  const todo=modo==='todo';
+  const wb=XLSX.utils.book_new(),c=todo?(()=>{const k=F;F={...F,desde:F.mes+'-01',hasta:diasMes(F.mes).slice(-1)[0],eq:'',tu:'',cat:null};const r=calc();F=k;return r})():calc();
   const res=[['DURACRETO · Control de Producción de Bloques'],['Periodo',dmy(F.desde)+' a '+dmy(F.hasta)],['Grupo',F.eq?EQ[F.eq].nombre:'Todos'],['Turno',F.tu||'Todos'],[],
-   ['Indicador','Valor'],['Meta del mes (eq. B6")',Math.round(c.meta)],['Punto de equilibrio (eq. B6")',Math.round(c.equi)],['Producción acumulada del mes (eq. B6")',c.tot],['Cumplimiento de meta',+(c.tot/c.meta).toFixed(4)],['Proyección al cierre',Math.round(c.proy)],['Requerido por día hábil',Math.round(c.reqDia)],['Unidades reales en el periodo',c.realSel],['Ciclos en el periodo',c.cicSel],['Índice de productividad',+c.idx.toFixed(4)]];
+   ['Indicador','Valor'],['Meta del mes (eq. B6")',Math.round(c.meta)],['Punto de equilibrio (eq. B6")',Math.round(c.equi)],['Producción acumulada del mes (eq. B6")',c.tot],['Cumplimiento de meta',+(c.tot/c.meta).toFixed(4)],['Proyección al cierre',Math.round(c.proy)],['Requerido por día hábil',Math.round(c.reqDia)],['Unidades producidas en el periodo',c.realSel],['Ciclos en el periodo',c.cicSel],['Índice de productividad',+c.idx.toFixed(4)]];
+  if(todo){res.splice(1,3,['Contenido','Toda la base de datos (sin filtros)'],['Generado',dmy(todayISO())+' '+nowHM()],['Resumen de indicadores',`Mes de ${MESES[+F.mes.slice(5)-1].toLowerCase()} ${F.mes.slice(0,4)}, planta completa`])}
+  else if(F.cat)res.splice(4,0,['Categorías de paro',catLabel()]);
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(res),'Resumen');
-  for(const [k,d] of Object.entries(BDDEF)){const rows=DB[k].filter(r=>inF(r,d.date));const aoa=[d.cols.map(c=>c[0]),...rows.map(r=>d.cols.map(c=>c[1]==='foto'?(r.fotoData?'Foto adjunta':r.foto):cell(r,c)))];XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),d.n)}
-  const buf=XLSX.write(wb,{bookType:'xlsx',type:'array'}),name=`Produccion_Bloques_${F.desde}_a_${F.hasta}.xlsx`;
+  for(const [k,d] of Object.entries(BDDEF)){const rows=todo?DB[k].slice().sort((a,b)=>a.registro.localeCompare(b.registro)):DB[k].filter(r=>inBD(k,r));const aoa=[d.cols.map(c=>c[0]),...rows.map(r=>d.cols.map(c=>c[1]==='foto'?(r.fotoData?'Foto adjunta':r.foto):cell(r,c)))];XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),d.n)}
+  const buf=XLSX.write(wb,{bookType:'xlsx',type:'array'}),name=todo?`Produccion_Bloques_BD_completa_${todayISO()}.xlsx`:`Produccion_Bloques_${F.desde}_a_${F.hasta}.xlsx`;
   let dl=null;try{dl=window.claude?.use?await window.claude.use('downloads'):null}catch(e){}
   if(dl){try{await dl.save({filename:name,data:new Blob([buf])});toast('Excel descargado.')}catch(e){if(e?.code!=='declined')toast('No se pudo descargar el archivo en esta vista.')}}
   else{try{XLSX.writeFile(wb,name)}catch(e){toast('La descarga no está disponible en esta vista.')}}
