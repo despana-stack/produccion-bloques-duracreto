@@ -96,7 +96,14 @@ textarea.in-ctl{min-height:96px;resize:vertical}
 
 .photo{border:1.5px dashed var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}
 .photo .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.photo img{border-radius:10px;max-height:220px;object-fit:cover;width:100%}
+.photo img{border-radius:10px;max-height:220px;object-fit:cover;width:100%;display:block}
+.fpw{position:relative}.scanov{display:none;position:absolute;inset:0;border-radius:10px;overflow:hidden;background:rgba(18,19,15,.38);background-image:linear-gradient(rgba(249,214,0,.13) 1px,transparent 1px),linear-gradient(90deg,rgba(249,214,0,.13) 1px,transparent 1px);background-size:22px 22px}
+.scanning .scanov{display:block}.scanning #fprev{filter:saturate(.6) brightness(.9)}
+.scanov i{position:absolute;left:0;right:0;top:0;height:3px;background:#F9D600;box-shadow:0 0 22px 8px rgba(249,214,0,.65);animation:scanl 1.5s ease-in-out infinite alternate}
+@keyframes scanl{from{top:2%}to{top:96%}}
+.scanov b{position:absolute;width:26px;height:26px;border:3px solid #F9D600}.scanov .sc1{top:8px;left:8px;border-right:0;border-bottom:0}.scanov .sc2{top:8px;right:8px;border-left:0;border-bottom:0}.scanov .sc3{bottom:8px;left:8px;border-right:0;border-top:0}.scanov .sc4{bottom:8px;right:8px;border-left:0;border-top:0}
+.scanov span{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:#12130F;color:#F9D600;font-weight:700;font-size:13px;padding:7px 14px;border-radius:999px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+@media (prefers-reduced-motion:reduce){.scanov i{animation:none;top:50%}}
 .verifbox{background:var(--bad-bg);color:var(--fg);border-radius:14px;padding:14px 16px;font-size:14px;margin-bottom:14px;border-left:5px solid var(--bad)}.verifbox.duda{background:var(--warn-bg);border-left-color:var(--warn)}.verifbox b.t{display:block;font-size:15.5px;margin-bottom:6px}.verifbox ul{margin:6px 0 4px;padding-left:18px}.verifbox li{margin:3px 0}.verifbox .note{font-size:12.5px}
 .warnbox{background:var(--warn-bg);color:var(--fg);border-radius:12px;padding:12px 14px;font-size:13px;margin-bottom:14px;border-left:4px solid var(--warn)}
 
@@ -568,7 +575,7 @@ const MATS=[['cemento','Cemento','kg'],['arenaSE','Arena Santa Elena','kg'],['ar
 const numMat=s=>{s=String(s||'').trim();if(!s)return '';s=s.replace(/,(?=\d{3}(?!\d))/g,'').replace(',','.');return /^\d*\.?\d*$/.test(s)&&s!=='.'?s:'x'};
 const matField=([id,label,u])=>`<div class="field" data-k="${id}"><label for="${id}">${esc(label)}</label><div class="uw"><input class="in-ctl bigNum num" id="${id}" type="text" inputmode="decimal" autocomplete="off" placeholder="0" data-mat><span class="u">${u==='kg'?'kg':'litros'}</span></div></div>`;
 const photoField=(lbl='Foto del tablero de la máquina',hint='La foto es la evidencia de que el dato coincide con la pantalla de la máquina.')=>`<div class="field" data-k="foto"><span class="lbl">${lbl}</span><div class="photo" id="photo"><div class="btns"><label class="btn ghost small" for="fcam">Tomar foto</label><label class="btn ghost small" for="fgal">Elegir de galería</label></div>
- <input type="file" id="fcam" accept="image/*" capture="environment" hidden><input type="file" id="fgal" accept="image/*" hidden><img id="fprev" alt="Foto cargada" hidden><span class="hint" id="fhint">${hint}</span></div></div>`;
+ <input type="file" id="fcam" accept="image/*" capture="environment" hidden><input type="file" id="fgal" accept="image/*" hidden><div class="fpw"><img id="fprev" alt="Foto cargada" hidden><div class="scanov" aria-hidden="true"><i></i><b class="sc1"></b><b class="sc2"></b><b class="sc3"></b><b class="sc4"></b><span id="scanTxt">Analizando la imagen…</span></div></div><span class="hint" id="fhint">${hint}</span></div></div>`;
 
 function renderForm(){
   const t=form.tipo,m=$('#main');const eq=S.equipo?EQ[S.equipo]:null;const defT=eq?eq.turno:turnoSugerido();
@@ -627,11 +634,14 @@ async function verificarConsumo(){const g=id=>{const e=$('#'+id);return e?e.valu
   if(bad.length){bad.forEach(k=>{const f=document.querySelector(`[data-k="${k}"]`);if(f){f.classList.add('err');f.insertAdjacentHTML('beforeend',`<span class="errmsg">${k==='foto'?'Falta la foto.':k==='tolvas'?'Indique el agregado de cada tolva.':'Este dato es obligatorio.'}</span>`)}});document.querySelector('.field.err')?.scrollIntoView({behavior:'smooth',block:'center'});toast('Faltan datos. Revise los campos marcados en rojo.');return}
   store.set(TVK(),o);form.prev={fecha:val.fecha,turno:val.turno,producto:val.producto};
   const btn=$('#send');btn.disabled=true;btn.textContent='Leyendo la foto…';
+  const ph=$('#photo');ph.classList.add('scanning');ph.scrollIntoView({behavior:'smooth',block:'center'});
+  const pasos=['Analizando la imagen…','Detectando la tabla de consumo…','Leyendo cemento y tolvas…','Leyendo agua y aditivo…','Comprobando la fecha…'];let pi=0;const st=$('#scanTxt');const tick=setInterval(()=>{pi=(pi+1)%pasos.length;if(st)st.textContent=pasos[pi]},1100);
+  const fin=()=>{clearInterval(tick);ph.classList.remove('scanning')};
   let res;
   try{if(ONLINE){res=await api('leerConsumo',{rec:{fecha:val.fecha,turno:val.turno,fotoData:val.foto}});if(!res.ok)throw new Error(res.error||'error')}
-    else{const c=3000+Math.round(Math.random()*6000);res={id:'demo',lectura:{legible:true,fechaOk:true,cemento:{v:c},t1:{v:Math.round(c*4.6)},t2:{v:Math.round(c*5.1),opciones:[Math.round(c*5.1),Math.round(c*5.1)-100]},t3:{v:Math.round(c*3.1)},agua:{v:Math.round(c*.2)},aditivo:{faltante:true}}}}}
-  catch(e){btn.disabled=false;btn.textContent='Verificar';if(e.message!=='sesion')toast(e.message==='red'?'Sin conexión. Revise el internet e intente de nuevo.':'No se pudo leer la foto: '+e.message);return}
-  form.lect=res;form.val=val;form.eleg={};form.dig={};renderLectura()}
+    else{await new Promise(r=>setTimeout(r,2800));const c=3000+Math.round(Math.random()*6000);res={id:'demo',lectura:{legible:true,fechaOk:true,cemento:{v:c},t1:{v:Math.round(c*4.6)},t2:{v:Math.round(c*5.1),opciones:[Math.round(c*5.1),Math.round(c*5.1)-100]},t3:{v:Math.round(c*3.1)},agua:{v:Math.round(c*.2)},aditivo:{faltante:true}}}}}
+  catch(e){fin();btn.disabled=false;btn.textContent='Verificar';if(e.message!=='sesion')toast(e.message==='red'?'Sin conexión. Revise el internet e intente de nuevo.':'No se pudo leer la foto: '+e.message);return}
+  fin();form.lect=res;form.val=val;form.eleg={};form.dig={};renderLectura()}
 function renderLectura(){const m=$('#main'),r=form.lect.lectura||{},val=form.val,o=form.tolvas;const eq=EQ[S.equipo]||{};
   const fv=x=>Number.isInteger(+x)?fmt(+x):fmtQ(+x);
   const volver=`<button class="btn ghost" id="lcBack" style="margin-top:10px">Volver y cambiar la foto</button>`;
