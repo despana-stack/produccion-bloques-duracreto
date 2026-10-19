@@ -90,6 +90,7 @@ textarea.in-ctl{min-height:96px;resize:vertical}
 .photo{border:1.5px dashed var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}
 .photo .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .photo img{border-radius:10px;max-height:220px;object-fit:cover;width:100%}
+.verifbox{background:var(--bad-bg);color:var(--fg);border-radius:14px;padding:14px 16px;font-size:14px;margin-bottom:14px;border-left:5px solid var(--bad)}.verifbox.duda{background:var(--warn-bg);border-left-color:var(--warn)}.verifbox b.t{display:block;font-size:15.5px;margin-bottom:6px}.verifbox ul{margin:6px 0 4px;padding-left:18px}.verifbox li{margin:3px 0}.verifbox .note{font-size:12.5px}
 .warnbox{background:var(--warn-bg);color:var(--fg);border-radius:12px;padding:12px 14px;font-size:13px;margin-bottom:14px;border-left:4px solid var(--warn)}
 
 /* Inicio líder */
@@ -381,7 +382,7 @@ aplicarTema();
 const DB={};
 function loadDB(){if(ONLINE){for(const k of ['produccion','cortes','noconf','paros','consumos'])DB[k]=(SEED[k]||[]).slice();DB.alertas=(SEED.alertas||[]).slice();return}for(const k of ['produccion','cortes','noconf','paros','consumos'])DB[k]=(SEED[k]||[]).map(r=>({...r,migrado:true})).concat(LOCAL[k]||[]);DB.alertas=(LOCAL.alertas||[]).slice()}
 function nextId(kind,pre){const n=DB[kind].length+1;return pre+'-'+String(n).padStart(4,'0')}
-async function addRec(kind,rec){if(ONLINE){const j=await api('add',{kind,rec});if(!j.ok)throw new Error(j.error||'No se pudo guardar');DB[kind].push(j.rec);return j.rec}LOCAL[kind]=LOCAL[kind]||[];LOCAL[kind].push(rec);if(!store.set(LS,LOCAL)){delete rec.fotoData;LOCAL[kind][LOCAL[kind].length-1]=rec;store.set(LS,LOCAL)}DB[kind].push(rec);return rec}
+async function addRec(kind,rec){if(ONLINE){const j=await api('add',{kind,rec});if(!j.ok){const e=new Error(j.error||'No se pudo guardar');if(j.verif)e.verif=j.verif;throw e}DB[kind].push(j.rec);return j.rec}LOCAL[kind]=LOCAL[kind]||[];LOCAL[kind].push(rec);if(!store.set(LS,LOCAL)){delete rec.fotoData;LOCAL[kind][LOCAL[kind].length-1]=rec;store.set(LS,LOCAL)}DB[kind].push(rec);return rec}
 
 /* ===================== Utilidades ===================== */
 const $=s=>document.querySelector(s);
@@ -592,7 +593,7 @@ function renderForm(){
 }
 function checkUnits(){const box=$('#chk');if(!box)return;form.forzar=false;const p=PR[$('#producto').value],c=+$('#ciclos').value,u=+$('#unidades').value;
   if(p&&p.upc&&c&&u){const exp=c*p.upc;if(Math.abs(u-exp)/exp>0.05){box.innerHTML=`<div class="warnbox">Revise los números: con ${fmt(c)} ciclos de ${p.nombre} se esperan unas <b>${fmt(exp)}</b> unidades (${p.upc} por ciclo). Si el tablero muestra ${fmt(u)}, puede cargar de todas formas.</div>`;return}}box.innerHTML=''}
-function loadPhoto(file){const rd=new FileReader();rd.onload=()=>{const img=new Image();img.onload=()=>{const s=Math.min(1,900/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=img.width*s;c.height=img.height*s;c.getContext('2d').drawImage(img,0,0,c.width,c.height);form.v.foto=c.toDataURL('image/jpeg',.6);const p=$('#fprev');p.src=form.v.foto;p.hidden=false;$('#fhint').textContent='Foto lista. Puede cambiarla con los botones de arriba.';$('[data-k="foto"]').classList.remove('err')};img.src=rd.result};rd.readAsDataURL(file)}
+function loadPhoto(file){const rd=new FileReader();rd.onload=()=>{const img=new Image();img.onload=()=>{const s=Math.min(1,1400/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=img.width*s;c.height=img.height*s;c.getContext('2d').drawImage(img,0,0,c.width,c.height);form.v.foto=c.toDataURL('image/jpeg',.72);const p=$('#fprev');p.src=form.v.foto;p.hidden=false;$('#fhint').textContent='Foto lista. Puede cambiarla con los botones de arriba.';$('[data-k="foto"]').classList.remove('err')};img.src=rd.result};rd.readAsDataURL(file)}
 
 async function submit(){
   const t=form.tipo,v=form.v,g=id=>{const e=$('#'+id);return e?e.value.trim():''};
@@ -611,12 +612,26 @@ async function submit(){
   else if(t==='nc'){kind='noconf';rec={id:nextId(kind,'NC'),...base,fecha:val.fecha,fechaProd:val.fechaProd,equipo:val.equipo,producto:val.producto,cantidad:+val.cantidad,clase:val.clase,obs:g('obs'),foto:'Foto adjunta',fotoData:val.foto}}
   else if(t==='cons'){kind='consumos';rec={id:nextId(kind,'CN'),...base,fecha:val.fecha,turno:val.turno,equipo:val.equipo,producto:val.producto,foto:'Foto adjunta',fotoData:val.foto};matIds.forEach(k=>rec[k]=Math.round(+val[k]*100)/100)}
   else{kind='paros';rec={id:nextId(kind,'PA'),...base,fecha:val.fecha,turno:val.turno,equipo:val.equipo,inicio:val.inicio,fin:val.fin,minutos:minutos(val.inicio,val.fin),causa:val.causa,comentario:val.comentario,causaRev:'',subcausa:''}}
-  const btn=$('#send');btn.disabled=true;btn.textContent='Cargando…';
+  const conFoto=['prod','corte','cons'].includes(t)&&ONLINE;
+  const firma=conFoto?JSON.stringify([rec.fecha,rec.turno,rec.ciclos,rec.unidades,...MATS.map(x=>rec[x[0]]),(val.foto||'').length]):'';
+  if(conFoto&&form.verifFirma===firma)rec.aceptarSinVerificar=true;
+  $('#verifbox')?.remove();
+  const btn=$('#send');btn.disabled=true;btn.textContent=conFoto?'Verificando la foto…':'Cargando…';
   try{const saved=await addRec(kind,rec);form.rec=saved||rec;form.kind=kind;
     if(kind==='paros'){if(ONLINE){try{const j=await api('alertas');if(j.ok)DB.alertas=j.alertas}catch(e){}}else{(LOCAL.alertas||[]).forEach(a=>{if(a.equipo===rec.equipo&&a.estado!=='Resuelta'){a.estado='Resuelta';a.reanudo=rec.fin}});store.set(LS,LOCAL);DB.alertas=LOCAL.alertas.slice()}}
     view='done';render()}
-  catch(e){btn.disabled=false;btn.textContent='Cargar';if(e.message!=='sesion')toast(e.message==='red'?'Sin conexión. Revise el internet y toque «Cargar» de nuevo.':'No se pudo guardar: '+e.message)}
+  catch(e){btn.disabled=false;btn.textContent='Cargar';
+    if(e.verif){mostrarVerif(e.verif,firma);return}
+    if(e.message!=='sesion')toast(e.message==='red'?'Sin conexión. Revise el internet y toque «Cargar» de nuevo.':'No se pudo guardar: '+e.message)}
 }
+function mostrarVerif(v,firma){const P=v.problemas||[],D=v.dudosos||[];const fv=x=>typeof x==='number'?(Number.isInteger(x)?fmt(x):fmtQ(x)):esc(String(x));
+  const F=P.filter(p=>!p.aprox),A=P.filter(p=>p.aprox);let h;
+  const li=p=>`<li><b>${esc(p.campo)}:</b> usted escribió <b>${fv(p.escrito)}</b>, ${p.aprox?(typeof p.foto==='number'?`en la foto el número más parecido es <b>${fv(p.foto)}</b>`:'ese número no aparece en la foto'):`la foto muestra <b>${fv(p.foto)}</b>`}</li>`;
+  if(F.length){form.verifFirma=null;h=`<div class="verifbox" id="verifbox" role="alert"><b class="t">Los datos no coinciden con la foto</b>Corrija estos valores para poder cargar:<ul>${F.concat(A).map(li).join('')}</ul></div>`}
+  else if(A.length){form.verifFirma=firma;h=`<div class="verifbox" id="verifbox" role="alert"><b class="t">Hay valores que no encontramos en la foto</b>Revise y corrija:<ul>${A.map(li).join('')}</ul><p class="note" style="margin:6px 0 0">Si está seguro de que el número es correcto, tome otra foto más clara. Si aun así no coincide, toque «Cargar» otra vez: se guardará marcado como «Por revisar».</p></div>`}
+  else{form.verifFirma=firma;h=`<div class="verifbox duda" id="verifbox" role="alert"><b class="t">No pudimos leer la foto</b>Tome otra foto de la pantalla más cerca, de frente y sin reflejos.<p class="note" style="margin:6px 0 0">Si está seguro de que los datos son correctos, toque «Cargar» otra vez: se guardará marcado como «Por revisar».</p></div>`}
+  const b=$('#send');b.insertAdjacentHTML('beforebegin',h);$('#verifbox').scrollIntoView({behavior:'smooth',block:'center'});
+  toast(P.length?'Hay valores que no coinciden con la foto.':'No pudimos leer la foto.')}
 function renderDone(){
   const r=form.rec,k=form.kind,m=$('#main');let extra='',rows=[];
   const T={produccion:'Producción cargada',cortes:'Corte registrado',noconf:'Producto no conforme registrado',paros:'Paro registrado',consumos:'Consumo registrado'}[k];
@@ -626,6 +641,7 @@ function renderDone(){
   else if(k==='consumos')rows=[['Fecha',dmy(r.fecha)],['Turno',TURNOS[r.turno].lbl],['Grupo',EQ[r.equipo].nombre],['Producto',PR[r.producto].nombre],...MATS.map(([id,l,u])=>[l,fmtQ(r[id])+' '+(u==='kg'?'kg':'L')])];
   else if(k==='noconf')rows=[['Fecha de producción',dmy(r.fechaProd)],['Grupo de origen',EQ[r.equipo]?.nombre||'No identificado'],['Producto',PR[r.producto].nombre],['Cantidad',fmt(r.cantidad)],['Clasificación',r.clase]];
   else rows=[['Fecha',dmy(r.fecha)],['Turno',TURNOS[r.turno].lbl],['Paro',`${r.inicio} a ${r.fin} · ${r.minutos} min`],['Causa',CA[r.causa].nombre]];
+  if(r.verif)rows.push(['Foto',r.verif==='Coincide'?'Verificada ✓':'Por revisar']);
   m.innerHTML=`<div class="col done"><div class="ok">${ICON.check}</div><h2>${T}</h2><p class="note">Su información quedó guardada con éxito el ${dmy(r.registro)} a las ${r.registro.slice(11)}.</p><span class="folio">Folio ${r.id}</span>${extra}
    <div class="summary">${rows.map(x=>`<div><span class="note">${x[0]}</span><b class="num">${esc(x[1])}</b></div>`).join('')}</div>
    <button class="btn primary" id="home">Volver al inicio</button></div>`;
@@ -983,10 +999,10 @@ function renderRank(){const m=$('#main');const ms=monthsAvail();if(!rankMes||!ms
 /* ===================== Bases de datos ===================== */
 let bdTab='produccion';
 const BDDEF={
- produccion:{n:'Producción',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Usuario','usuario'],['Producto',r=>PR[r.producto].nombre],['Ciclos','ciclos',1],['Unidades','unidades',1],['Eq. B6"',r=>eqv(r),1],['Índice',r=>pct(r.ciclos/1260,1)],['Foto','foto']]},
- cortes:{n:'Cortes',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Hora','hora'],['Horas ef.',r=>horasEfC(r),1],['Ciclos teóricos',r=>Math.round(180*horasEfC(r)),1],['Ciclos producidos','ciclos',1],['Unidades','unidades',1],['Índice',r=>{const t=Math.round(180*horasEfC(r));return pct(t?r.ciclos/t:0,1)}],['Foto','foto']]},
+ produccion:{n:'Producción',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Usuario','usuario'],['Producto',r=>PR[r.producto].nombre],['Ciclos','ciclos',1],['Unidades','unidades',1],['Eq. B6"',r=>eqv(r),1],['Índice',r=>pct(r.ciclos/1260,1)],['Verificación foto','verif'],['Foto','foto']]},
+ cortes:{n:'Cortes',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Hora','hora'],['Horas ef.',r=>horasEfC(r),1],['Ciclos teóricos',r=>Math.round(180*horasEfC(r)),1],['Ciclos producidos','ciclos',1],['Unidades','unidades',1],['Índice',r=>{const t=Math.round(180*horasEfC(r));return pct(t?r.ciclos/t:0,1)}],['Verificación foto','verif'],['Foto','foto']]},
  noconf:{n:'No conformes',date:'fechaProd',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fechaProd)],['Grupo de origen',r=>EQ[r.equipo]?.nombre||'No identificado'],['Usuario','usuario'],['Producto',r=>PR[r.producto].nombre],['Cantidad','cantidad',1],['Clasificación','clase'],['Observación','obs'],['Foto','foto']]},
- consumos:{n:'Consumos',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo]?.nombre||''],['Usuario','usuario'],['Producto',r=>PR[r.producto]?.nombre||''],...MATS.map(([id,l,u])=>[`${l} (${u})`,id,1]),['Foto','foto']]},
+ consumos:{n:'Consumos',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo]?.nombre||''],['Usuario','usuario'],['Producto',r=>PR[r.producto]?.nombre||''],...MATS.map(([id,l,u])=>[`${l} (${u})`,id,1]),['Verificación foto','verif'],['Foto','foto']]},
  paros:{n:'Paros',date:'fecha',cols:[['Folio','id'],['Registro','registro'],['Fecha prod.',r=>dmy(r.fecha)],['Turno','turno'],['Grupo',r=>EQ[r.equipo].nombre],['Inicio','inicio'],['Fin','fin'],['Minutos','minutos',1],['Categoría reportada',r=>CA[r.causa].nombre],['Comentario','comentario'],['Categoría revisada',r=>r.causaRev?CA[r.causaRev].nombre:'']]}
 };
 const fmtQ=v=>(+v||0).toLocaleString('es-HN',{maximumFractionDigits:2});
