@@ -1,5 +1,5 @@
 // Service worker: permite instalar la app y abrirla rápido. Nunca guarda datos de producción.
-const CACHE = 'produccion-bloques-v5';
+const CACHE = 'produccion-bloques-v6';
 const APP = ['./', 'index.html', 'config.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(APP)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {
@@ -24,7 +24,7 @@ self.addEventListener('push', e => {
   const title = d.title || 'Bloques DC App';
   e.waitUntil(self.registration.showNotification(title, {
     body: d.body || 'Hay un aviso nuevo.', icon: 'icons/icon-192.png', badge: 'icons/icon-192.png',
-    tag: d.tag === 'prueba' ? 'prueba' : 'paro-' + Date.now(), renotify: true, requireInteraction: d.tag !== 'prueba',
+    tag: d.tag === 'prueba' ? 'prueba' : d.tag === 'corte' ? 'corte' : 'paro-' + Date.now(), renotify: true, requireInteraction: d.tag !== 'prueba' && d.tag !== 'corte',
     vibrate: [300, 120, 300, 120, 300], data: { url: d.url || './' }
   }));
 });

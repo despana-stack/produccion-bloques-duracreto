@@ -909,10 +909,11 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 const PTK='dc_bloques_push_token';let pushRefrescado=false,fbMsg=null;
 const esIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const instalada=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
-const pushPosible=()=>ONLINE&&!!window.FIREBASE&&!!window.FIREBASE_VAPID&&can('aviso');
+const pushPosible=()=>ONLINE&&!!window.FIREBASE&&!!window.FIREBASE_VAPID&&(can('aviso')||can('corte'));
+const pushQue=()=>can('aviso')?'avisos de paro':'recordatorios de corte';
 const pushSoportado=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
 const pushActivo=()=>pushSoportado()&&Notification.permission==='granted'&&!!store.get(PTK);
-function pushBtn(){if(!pushPosible())return'';const on=pushActivo();return `<button class="thm ${on?'on':''}" id="pushb" aria-label="${on?'Avisos de paro activados en este teléfono':'Activar avisos de paro en este teléfono'}" title="${on?'Avisos activados':'Activar avisos'}">${ICON.campana}${on?'':'<span class="dot"></span>'}</button>`}
+function pushBtn(){if(!pushPosible())return'';const on=pushActivo();return `<button class="thm ${on?'on':''}" id="pushb" aria-label="${on?'Notificaciones activadas en este teléfono':'Activar notificaciones en este teléfono'}" title="${on?'Avisos activados':'Activar avisos'}">${ICON.campana}${on?'':'<span class="dot"></span>'}</button>`}
 function cargarScript(src){return new Promise((ok,no)=>{if(document.querySelector(`script[src="${src}"]`))return ok();const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('No se pudo cargar Firebase'));document.head.appendChild(s)})}
 async function firebaseMsg(){if(fbMsg)return fbMsg;const v='10.12.5';
   await cargarScript(`https://www.gstatic.com/firebasejs/${v}/firebase-app-compat.js`);await cargarScript(`https://www.gstatic.com/firebasejs/${v}/firebase-messaging-compat.js`);
@@ -931,18 +932,19 @@ async function desactivarPush(){const tk=store.get(PTK);store.del(PTK);try{if(tk
 async function refrescarPush(){if(pushRefrescado||!pushPosible()||!pushActivo())return;pushRefrescado=true;
   try{const tk=await obtenerTokenPush();if(tk){if(tk!==store.get(PTK))store.set(PTK,tk);await api('suscribir',{pushToken:tk,disp:nombreDisp()})}}catch(e){}}
 function panelPush(){const md=$('#modal'),on=pushActivo(),den=pushSoportado()&&Notification.permission==='denied';
-  const cuerpo=on?`<p>Este teléfono recibe una notificación cada vez que un líder avisa que hay un paro, aunque la app esté cerrada.</p><button class="btn ghost" id="pPrueba">Enviar una prueba</button><button class="btn ghost" id="pOff" style="margin-top:8px">Desactivar en este teléfono</button>`
+  const lider=!can('aviso');
+  const cuerpo=on?`<p>${lider?'Este teléfono recibe el recordatorio 10 minutos antes de cada corte (8, 10 y 12 en el Turno A; 4, 6 y 8 pm en el B; 12, 2 y 4 am en el C), aunque la app esté cerrada.':'Este teléfono recibe una notificación cada vez que un líder avisa que hay un paro, aunque la app esté cerrada.'}</p><button class="btn ghost" id="pPrueba">Enviar una prueba</button><button class="btn ghost" id="pOff" style="margin-top:8px">Desactivar en este teléfono</button>`
    :esIOS&&!instalada()?`<p>En iPhone, los avisos solo funcionan con la app <b>instalada</b>: abra este enlace en Safari › Compartir › <b>Agregar a pantalla de inicio</b>. Luego abra la app desde el ícono y toque esta campana otra vez.</p>`
    :den?`<p>Las notificaciones están bloqueadas para esta app. Actívelas en la configuración del navegador o del teléfono (Notificaciones › Bloques DC) y vuelva a tocar la campana.</p>`
    :!pushSoportado()?`<p>Este navegador no permite notificaciones. En Android use Chrome; en iPhone, instale la app en la pantalla de inicio (iOS 16.4 o más reciente).</p>`
-   :`<p>Reciba una notificación en este teléfono cuando un líder avise que hay un paro, aunque la app esté cerrada. Solo hay que aceptarlo una vez.</p><button class="btn danger" id="pOn" style="background:var(--yellow);color:#12130F">Activar avisos</button>`;
-  md.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="pT"><div class="ic" style="background:var(--warn-bg);color:var(--warn)">${ICON.campana}</div><h2 id="pT">${on?'Avisos activados':'Avisos de paro'}</h2>${cuerpo}<button class="btn ghost" id="pX" style="margin-top:8px">Cerrar</button></div>`;
+   :`<p>${lider?'Reciba en este teléfono el recordatorio 10 minutos antes de cada corte, aunque la app esté cerrada.':'Reciba una notificación en este teléfono cuando un líder avise que hay un paro, aunque la app esté cerrada.'} Solo hay que aceptarlo una vez.</p><button class="btn danger" id="pOn" style="background:var(--yellow);color:#12130F">Activar avisos</button>`;
+  md.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="pT"><div class="ic" style="background:var(--warn-bg);color:var(--warn)">${ICON.campana}</div><h2 id="pT">${on?'Notificaciones activadas':lider?'Recordatorios de corte':'Avisos de paro'}</h2>${cuerpo}<button class="btn ghost" id="pX" style="margin-top:8px">Cerrar</button></div>`;
   md.hidden=false;md.onclick=e=>{if(e.target===md)md.hidden=true};$('#pX').onclick=()=>md.hidden=true;
   if($('#pOn'))$('#pOn').onclick=async()=>{const b=$('#pOn');b.disabled=true;b.textContent='Activando…';
-    try{await activarPush();md.hidden=true;toast('Avisos activados. Le enviamos una notificación de prueba.');render()}
+    try{await activarPush();md.hidden=true;toast('Notificaciones activadas. Le enviamos una de prueba.');render()}
     catch(e){b.disabled=false;b.textContent='Activar avisos';toast({ios:'Primero instale la app en la pantalla de inicio.',denegado:'No se dio permiso para notificaciones.',nosoporta:'Este navegador no admite notificaciones.',red:'Sin conexión. Intente de nuevo.'}[e.message]||'No se pudo activar: '+e.message)}};
   if($('#pPrueba'))$('#pPrueba').onclick=async()=>{try{const j=await api('probarPush');toast(j.ok&&j.enviados?'Prueba enviada. Debe llegar en unos segundos.':'No se pudo enviar: '+(j.error||'sin teléfonos registrados'))}catch(e){toast('Sin conexión.')}};
-  if($('#pOff'))$('#pOff').onclick=async()=>{await desactivarPush();md.hidden=true;toast('Avisos desactivados en este teléfono.');render()}}
+  if($('#pOff'))$('#pOff').onclick=async()=>{await desactivarPush();md.hidden=true;toast('Notificaciones desactivadas en este teléfono.');render()}}
 
 /* ===================== Ranking ===================== */
 let rankMes=null;
