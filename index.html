@@ -610,7 +610,7 @@ function renderForm(){
   document.querySelectorAll('.choice-grid').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('.choice');if(!b)return;g.querySelectorAll('.choice').forEach(x=>x.setAttribute('aria-pressed',x===b));form.v[g.id]=b.dataset.v}));
   ['fcam','fgal'].forEach(id=>{const i=$('#'+id);if(i)i.onchange=()=>i.files[0]&&loadPhoto(i.files[0])});
   const pr=$('#producto');if(pr&&t!=='nc')pr.onchange=checkUnits;
-  if(t==='paro'){const al=form.alerta||paroActivo(S.equipo);if(al&&!$('#inicio').value){$('#inicio').value=al.registro.slice(11);$('#turno').value=al.turno;$('#fecha').value=fechaTurnoAl(al)}const u=()=>{const a=$('#inicio').value,b=$('#fin').value;$('#dur').textContent=a&&b?`Duración: ${minutos(a,b)} minutos (${(minutos(a,b)/60).toFixed(1)} h)`:''};$('#inicio').oninput=u;$('#fin').oninput=u}
+  if(t==='paro'){const al=form.alerta||paroActivo(S.equipo);if(al&&!al.prol&&!$('#inicio').value){$('#inicio').value=al.registro.slice(11);$('#turno').value=al.turno;$('#fecha').value=fechaTurnoAl(al)}const u=()=>{const a=$('#inicio').value,b=$('#fin').value;$('#dur').textContent=a&&b?`Duración: ${minutos(a,b)} minutos (${(minutos(a,b)/60).toFixed(1)} h)`:''};$('#inicio').oninput=u;$('#fin').oninput=u}
   if(t==='cons'){pintarTolvas();const pv=form.prev;if(pv){['fecha','turno','producto'].forEach(k=>{if(pv[k]&&$('#'+k))$('#'+k).value=pv[k]})}
     if(form.v.foto){const pi=$('#fprev');pi.src=form.v.foto;pi.hidden=false;$('#fhint').textContent='Foto lista. Puede cambiarla con los botones de arriba.'}}
   $('#ff').onsubmit=e=>{e.preventDefault();submit()};
@@ -891,11 +891,13 @@ function renderRep(){
   const estadoT=t=>{const h=new Date().getHours()+new Date().getMinutes()/60;const ayer=fechaJornada('C')!==T0;
     if(repDia===T0){if(t==='A'&&h<6||t==='B'&&h<14||t==='C'&&h<22)return ['blue','Por iniciar'];if(t==='A'&&h<14||t==='B'&&h<22||t==='C')return ['blue','En curso · sin cortes todavía']}
     if(t==='C'&&ayer&&repDia===fechaJornada('C')&&h<6)return ['blue','En curso · sin cortes todavía'];return ['warn','Sin reporte de cierre']};
-  const parado=t=>(DB.alertas||[]).filter(a=>a.turno===t&&a.estado!=='Resuelta'&&!a.reanudo&&msDesde(a.registro)<12*3600e3&&fechaTurnoAl(a)===repDia).sort((a,b)=>a.registro.localeCompare(b.registro)).pop();
-  const pilParo=a=>`<span class="pill parado" style="align-self:flex-start"><i></i>PARADO desde ${a.registro.slice(11)} · ${hace(a.registro)}</span>`;
+  const parado=t=>{const pr=prolActivo();if(pr){const st={A:6,B:14,C:22}[t],p0=repDia.split('-').map(Number),s0=new Date(p0[0],p0[1]-1,p0[2],st),s1=new Date(s0.getTime()+8*3600e3);if(s0<new Date()&&s1>new Date(pr.registro.replace(' ','T')))return pr}
+    return (DB.alertas||[]).filter(a=>a.turno===t&&a.estado!=='Resuelta'&&!a.reanudo&&msDesde(a.registro)<12*3600e3&&fechaTurnoAl(a)===repDia).sort((a,b)=>a.registro.localeCompare(b.registro)).pop()};
+  const pilParo=a=>`<span class="pill parado" style="align-self:flex-start"><i></i>PARADO desde ${a.prol?desdeTxt(a.registro):a.registro.slice(11)} · ${hace(a.registro)}</span>${a.prol&&a.desc?`<span class="note" style="font-size:12px;margin-top:-4px">${esc(a.desc)}</span>`:''}`;
   const turnoCard=t=>{const R=P.filter(r=>r.turno===t),X=VT[t],v=X.v,u=X.u,ix=X.teo?X.cy/X.teo:0,pq=R.length?null:parado(t);
     const lc=X.lc,pa=PA.filter(r=>r.turno===t).reduce((s,r)=>s+r.minutos,0);
-    const gid=(R[0]||lc||PA.find(r=>r.turno===t)||pq||{}).equipo;const [c3,l3]=nivel(ix),pc=v/metaT;
+    const gRot=()=>{const p0=repDia.split('-').map(Number),s0=new Date(p0[0],p0[1]-1,p0[2],{A:6,B:14,C:22}[t]);return Object.keys(EQ).find(id=>turnoRot(id,s0)===t)};
+    const gid=(R[0]||lc||PA.find(r=>r.turno===t)||{}).equipo||(pq&&pq.prol?gRot():pq&&pq.equipo);const [c3,l3]=nivel(ix),pc=v/metaT;
     return `<section class="card s4 tcard"><div class="th"><div><b>${TURNOS[t].lbl.split(' · ')[0]}</b><div class="note">${TURNOS[t].lbl.split(' · ')[1]}</div></div>${gid?teamChip(gid):''}</div>
      ${pq&&X.vivo?pilParo(pq):X.vivo?`<span class="pill blue" style="align-self:flex-start">En curso · según corte de las ${lc.hora}</span>`:''}
      ${R.length||X.vivo?`<div class="big num">${fmt(v)} <span class="note" style="font-size:13px;font-weight:500">de ${fmt(metaT)}</span></div>
@@ -933,14 +935,17 @@ document.addEventListener('click',e=>{document.querySelectorAll('details.info[op
 const ALVISTOS=new Set();let alPrimera=true;
 const msDesde=reg=>Date.now()-new Date(reg.replace(' ','T'));
 const fechaTurnoAl=a=>{const f=a.registro.slice(0,10);if(a.turno==='C'&&a.registro.slice(11)<'12:00'){const d=new Date(f+'T12:00');d.setDate(d.getDate()-1);return iso(d)}return f};
-function paroActivo(eq,turno){return (DB.alertas||[]).filter(a=>a.equipo===eq&&a.estado!=='Resuelta'&&!a.reanudo&&msDesde(a.registro)<12*3600e3&&(!turno||a.turno===turno)).sort((a,b)=>a.registro.localeCompare(b.registro)).pop()}
-function hace(reg){const d=new Date(reg.replace(' ','T'));const m=Math.max(0,Math.round((Date.now()-d)/60000));return m<1?'hace un momento':m<60?`hace ${m} min`:`hace ${Math.floor(m/60)} h ${m%60} min`}
+const prolActivo=()=>(DB.alertas||[]).filter(a=>a.prol&&a.estado!=='Resuelta'&&!a.reanudo).sort((a,b)=>a.registro.localeCompare(b.registro))[0];
+const DIAS=['dom','lun','mar','mié','jue','vie','sáb'];
+const desdeTxt=reg=>{const d=new Date(reg.replace(' ','T'));return reg.slice(0,10)===todayISO()?reg.slice(11):`${DIAS[d.getDay()]} ${dmy(reg.slice(0,10)).slice(0,5)} ${reg.slice(11)}`};
+function paroActivo(eq,turno){const pr=prolActivo();if(pr)return pr;return (DB.alertas||[]).filter(a=>a.equipo===eq&&a.estado!=='Resuelta'&&!a.reanudo&&msDesde(a.registro)<12*3600e3&&(!turno||a.turno===turno)).sort((a,b)=>a.registro.localeCompare(b.registro)).pop()}
+function hace(reg){const d=new Date(reg.replace(' ','T'));const m=Math.max(0,Math.round((Date.now()-d)/60000));return m<1?'hace un momento':m<60?`hace ${m} min`:m<1440?`hace ${Math.floor(m/60)} h ${m%60} min`:`hace ${Math.floor(m/1440)} d ${Math.floor(m%1440/60)} h`}
 function confirmarAviso(){const md=$('#modal');const mio=paroActivo(S.equipo);
   if(mio){md.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgT"><div class="ic" style="background:var(--ok-bg);color:var(--ok)">${ICON.check.replace('width="52" height="52"','width="34" height="34"')}</div><h2 id="dlgT">¿Ya arrancó la producción?</h2>
-   <p>Su grupo está marcado como <b>parado</b> desde las ${mio.registro.slice(11)}. Si ya se resolvió, puede quitar el aviso o reportar el paro completo ahora.</p>
-   <button class="btn danger" id="alFin" style="background:var(--ok)">Sí, ya arrancamos</button><button class="btn ghost" id="alRep">Reportar el paro ahora</button><button class="btn ghost" id="alNo" style="margin-top:8px">Cancelar</button></div>`;
+   <p>${mio.prol?`La planta está marcada como <b>parada</b> desde el ${desdeTxt(mio.registro)}. Si la máquina ya está lista, toque «Sí, ya arrancamos»: el paro de este turno se registra solo hasta ahora.`:`Su grupo está marcado como <b>parado</b> desde las ${mio.registro.slice(11)}. Si ya se resolvió, puede quitar el aviso o reportar el paro completo ahora.`}</p>
+   <button class="btn danger" id="alFin" style="background:var(--ok)">Sí, ya arrancamos</button>${mio.prol?'':'<button class="btn ghost" id="alRep">Reportar el paro ahora</button>'}<button class="btn ghost" id="alNo" style="margin-top:8px">Cancelar</button></div>`;
     md.hidden=false;md.onclick=e=>{if(e.target===md)md.hidden=true};$('#alNo').onclick=()=>md.hidden=true;
-    $('#alRep').onclick=()=>{md.hidden=true;form={tipo:'paro',v:{},alerta:mio};view='form';render()};
+    if($('#alRep'))$('#alRep').onclick=()=>{md.hidden=true;form={tipo:'paro',v:{},alerta:mio};view='form';render()};
     $('#alFin').onclick=async()=>{const b=$('#alFin');b.disabled=true;b.textContent='Guardando…';
       try{await resolverAviso(mio.id);md.hidden=true;toast('Listo. Su grupo vuelve a aparecer en producción. Recuerde reportar el paro.');renderRegistro()}
       catch(e){b.disabled=false;b.textContent='Sí, ya arrancamos';if(e.message!=='sesion')toast('No se pudo guardar. Intente de nuevo.')}};return}
@@ -976,7 +981,8 @@ function pintarAlertas(){if(!S)return;const L=DB.alertas||[];
   alPrimera=false;
   const st=$('#alstate');if(st&&S.equipo){const act=paroActivo(S.equipo);const ult=L.filter(a=>a.equipo===S.equipo&&msDesde(a.registro)<12*3600e3).sort((a,b)=>a.registro.localeCompare(b.registro)).pop();
     const sb=$('#sos');if(sb){sb.classList.toggle('on',!!act);sb.setAttribute('aria-label',act?'Avisar que ya arrancó la producción':'Avisar a jefes y gerencia que hay un paro')}
-    st.innerHTML=act?`<div class="alstate on">${ICON.reloj.replace('<svg','<svg width="18" height="18"')}<span>Su turno aparece como <b>PARADO</b> desde las ${act.registro.slice(11)}. ${act.estado==='Atendida'?'Lo está atendiendo '+esc((act.atendidaPor||'jefatura').split(' ')[0])+'.':'Esperando que jefatura lo atienda.'}</span><button class="btn ghost" id="alstB">Ya arrancamos</button></div>`
+    st.innerHTML=act&&act.prol?`<div class="alstate on">${ICON.reloj.replace('<svg','<svg width="18" height="18"')}<span>La planta está <b>PARADA</b> desde el ${desdeTxt(act.registro)} (${hace(act.registro).replace('hace ','')})${act.desc?': '+esc(act.desc.replace(/\.\s*$/,'')):''}. Cuando la máquina esté lista, toque «Ya arrancamos».</span><button class="btn ghost" id="alstB">Ya arrancamos</button></div>`
+      :act?`<div class="alstate on">${ICON.reloj.replace('<svg','<svg width="18" height="18"')}<span>Su turno aparece como <b>PARADO</b> desde las ${act.registro.slice(11)}. ${act.estado==='Atendida'?'Lo está atendiendo '+esc((act.atendidaPor||'jefatura').split(' ')[0])+'.':'Esperando que jefatura lo atienda.'}</span><button class="btn ghost" id="alstB">Ya arrancamos</button></div>`
       :ult&&ult.estado==='Resuelta'?`<div class="alstate done">${ICON.check.replace('width="52" height="52"','width="18" height="18"')}<span>Producción reanudada${ult.reanudo?' a las '+esc(ult.reanudo):''}. ${PAROREP(ult)?'Paro reportado.':'Recuerde reportar el paro en «Reportar paro».'}</span></div>`:'';
     if($('#alstB'))$('#alstB').onclick=confirmarAviso}}
 const PAROREP=a=>DB.paros.some(p=>p.equipo===a.equipo&&p.registro>=a.registro);
