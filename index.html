@@ -284,6 +284,7 @@ table.fit td.r{white-space:nowrap}
 .cpdet.prev{background:var(--surface);border:1px solid var(--line)}
 .choice-grid.one{grid-template-columns:1fr}.choice small{display:block;font-weight:500;color:var(--muted);font-size:12px;margin-top:3px}
 .choice.cs-ok[aria-pressed="true"]{border-color:var(--ok);background:var(--ok-bg)}.choice.cs-warn[aria-pressed="true"]{border-color:var(--warn);background:var(--warn-bg)}.choice.cs-bad[aria-pressed="true"]{border-color:var(--bad);background:var(--bad-bg)}
+.choice{position:relative}.choice .sugtag{position:absolute;top:-9px;right:8px;background:#12130F;color:#F9D600;font-size:10.5px;font-weight:800;border-radius:999px;padding:1px 8px;letter-spacing:.02em}.choice.sugerida{border-color:var(--yellow)}
 .tile.t6 .ic{background:var(--ok-bg);color:var(--ok)}.tile .badge{margin-left:auto;align-self:center;background:var(--bad);color:#fff;border-radius:999px;font-size:12px;font-weight:800;padding:2px 9px}
 /* Consumo vs ficha */
 .mp{max-width:1280px;margin:0 auto}
@@ -644,8 +645,8 @@ function renderForm(){
      photoField('Foto del producto no conforme','Tome la foto del lote o de las piezas defectuosas.')+`<div class="field"><label for="obs">Observación (opcional)</label><textarea class="in-ctl" id="obs" placeholder="Ej. fisuras, aristas rotas, color disparejo"></textarea></div>`;
   }else{
     body=fecha+turno+eqField('equipo')+`<div class="row2"><div class="field" data-k="inicio"><label for="inicio">Hora inicio del paro</label><input class="in-ctl" type="time" id="inicio"></div><div class="field" data-k="fin"><label for="fin">Hora en que arrancó</label><input class="in-ctl" type="time" id="fin"></div></div><div class="note" id="dur" style="margin:-8px 0 14px"></div>`+
-     `<div class="field" data-k="causa"><span class="lbl">Causa principal</span><div class="choice-grid" id="causa">${SEED.causas.map(c=>`<button type="button" class="choice" data-v="${c.id}" aria-pressed="false">${c.nombre}<small>${c.desc}</small></button>`).join('')}</div></div>`+
-     `<div class="field" data-k="comentario"><label for="comentario">Explique qué pasó</label><textarea class="in-ctl" id="comentario" placeholder="Ej. se rompió la balinera del vibrador; se esperó al mecánico"></textarea></div>`;
+     `<div class="field" data-k="comentario"><label for="comentario">Explique qué pasó</label><textarea class="in-ctl" id="comentario" placeholder="Ej. se rompió la balinera del vibrador; se esperó al mecánico"></textarea></div>`+
+     `<div class="field" data-k="causa"><span class="lbl">Causa principal</span><span class="hint" id="sughint" style="margin-top:-2px">Escriba primero qué pasó: la app le sugerirá la causa.</span><div class="choice-grid" id="causa">${SEED.causas.map(c=>`<button type="button" class="choice" data-v="${c.id}" aria-pressed="false">${c.nombre}<small>${c.desc}</small></button>`).join('')}</div></div>`;
   }
   m.innerHTML=`<div class="col"><div class="formhead"><button id="back" aria-label="Volver">←</button><div><h2>${head[0]}</h2><p>${head[1]}</p></div></div><form id="ff" novalidate>${body}<button class="btn primary" type="submit" id="send">${t==='cons'?'Verificar':'Cargar'}</button></form></div>`;
   $('#back').onclick=()=>{view='home';render()};
@@ -655,6 +656,8 @@ function renderForm(){
   document.querySelectorAll('.choice-grid').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('.choice');if(!b)return;g.querySelectorAll('.choice').forEach(x=>x.setAttribute('aria-pressed',x===b));form.v[g.id]=b.dataset.v}));
   ['fcam','fgal'].forEach(id=>{const i=$('#'+id);if(i)i.onchange=()=>i.files[0]&&loadPhoto(i.files[0])});
   const pr=$('#producto');if(pr&&t!=='nc')pr.onchange=checkUnits;
+  if(t==='paro'){form.sug='';form.causaManual=false;let tmS;$('#comentario').addEventListener('input',()=>{clearTimeout(tmS);tmS=setTimeout(()=>{form.sug=sugerirCausa($('#comentario').value);pintarSugerencia()},250)});
+    $('#causa').addEventListener('click',e=>{if(e.target.closest('.choice')){form.causaManual=true;setTimeout(pintarSugerencia,0)}});}
   if(t==='paro'){const al=form.alerta||paroActivo(S.equipo);if(al&&!al.prol&&!$('#inicio').value){$('#inicio').value=al.registro.slice(11);$('#turno').value=al.turno;$('#fecha').value=fechaTurnoAl(al)}const u=()=>{const a=$('#inicio').value,b=$('#fin').value;$('#dur').textContent=a&&b?`Duración: ${minutos(a,b)} minutos (${(minutos(a,b)/60).toFixed(1)} h)`:''};$('#inicio').oninput=u;$('#fin').oninput=u}
   if(t==='cons'){pintarTolvas();const pv=form.prev;if(pv){['fecha','turno','producto'].forEach(k=>{if(pv[k]&&$('#'+k))$('#'+k).value=pv[k]})}
     if(form.v.foto){const pi=$('#fprev');pi.src=form.v.foto;pi.hidden=false;$('#fhint').textContent='Foto lista. Puede cambiarla con los botones de arriba.'}}
@@ -732,13 +735,14 @@ async function submit(){
   const matIds=MATS.map(x=>x[0]);if(t==='cons')matIds.forEach(k=>{if(val[k]==='x'&&!bad.includes(k))bad.push(k)});
   if(!bad.length&&t==='cons'&&!matIds.some(k=>+val[k]>0)){toast('Escriba al menos una cantidad mayor que cero.');return}
   if(bad.length){bad.forEach(k=>{const f=document.querySelector(`[data-k="${k}"]`);if(f){f.classList.add('err');f.insertAdjacentHTML('beforeend',`<span class="errmsg">${k==='foto'?'Falta la foto.':matIds.includes(k)?(val[k]==='x'?'Revise el número: use punto para decimales.':'Escriba la cantidad (0 si no se usó).'):'Este dato es obligatorio.'}</span>`)}});document.querySelector('.field.err')?.scrollIntoView({behavior:'smooth',block:'center'});toast('Faltan datos. Revise los campos marcados en rojo.');return}
+  if(t==='paro'){form.sug=sugerirCausa(val.comentario);if(val.causa==='OTR'&&form.sug&&form.sug!=='OTR'&&!form.otraOk){const r=await confirmarOtra();if(!r)return;if(r==='OTR')form.otraOk=true;else{val.causa=r;form.v.causa=r;form.causaManual=true;pintarSugerencia()}}}
   if((t==='prod')&&$('#chk').innerHTML&&!form.forzar){form.forzar=true;toast('Los números no cuadran. Toque «Cargar» otra vez para confirmar.');return}
   if(t==='prod'){const dup=DB.produccion.find(r=>r.fecha===val.fecha&&r.turno===val.turno&&r.equipo===val.equipo&&r.producto===val.producto);if(dup&&!form.dup){form.dup=true;toast('Ya existe un reporte igual para esa fecha y turno. Toque «Cargar» otra vez si es correcto.');return}}
   let rec,kind;const base={registro:stamp(),usuario:S.u};
   if(t==='prod'||t==='corte'){kind=t==='prod'?'produccion':'cortes';rec={id:nextId(kind,t==='prod'?'PR':'CO'),...base,fecha:val.fecha,turno:val.turno,equipo:val.equipo,producto:val.producto,ciclos:+val.ciclos,unidades:+val.unidades,foto:'Foto adjunta',fotoData:val.foto};if(t==='corte')rec.hora=nowHM()}
   else if(t==='nc'){kind='noconf';rec={id:nextId(kind,'NC'),...base,fecha:val.fecha,fechaProd:val.fechaProd,equipo:val.equipo,producto:val.producto,cantidad:+val.cantidad,clase:val.clase,obs:g('obs'),foto:'Foto adjunta',fotoData:val.foto}}
   else if(t==='cons'){kind='consumos';rec={id:nextId(kind,'CN'),...base,fecha:val.fecha,turno:val.turno,equipo:val.equipo,producto:val.producto,foto:'Foto adjunta',fotoData:val.foto};matIds.forEach(k=>rec[k]=Math.round(+val[k]*100)/100)}
-  else{kind='paros';rec={id:nextId(kind,'PA'),...base,fecha:val.fecha,turno:val.turno,equipo:val.equipo,inicio:val.inicio,fin:val.fin,minutos:minutos(val.inicio,val.fin),causa:val.causa,comentario:val.comentario,causaRev:'',subcausa:''}}
+  else{kind='paros';rec={id:nextId(kind,'PA'),...base,fecha:val.fecha,turno:val.turno,equipo:val.equipo,inicio:val.inicio,fin:val.fin,minutos:minutos(val.inicio,val.fin),causa:val.causa,comentario:val.comentario,causaRev:'',subcausa:'',sugerida:form.sug||''}}
   const conFoto=['prod','corte','cons'].includes(t)&&ONLINE;
   const firma=conFoto?JSON.stringify([rec.fecha,rec.turno,rec.ciclos,rec.unidades,...MATS.map(x=>rec[x[0]]),(val.foto||'').length]):'';
   if(conFoto&&form.verifFirma===firma)rec.aceptarSinVerificar=true;
@@ -1165,6 +1169,35 @@ function renderUsers(){const m=$('#main');
   <section class="card s12"><h3>Registros de este navegador</h3><p class="cap">Borra lo cargado desde este navegador y deja solo el histórico.</p><button class="btn small ghost" id="reset">Borrar registros de este navegador</button></section></div>`;
   if(ONLINE){const rs=$('#reset');rs.closest('section').remove()}else $('#reset').onclick=()=>{LOCAL={produccion:[],cortes:[],noconf:[],paros:[],alertas:[],consumos:[]};store.set(LS,LOCAL);loadDB();toast('Registros borrados.')};
 }
+
+/* ===================== Sugerencia de causa del paro (según el comentario) ===================== */
+const normTxt=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+const SUG_FALLA=/problema|danad|dano|falla|quebr|revent|roto|rompi|cambi(o|ar|ando) de (sensor|banda|balinera|cadena|pieza)|sold|repar|trab|fuga|desajust|no funciona|sin funcionar/;
+const SUG_REGLAS=[
+ ['ELE',/\b(luz|enee|generador|apagon|energia|electricidad|voltaje|planta electrica)\b/],
+ ['MOL',/cambio de (molde|producto)|calibra|ajuste (de|del) molde|montaje de molde|cambiando molde/],
+ ['TRA',/cargadora|multiforca|montacarga|llanta|ponchad|bandejas? caidas? en (el )?tunel|tunel \d/],
+ ['MAT',/\b(cemento|arena|grava|aditivo|adiblock)\b|agregado contaminado|piedra|tolvas? vacias?|falta de (material|materia|rampla|rampa|tarima|bandeja|agregado)|cisterna|sin material/],
+ ['PER',/reunion|capacitacion|ausencia|falta de personal|accidente|personal/],
+ ['LIM',/limpi|aseo|engras|lubric/],
+ ['MEC',/molde|pin\b|pines|piston|volteador|voltiador|sprocket|banda|freno|skip|sky|cono|sensor|sonda|motor|balinera|cadena|cajon|mesa|fuga|sold|rodo|rodillo|ascensor|descensor|desensor|inyector|contactor|paletizador|mezcladora|prensa|vibra|reductor|tornillo|una\b|unas\b|pata|contramolde|contra molde|guia|cable|rampa|brazo|eje\b|agitador|tope|cilindro|hidraul|compresor|valvula|manguera|bomba|faja|polea|rueda|parrilla|tolva|danad|quebr|revent|falla|averia|corto ?circuito/]
+];
+function sugerirCausa(txt){const t=normTxt(txt);if(t.replace(/\W/g,'').length<4)return '';
+  for(const [id,re] of SUG_REGLAS){if(!re.test(t))continue;
+    if(id==='LIM')return SUG_FALLA.test(t)?'MEC':'MAN';
+    if(id==='PER'&&/personal de vacaciones/.test(t))continue;
+    return id}
+  return ''}
+function pintarSugerencia(){const g=$('#causa');if(!g)return;const s=form.sug||'';
+  g.querySelectorAll('.choice').forEach(b=>{const on=b.dataset.v===s;b.classList.toggle('sugerida',on);let e=b.querySelector('.sugtag');if(on&&!e)b.insertAdjacentHTML('afterbegin','<span class="sugtag">Sugerida</span>');if(!on&&e)e.remove()});
+  if(s&&!form.causaManual){form.v.causa=s;g.querySelectorAll('.choice').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===s))}
+  const h=$('#sughint');if(h)h.textContent=s?(form.causaManual&&form.v.causa!==s?`La app sugiere «${CA[s]?.nombre}». Usted eligió otra causa.`:`La app sugiere «${CA[s]?.nombre}» según su comentario. Puede cambiarla si no corresponde.`):'Escriba primero qué pasó: la app le sugerirá la causa.'}
+function confirmarOtra(){return new Promise(ok=>{const md=$('#modal'),s=form.sug;
+  md.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="otT"><div class="ic">${ICON.paro}</div><h2 id="otT">¿Seguro que es «Otra causa»?</h2>
+   <p>Por lo que escribió, parece <b>${esc(CA[s]?.nombre||'')}</b>. Elegir la causa correcta ayuda a saber dónde se pierde más tiempo.</p>
+   <button class="btn primary" id="otUsar">Usar «${esc(CA[s]?.nombre||'')}»</button><button class="btn ghost" id="otSi">Sí, es otra causa</button></div>`;
+  md.hidden=false;md.onclick=e=>{if(e.target===md){md.hidden=true;ok(null)}};
+  $('#otUsar').onclick=()=>{md.hidden=true;ok(s)};$('#otSi').onclick=()=>{md.hidden=true;ok('OTR')}})}
 
 /* ===================== Cierre de paros (mantenimiento) ===================== */
 const CIERRE_OK='Cerrado – solucionado';
