@@ -497,7 +497,7 @@ let CFG,UMBRAL,EQ,PR,CA,lastLoad=0;
 async function api(action,payload={}){let r;try{r=await fetch(API_URL,{method:'POST',body:JSON.stringify(Object.assign({action,token:S&&S.token},payload))})}catch(e){throw new Error('red')}
   const j=await r.json();if(!j.ok&&j.error==='sesion'){store.del(SS);S=null;render();throw new Error('sesion')}return j}
 async function cargarDatos(){const j=await api('data');SEED=j.seed;initCat();loadDB();lastLoad=Date.now();if(j.user){S=Object.assign({},S,j.user);store.set(SS,S)}}
-function pantallaCarga(msg){$('#app').innerHTML=`<div class="login wrap"><div style="text-align:center"><img src="${temaActual()==='dark'?LOGO_D:LOGO_L}" alt="Duracreto" style="width:160px;margin:0 auto 18px;display:block"><p class="note" style="font-size:14px">${msg}</p></div></div>`}
+function pantallaCarga(msg){$('#app').innerHTML=`<div class="wrap" style="position:fixed;inset:0;display:grid;place-items:center;z-index:70;background:var(--bg)"><div style="text-align:center"><img src="${temaActual()==='dark'?LOGO_D:LOGO_L}" alt="Duracreto" style="width:240px;max-width:60vw;margin:0 auto 20px;display:block"><p class="note" style="font-size:16px">${msg}</p></div></div>`}
 async function boot(){if(!ONLINE){if(!SEED){pantallaCarga('Falta configurar la dirección del servidor en config.js.');return}initCat();loadDB();render();return}if(!S||!S.token){S=null;render();return}
   pantallaCarga('Cargando información…');try{await cargarDatos();render()}catch(e){if(e.message!=='sesion')pantallaCarga('No hay conexión. Revise el internet y vuelva a abrir la app.')}}
 function initCat(){CFG=SEED.config;if(CFG.descansoDespuesDe==null)CFG.descansoDespuesDe=4;UMBRAL={bueno:CFG.umbralOptimo,aceptable:CFG.umbralMejorar};EQ=Object.fromEntries(SEED.equipos.map(e=>[e.id,e]));PR=Object.fromEntries(SEED.productos.map(p=>[p.id,p]));CA=Object.fromEntries(SEED.causas.map(c=>[c.id,c]));aplicarRotacion()}
@@ -519,7 +519,7 @@ function cambiarTema(){const n=temaActual()==='dark'?'light':'dark';store.set(TH
 const thmBtn=(cls='')=>`<button class="thm ${cls}" id="thm" aria-label="${temaActual()==='dark'?'Cambiar a modo claro':'Cambiar a modo oscuro'}" title="${temaActual()==='dark'?'Modo claro':'Modo oscuro'}">${temaActual()==='dark'?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>'}</button>`;
 aplicarTema();
 const DB={};
-function loadDB(){if(ONLINE){for(const k of ['produccion','cortes','noconf','paros','consumos'])DB[k]=(SEED[k]||[]).slice();DB.alertas=(SEED.alertas||[]).slice();return}for(const k of ['produccion','cortes','noconf','paros','consumos'])DB[k]=(SEED[k]||[]).map(r=>({...r,migrado:true})).concat(LOCAL[k]||[]);DB.alertas=(LOCAL.alertas||[]).slice()}
+function loadDB(){if(ONLINE){for(const k of ['produccion','cortes','noconf','paros','consumos'])DB[k]=(SEED[k]||[]).slice();DB.alertas=(SEED.alertas||[]).slice();DB.solicitudes=(SEED.solicitudes||[]).slice();return}for(const k of ['produccion','cortes','noconf','paros','consumos'])DB[k]=(SEED[k]||[]).map(r=>({...r,migrado:true})).concat(LOCAL[k]||[]);DB.alertas=(LOCAL.alertas||[]).slice()}
 function nextId(kind,pre){const n=DB[kind].length+1;return pre+'-'+String(n).padStart(4,'0')}
 async function addRec(kind,rec){if(ONLINE){const j=await api('add',{kind,rec});if(!j.ok){const e=new Error(j.error||'No se pudo guardar');if(j.verif)e.verif=j.verif;throw e}DB[kind].push(j.rec);return j.rec}LOCAL[kind]=LOCAL[kind]||[];LOCAL[kind].push(rec);if(!store.set(LS,LOCAL)){delete rec.fotoData;LOCAL[kind][LOCAL[kind].length-1]=rec;store.set(LS,LOCAL)}DB[kind].push(rec);return rec}
 
@@ -790,7 +790,7 @@ function renderRegistro(){
   }
   m.innerHTML=`<div class="col"><div class="hello"><h2>${sal}, ${esc(S.nombre.split(' ')[0])}</h2>
    <p>${eq?`${esc(eq.nombre)} · Turno asignado: ${TURNOS[eq.turno].lbl}`:esc(ROLES[S.rol].nom)} · ${dmy(todayISO())}</p></div>${body}</div>`;
-  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{if(b.dataset.f==='cierre'){cierreSel=null;cierreTab='pend';view='cierre';render();return}form={tipo:b.dataset.f,v:{}};view='form';render()});
+  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{if(b.dataset.f==='cierre'){cierreSel=null;cierreTab='pend';view='cierre';render();return}if(b.dataset.f==='prod'&&necesitaVentana()){const t=EQ[S.equipo].turno,f=fechaJornada(t);if(!prodPermitida(f,t)){modalSolicitud(f,t);return}}form={tipo:b.dataset.f,v:{}};view='form';render()});
   document.querySelectorAll('[data-hs]').forEach(b=>b.onclick=()=>{homeSel=b.dataset.hs;renderRegistro()});
   if($('#sos'))$('#sos').onclick=confirmarAviso;
   pintarAlertas();
@@ -922,6 +922,7 @@ async function submit(){
   if(bad.length){bad.forEach(k=>{const f=document.querySelector(`[data-k="${k}"]`);if(f){f.classList.add('err');f.insertAdjacentHTML('beforeend',`<span class="errmsg">${k==='foto'?'Falta la foto.':matIds.includes(k)?(val[k]==='x'?'Revise el número: use punto para decimales.':'Escriba la cantidad (0 si no se usó).'):'Este dato es obligatorio.'}</span>`)}});document.querySelector('.field.err')?.scrollIntoView({behavior:'smooth',block:'center'});toast('Faltan datos. Revise los campos marcados en rojo.');return}
   if(t==='paro'){form.sug=sugerirCausa(val.comentario);if(val.causa==='OTR'&&form.sug&&form.sug!=='OTR'&&!form.otraOk){const r=await confirmarOtra();if(!r)return;if(r==='OTR')form.otraOk=true;else{val.causa=r;form.v.causa=r;form.causaManual=true;pintarSugerencia()}}}
   if((t==='prod')&&$('#chk').innerHTML&&!form.forzar){form.forzar=true;toast('Los números no cuadran. Toque «Cargar» otra vez para confirmar.');return}
+  if(t==='prod'&&!prodPermitida(val.fecha,val.turno)){modalSolicitud(val.fecha,val.turno);return}
   if(t==='prod'){const dup=DB.produccion.find(r=>r.fecha===val.fecha&&r.turno===val.turno&&r.equipo===val.equipo&&r.producto===val.producto);if(dup&&!form.dup){form.dup=true;toast('Ya existe un reporte igual para esa fecha y turno. Toque «Cargar» otra vez si es correcto.');return}}
   let rec,kind;const base={registro:stamp(),usuario:S.u};
   if(t==='prod'||t==='corte'){kind=t==='prod'?'produccion':'cortes';rec={id:nextId(kind,t==='prod'?'PR':'CO'),...base,fecha:val.fecha,turno:val.turno,equipo:val.equipo,producto:val.producto,ciclos:+val.ciclos,unidades:+val.unidades,foto:'Foto adjunta',fotoData:val.foto};if(t==='corte')rec.hora=nowHM()}
@@ -933,10 +934,11 @@ async function submit(){
   if(conFoto&&form.verifFirma===firma)rec.aceptarSinVerificar=true;
   $('#verifbox')?.remove();
   const btn=$('#send');btn.disabled=true;btn.textContent=conFoto?'Verificando la foto…':'Cargando…';
-  try{const saved=await addRec(kind,rec);form.rec=saved||rec;form.kind=kind;
+  try{const saved=await addRec(kind,rec);if(kind==='produccion')(DB.solicitudes||[]).forEach(x=>{if(x.equipo===rec.equipo&&x.fecha===rec.fecha&&x.turno===rec.turno&&x.estado==='Aprobada'&&!x.usada)x.usada=(saved||rec).id});form.rec=saved||rec;form.kind=kind;
     if(kind==='paros'){if(ONLINE){try{const j=await api('alertas');if(j.ok)DB.alertas=j.alertas}catch(e){}}else{(LOCAL.alertas||[]).forEach(a=>{if(a.equipo===rec.equipo&&a.estado!=='Resuelta'){a.estado='Resuelta';a.reanudo=rec.fin}});store.set(LS,LOCAL);DB.alertas=LOCAL.alertas.slice()}}
     view='done';render()}
   catch(e){btn.disabled=false;btn.textContent='Cargar';
+    if(e.message==='fuera_horario'){modalSolicitud(val.fecha,val.turno);return}
     if(e.verif){mostrarVerif(e.verif,firma);return}
     if(e.message!=='sesion')toast(e.message==='red'?'Sin conexión. Revise el internet y toque «Cargar» de nuevo.':'No se pudo guardar: '+e.message)}
 }
@@ -1214,15 +1216,55 @@ function pintarAlertas(){if(!S)return;const L=DB.alertas||[];
     box.innerHTML=act.length?`<div class="alertbar" role="alert"><div class="in wrap">${act.map(a=>`<div class="al">${ICON.paro}<span><b>${EQ[a.equipo]?.nombre||a.equipo} · Turno ${a.turno}</b> avisó que tiene un paro a las ${a.registro.slice(11)} (${hace(a.registro)}). Necesita apoyo o que alguien revise qué pasa.</span><button data-at="${a.id}">Ya lo estamos atendiendo</button></div>`).join('')}</div></div>`:'';
     box.querySelectorAll('[data-at]').forEach(b=>b.onclick=async()=>{b.disabled=true;b.textContent='Guardando…';try{await atenderAviso(b.dataset.at)}catch(e){b.disabled=false;b.textContent='Ya lo estamos atendiendo';if(e.message!=='sesion')toast('No se pudo guardar. Intente de nuevo.')}})}
   else if(box)box.innerHTML='';
-  alPrimera=false;
+  alPrimera=false;pintarSolicitudes();
   const st=$('#alstate');if(st&&S.equipo){const act=paroActivo(S.equipo);const ult=L.filter(a=>a.equipo===S.equipo&&msDesde(a.registro)<12*3600e3).sort((a,b)=>a.registro.localeCompare(b.registro)).pop();
     const sb=$('#sos');if(sb){sb.classList.toggle('on',!!act);sb.setAttribute('aria-label',act?'Avisar que ya arrancó la producción':'Avisar a jefes y gerencia que hay un paro')}
     st.innerHTML=act&&act.prol?`<div class="alstate on">${ICON.reloj.replace('<svg','<svg width="18" height="18"')}<span>La planta está <b>PARADA</b> desde el ${desdeTxt(act.registro)} (${hace(act.registro).replace('hace ','')})${act.desc?': '+esc(act.desc.replace(/\.\s*$/,'')):''}. Cuando la máquina esté lista, toque «Ya arrancamos».</span><button class="btn ghost" id="alstB">Ya arrancamos</button></div>`
       :act?`<div class="alstate on">${ICON.reloj.replace('<svg','<svg width="18" height="18"')}<span>Su turno aparece como <b>PARADO</b> desde las ${act.registro.slice(11)}. ${act.estado==='Atendida'?'Lo está atendiendo '+esc((act.atendidaPor||'jefatura').split(' ')[0])+'.':'Esperando que jefatura lo atienda.'}</span><button class="btn ghost" id="alstB">Ya arrancamos</button></div>`
       :ult&&ult.estado==='Resuelta'?`<div class="alstate done">${ICON.check.replace('width="52" height="52"','width="18" height="18"')}<span>Producción reanudada${ult.reanudo?' a las '+esc(ult.reanudo):''}. ${PAROREP(ult)?'Paro reportado.':'Recuerde reportar el paro en «Reportar paro».'}</span></div>`:'';
     if($('#alstB'))$('#alstB').onclick=confirmarAviso}}
+/* ===================== Producción solo en la última hora del turno (o con autorización) ===================== */
+const PROD_ANTES=60,PROD_DESPUES=60,SOLVISTAS=new Set();let solPrimera=true;
+const necesitaVentana=()=>!!S&&S.rol==='LIDER'&&ONLINE;
+function finTurno(fecha,turno){const st={A:6,B:14,C:22}[turno];const d=new Date(fecha+'T00:00:00');d.setHours(st+8,0,0,0);return d}
+function ventanaProd(fecha,turno){if(!fecha||!turno)return false;const f=finTurno(fecha,turno).getTime(),n=Date.now();return n>=f-PROD_ANTES*60e3&&n<=f+PROD_DESPUES*60e3}
+const hAmPm=x=>{x=(x+24)%24;return (x%12||12)+':00 '+(x<12?'am':'pm')};
+const textoVentana=t=>{const f={A:14,B:22,C:6}[t];return `de ${hAmPm(f-1)} a ${hAmPm(f+1)}`};
+const solDe=(f,t)=>(DB.solicitudes||[]).filter(s=>s.equipo===S.equipo&&s.fecha===f&&s.turno===t).sort((a,b)=>a.registro.localeCompare(b.registro)).pop();
+const autorizada=(f,t)=>(DB.solicitudes||[]).some(s=>s.equipo===S.equipo&&s.fecha===f&&s.turno===t&&s.estado==='Aprobada'&&!s.usada);
+function prodPermitida(f,t){return !necesitaVentana()||ventanaProd(f,t)||autorizada(f,t)}
+function modalSolicitud(f,t){const md=$('#modal'),s=solDe(f,t);
+  const est=s&&s.estado==='Pendiente'?`<div class="verifbox duda" style="text-align:left"><b class="t">Solicitud enviada</b>La envió a las ${esc(s.registro.slice(11))}. Le llegará un aviso cuando la jefa de planta la autorice.</div><button class="btn ghost" id="soRef">Revisar si ya la autorizaron</button>`
+   :`${s&&s.estado==='Rechazada'?`<div class="verifbox" style="text-align:left"><b class="t">Su solicitud anterior no fue autorizada</b>${esc(s.por||'')}. Si necesita registrar el avance del turno, use «Hacer corte».</div>`:''}
+    <div class="field" style="text-align:left"><label for="soMot">¿Por qué necesita cargarlo fuera de horario?</label><textarea class="in-ctl" id="soMot" placeholder="Ej. se terminó la producción antes por falta de cemento; o se me olvidó reportarlo al cierre"></textarea></div>
+    <button class="btn primary" id="soEnv">Enviar solicitud a la jefa de planta</button>`;
+  md.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="soT"><div class="ic">${ICON.reloj}</div><h2 id="soT">El reporte de producción aún no está habilitado</h2>
+   <p>Se carga <b>una sola vez, al cerrar el turno</b>: Turno ${t} ${textoVentana(t)}. Si quiere registrar cuánto lleva, use <b>«Hacer corte»</b>.</p>
+   <button class="btn ghost" id="soCorte" style="margin-bottom:10px">Hacer corte</button>${est}<button class="btn ghost" id="soX" style="margin-top:8px">Cancelar</button></div>`;
+  md.hidden=false;md.onclick=e=>{if(e.target===md)md.hidden=true};$('#soX').onclick=()=>md.hidden=true;
+  $('#soCorte').onclick=()=>{md.hidden=true;form={tipo:'corte',v:{}};view='form';render()};
+  if($('#soRef'))$('#soRef').onclick=async()=>{await refrescarAlertas();if(autorizada(f,t)){md.hidden=true;toast('¡Autorizado! Ya puede cargar la producción.');form={tipo:'prod',v:{}};view='form';render()}else modalSolicitud(f,t)};
+  if($('#soEnv'))$('#soEnv').onclick=async()=>{const m=$('#soMot').value.trim();if(m.length<5){toast('Escriba el motivo de la solicitud.');return}
+    const b=$('#soEnv');b.disabled=true;b.textContent='Enviando…';
+    try{const j=await api('solicitarProd',{rec:{fecha:f,turno:t,motivo:m}});if(!j.ok)throw new Error(j.error||'error');DB.solicitudes=j.solicitudes;toast('Solicitud enviada. Le avisaremos cuando la autoricen.');modalSolicitud(f,t)}
+    catch(e){b.disabled=false;b.textContent='Enviar solicitud a la jefa de planta';if(e.message!=='sesion')toast(e.message==='red'?'Sin conexión.':e.message)}}}
+function pintarSolicitudes(){if(!S)return;let box=$('#solic');const a=$('#alertas');if(!box&&a){a.insertAdjacentHTML('afterend','<div id="solic"></div>');box=$('#solic')}if(!box)return;
+  const L=DB.solicitudes||[];
+  if(can('autoriza')||S.rol==='ADMIN'){const p=L.filter(s=>s.estado==='Pendiente').sort((a,b)=>b.registro.localeCompare(a.registro));
+    const nuevos=p.filter(s=>!SOLVISTAS.has(s.id));p.forEach(s=>SOLVISTAS.add(s.id));if(nuevos.length&&!solPrimera){sonarAviso();toast(`${EQ[nuevos[0].equipo]?.nombre||''} pide autorización para reportar producción.`)}
+    box.innerHTML=p.length?`<div class="alertbar rec" role="alert"><div class="in wrap">${p.map(s=>`<div class="al">${ICON.reloj}<span><b>${esc(EQ[s.equipo]?.nombre||s.equipo)} · Turno ${s.turno} (${dmy(s.fecha).slice(0,5)})</b> pide cargar la producción fuera de horario: «${esc(s.motivo)}»</span><button data-sa="${s.id}">Autorizar</button><button class="ghost" data-sr="${s.id}">Rechazar</button></div>`).join('')}</div></div>`:'';
+    box.querySelectorAll('[data-sa],[data-sr]').forEach(b=>b.onclick=async()=>{const ap=!!b.dataset.sa,id=b.dataset.sa||b.dataset.sr;b.disabled=true;
+      try{const j=await api('resolverSolicitud',{id,aprobar:ap});if(!j.ok)throw new Error(j.error||'error');DB.solicitudes=j.solicitudes;toast(ap?'Autorizado. El líder recibirá un aviso.':'Solicitud rechazada.');pintarSolicitudes()}
+      catch(e){b.disabled=false;if(e.message!=='sesion')toast('No se pudo guardar. Intente de nuevo.')}})}
+  else if(S.rol==='LIDER'&&S.equipo){const ok=L.filter(s=>s.equipo===S.equipo&&s.estado==='Aprobada'&&!s.usada);
+    if(ok.length&&$('#soT')&&!$('#modal').hidden)$('#modal').hidden=true;
+    ok.forEach(s=>{if(!SOLVISTAS.has(s.id)){SOLVISTAS.add(s.id);if(!solPrimera){sonarAviso();toast('Su solicitud fue autorizada. Ya puede cargar la producción.')}}});
+    box.innerHTML=ok.length&&view!=='form'?`<div class="alertbar rec" role="status"><div class="in wrap"><div class="al">${ICON.check.replace('width="52" height="52"','width="20" height="20"')}<span><b>Autorizado:</b> ya puede cargar la producción del Turno ${ok[0].turno} (${dmy(ok[0].fecha).slice(0,5)}).</span><button id="solGo">Reportar producción</button></div></div></div>`:'';
+    if($('#solGo'))$('#solGo').onclick=()=>{form={tipo:'prod',v:{}};view='form';render()}}
+  else box.innerHTML='';
+  solPrimera=false}
 const PAROREP=a=>DB.paros.some(p=>p.equipo===a.equipo&&p.registro>=a.registro);
-async function refrescarAlertas(){if(!ONLINE||!S||!(can('aviso')||can('alerta')))return;try{const j=await api('alertas');if(j.ok){DB.alertas=j.alertas;pintarAlertas()}}catch(e){}}
+async function refrescarAlertas(){if(!ONLINE||!S||!(can('aviso')||can('alerta')||can('autoriza')))return;try{const j=await api('alertas');if(j.ok){DB.alertas=j.alertas;if(j.solicitudes)DB.solicitudes=j.solicitudes;pintarAlertas()}}catch(e){}}
 setInterval(()=>{if(document.visibilityState==='visible')refrescarAlertas()},45000);
 
 /* Recordatorio de corte para líderes: 3 cortes por turno, a las 2, 4 y 6 h del inicio; aviso desde 10 min antes */
