@@ -819,7 +819,7 @@ function renderForm(){
      numField('ciclos',t==='corte'?'Ciclos acumulados del turno':'Ciclos producidos','Copie el número que muestra la pantalla de la máquina.')+
      numField('unidades',t==='corte'?'Unidades acumuladas del turno':'Unidades producidas')+`<div id="chk"></div>`+photoField();
   }else if(t==='cons'){
-    body=fecha+turno+eqField('equipo')+`<div class="field" data-k="producto"><label for="producto">Producto</label><select class="in-ctl" id="producto">${prodOptions('')}</select></div>`+
+    body=fecha+turno+`<div id="corteBox"></div>`+eqField('equipo')+`<div class="field" data-k="producto"><label for="producto">Producto</label><select class="in-ctl" id="producto">${prodOptions('')}</select></div>`+
      `<div class="field" data-k="tolvas"><span class="lbl">¿Qué agregado hay en cada tolva?</span><div class="tolvas">${[1,2,3].map(n=>`<div class="tv"><label for="tv${n}">Tolva ${n}</label><select class="in-ctl" id="tv${n}"></select></div>`).join('')}</div></div>`+
      photoField('Foto de la pantalla de consumo','La app lee de la foto el cemento, las tolvas, el agua y el aditivo (columna «Real»). Tómela de frente, que se vea toda la tabla.');
   }else if(t==='nc'){
@@ -845,6 +845,7 @@ function renderForm(){
     $('#causa').addEventListener('click',e=>{if(e.target.closest('.choice')){form.causaManual=true;setTimeout(pintarSugerencia,0)}});}
   if(t==='paro'){const al=form.alerta||paroActivo(S.equipo);if(al&&!al.prol&&!$('#inicio').value){$('#inicio').value=al.registro.slice(11);$('#turno').value=al.turno;$('#fecha').value=fechaTurnoAl(al)}const u=()=>{const a=$('#inicio').value,b=$('#fin').value;$('#dur').textContent=a&&b?`Duración: ${minutos(a,b)} minutos (${(minutos(a,b)/60).toFixed(1)} h)`:''};$('#inicio').oninput=u;$('#fin').oninput=u}
   if(t==='cons'){pintarTolvas();const pv=form.prev;if(pv){['fecha','turno','producto'].forEach(k=>{if(pv[k]&&$('#'+k))$('#'+k).value=pv[k]})}
+    pintarCorte();['turno','fecha'].forEach(k=>$('#'+k).addEventListener('change',()=>setTimeout(pintarCorte,0)));
     if(form.v.foto){const pi=$('#fprev');pi.src=form.v.foto;pi.hidden=false;$('#fhint').textContent='Foto lista. Puede cambiarla con los botones de arriba.'}}
   $('#ff').onsubmit=e=>{e.preventDefault();submit()};
 }
@@ -859,12 +860,24 @@ function pintarTolvas(){if(!form.tolvas)form.tolvas=(store.get(TVK())||[]).slice
   const r3=o[0]&&o[1]?AGR.filter(([k])=>k!==o[0]&&k!==o[1]):[];if(r3.length)o[2]=r3[0][0];else o.length=Math.min(o.length,2);
   t3.disabled=true;t3.innerHTML=r3.length?`<option>${esc(r3[0][1])}</option>`:`<option>Se completa sola</option>`;
   t1.onchange=()=>{form.tolvas=[t1.value].filter(Boolean);pintarTolvas()};t2.onchange=()=>{form.tolvas=[o[0],t2.value].filter(Boolean);pintarTolvas()}}
+/* ---------- Turno C: corte de medianoche (dos fotos que se suman) ---------- */
+const PARTE_TXT={unico:'Una sola foto (sin corte)',medianoche:'Corte de medianoche',cierre:'Cierre (después del corte)'};
+function medianocheCargada(f){return (DB.consumos||[]).find(c=>c.equipo===S.equipo&&c.fecha===f&&c.turno==='C'&&c.parte==='Corte de medianoche')}
+function pintarCorte(){const box=$('#corteBox');if(!box)return;const t=$('#turno')?.value,f=$('#fecha')?.value;
+  if(t!=='C'){box.innerHTML='';form.v.parte='unico';return}
+  const med=medianocheCargada(f);
+  if(med){form.v.parte='cierre';box.innerHTML=`<div class="verifbox duda" style="margin:0 0 16px"><b class="t">Esta es la foto del cierre</b>El corte de medianoche de este turno ya está cargado (${esc(med.registro.slice(11))}). Ahora suba la foto de la pantalla al terminar el turno.</div>`;return}
+  if(form.v.parte==='cierre')form.v.parte='';
+  box.innerHTML=`<div class="field" data-k="parte"><span class="lbl">¿Hizo corte de medianoche?</span><div class="choice-grid" id="parteG">
+    <button type="button" class="choice" data-v="medianoche" aria-pressed="${form.v.parte==='medianoche'}">Sí, hice corte<small>Esta es la foto de medianoche. Al cierre del turno subirá la segunda.</small></button>
+    <button type="button" class="choice" data-v="unico" aria-pressed="${form.v.parte==='unico'}">No hice corte<small>Una sola foto al terminar el turno.</small></button></div></div>`;
+  $('#parteG').onclick=e=>{const b=e.target.closest('.choice');if(!b)return;form.v.parte=b.dataset.v;$('#parteG').querySelectorAll('.choice').forEach(x=>x.setAttribute('aria-pressed',x===b));$('[data-k="parte"]').classList.remove('err');$('[data-k="parte"] .errmsg')?.remove()}}
 const LCF=[['cemento','Cemento','kg'],['t1','Tolva 1','kg'],['t2','Tolva 2','kg'],['t3','Tolva 3','kg'],['agua','Agua','L'],['aditivo','Aditivo','L']];
 async function verificarConsumo(){const g=id=>{const e=$('#'+id);return e?e.value.trim():''};
   document.querySelectorAll('.field.err').forEach(f=>{f.classList.remove('err');f.querySelector('.errmsg')?.remove()});
   const val={fecha:g('fecha'),turno:g('turno'),producto:g('producto'),foto:form.v.foto},o=form.tolvas||[];
-  const bad=['fecha','turno','producto','foto'].filter(k=>!val[k]);if(o.length<3)bad.push('tolvas');
-  if(bad.length){bad.forEach(k=>{const f=document.querySelector(`[data-k="${k}"]`);if(f){f.classList.add('err');f.insertAdjacentHTML('beforeend',`<span class="errmsg">${k==='foto'?'Falta la foto.':k==='tolvas'?'Indique el agregado de cada tolva.':'Este dato es obligatorio.'}</span>`)}});document.querySelector('.field.err')?.scrollIntoView({behavior:'smooth',block:'center'});toast('Faltan datos. Revise los campos marcados en rojo.');return}
+  const bad=['fecha','turno','producto','foto'].filter(k=>!val[k]);if(o.length<3)bad.push('tolvas');if(val.turno==='C'&&!form.v.parte)bad.push('parte');
+  if(bad.length){bad.forEach(k=>{const f=document.querySelector(`[data-k="${k}"]`);if(f){f.classList.add('err');f.insertAdjacentHTML('beforeend',`<span class="errmsg">${k==='foto'?'Falta la foto.':k==='tolvas'?'Indique el agregado de cada tolva.':k==='parte'?'Indique si hizo corte de medianoche.':'Este dato es obligatorio.'}</span>`)}});document.querySelector('.field.err')?.scrollIntoView({behavior:'smooth',block:'center'});toast('Faltan datos. Revise los campos marcados en rojo.');return}
   store.set(TVK(),o);form.prev={fecha:val.fecha,turno:val.turno,producto:val.producto};
   const btn=$('#send');btn.disabled=true;btn.textContent='Leyendo la foto…';
   const ph=$('#photo');ph.classList.add('scanning');ph.scrollIntoView({behavior:'smooth',block:'center'});
@@ -900,8 +913,8 @@ function renderLectura(){const m=$('#main'),r=form.lect.lectura||{},val=form.val
     md.hidden=false;md.onclick=e=>{if(e.target===md)md.hidden=true};$('#cNo').onclick=()=>md.hidden=true;
     $('#cSi').onclick=async()=>{const b=$('#cSi');b.disabled=true;b.textContent='Cargando…';
       const dig=Object.fromEntries(Object.entries(form.dig).map(([k,v])=>[k,+numMat(v)]));
-      const rec={id:nextId('consumos','CN'),registro:stamp(),usuario:S.u,fecha:val.fecha,turno:val.turno,equipo:S.equipo,producto:val.producto,foto:'Foto adjunta',fotoData:val.foto,lecturaId:form.lect.id,elegidos:form.eleg,digitados:dig,tolvas:o.slice()};
-      if(!ONLINE){const vv=k=>{const x=r[k];return x.opciones?form.eleg[k]:x.faltante?dig[k]:x.v};rec.cemento=vv('cemento');rec.agua=vv('agua');rec.aditivo=vv('aditivo');o.forEach((mat,i)=>rec[mat]=vv('t'+(i+1)));rec.ordenTolvas=o.map((mat,i)=>'T'+(i+1)+': '+AGN[mat]).join(' · ');rec.verif='Coincide'}
+      const rec={id:nextId('consumos','CN'),registro:stamp(),usuario:S.u,fecha:val.fecha,turno:val.turno,equipo:S.equipo,producto:val.producto,foto:'Foto adjunta',fotoData:val.foto,lecturaId:form.lect.id,elegidos:form.eleg,digitados:dig,tolvas:o.slice(),parte:val.turno==='C'?form.v.parte:'unico'};
+      if(!ONLINE){const vv=k=>{const x=r[k];return x.opciones?form.eleg[k]:x.faltante?dig[k]:x.v};rec.cemento=vv('cemento');rec.agua=vv('agua');rec.aditivo=vv('aditivo');o.forEach((mat,i)=>rec[mat]=vv('t'+(i+1)));rec.ordenTolvas=o.map((mat,i)=>'T'+(i+1)+': '+AGN[mat]).join(' · ');rec.verif='Coincide';rec.parte=({unico:'Única (sin corte)',medianoche:'Corte de medianoche',cierre:'Cierre (después del corte)'})[rec.parte]}
       try{const saved=await addRec('consumos',rec);md.hidden=true;form.rec=saved||rec;form.kind='consumos';view='done';render()}
       catch(e){b.disabled=false;b.textContent='Sí, cargar';md.hidden=true;if(e.message!=='sesion')toast('No se pudo guardar: '+e.message)}}}}
 
@@ -960,6 +973,8 @@ function renderDone(){
   else if(k==='noconf')rows=[['Fecha de producción',dmy(r.fechaProd)],['Grupo de origen',EQ[r.equipo]?.nombre||'No identificado'],['Producto',PR[r.producto].nombre],['Cantidad',fmt(r.cantidad)],['Clasificación',r.clase]];
   else rows=[['Fecha',dmy(r.fecha)],['Turno',TURNOS[r.turno].lbl],['Paro',`${r.inicio} a ${r.fin} · ${r.minutos} min`],['Causa',CA[r.causa].nombre]];
   if(k==='consumos'&&r.ordenTolvas)rows.push(['Tolvas',r.ordenTolvas]);
+  if(k==='consumos'&&r.turno==='C'&&r.parte)rows.push(['Parte del turno',r.parte]);
+  if(k==='consumos'&&r.parte==='Corte de medianoche')extra+=`<div class="verifbox duda" style="text-align:left;margin-top:14px"><b class="t">Falta la segunda foto</b>Al terminar el turno (6:00 am), suba la foto de la pantalla de consumo en «Reportar consumo». Se suma a esta.</div>`;
   if(r.verif)rows.push(['Foto',r.verif==='Coincide'?(k==='consumos'?'Datos leídos de la foto ✓':'Verificada ✓'):'Por revisar']);
   m.innerHTML=`<div class="col done"><div class="ok">${ICON.check}</div><h2>${T}</h2><p class="note">Su información quedó guardada con éxito el ${dmy(r.registro)} a las ${r.registro.slice(11)}.</p><span class="folio">Folio ${r.id}</span>${extra}
    <div class="summary">${rows.map(x=>`<div><span class="note">${x[0]}</span><b class="num">${esc(x[1])}</b></div>`).join('')}</div>
