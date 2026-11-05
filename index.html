@@ -692,7 +692,7 @@ function render(){
   if(can('rep'))tabs.push(['rep','Reporte del día']);
   if(can('dash'))tabs.push(['dash','Dashboard']);
   tabs.push(['rank','Ranking']);
-  if(can('bd'))tabs.push(['bd','Bases de datos']);
+  if(can('bd'))tabs.push(['bd','Bases de datos']);else if(can('consumos'))tabs.push(['bd','Consumos']);
   if((can('costos')||can('param'))&&SEED.mp)tabs.push(['mp',SEED.mp.verCostos?'Consumo vs ficha':'Ficha y factores']);
   if(can('usr'))tabs.push(['usr','Usuarios y equipos']);
   if(!tabs.find(t=>t[0]===tab))tab=tabs[0][0];
@@ -1417,8 +1417,8 @@ addEventListener('scroll',()=>document.querySelectorAll('.vt.open').forEach(x=>x
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.vt');if(b)ubicarTip(b);document.querySelectorAll('.vt.open').forEach(x=>{if(x!==b)x.classList.remove('open')});if(b)b.classList.toggle('open')});
 const cell=(r,c)=>typeof c[1]==='function'?c[1](r):r[c[1]];
 const inBD=(k,r)=>inF(r,BDDEF[k].date)&&(k!=='paros'||inCat(r));
-function renderBD(){initF();const m=$('#main'),d=BDDEF[bdTab];const rows=DB[bdTab].filter(r=>inBD(bdTab,r)).sort((a,b)=>b.registro.localeCompare(a.registro));
-  m.innerHTML=filtersHTML('',bdTab==='paros'?catHTML():'')+`<div class="subtabs">${Object.entries(BDDEF).map(([k,v])=>`<button data-bt="${k}" aria-pressed="${k===bdTab}">${v.n} (${DB[k].filter(r=>inBD(k,r)).length})</button>`).join('')}</div>
+function renderBD(){initF();const soloCons=!can('bd');if(soloCons)bdTab='consumos';const m=$('#main'),d=BDDEF[bdTab];const rows=DB[bdTab].filter(r=>inBD(bdTab,r)).sort((a,b)=>b.registro.localeCompare(a.registro));
+  m.innerHTML=filtersHTML('',bdTab==='paros'?catHTML():'')+`<div class="subtabs">${Object.entries(BDDEF).filter(([k])=>!soloCons||k==='consumos').map(([k,v])=>`<button data-bt="${k}" aria-pressed="${k===bdTab}">${v.n} (${DB[k].filter(r=>inBD(k,r)).length})</button>`).join('')}</div>
   <section class="card"><div class="tbl"><table class="${d.fit?'fit':''}">${d.fit?`<colgroup>${d.fit.map(w=>`<col style="width:${w}%">`).join('')}</colgroup>`:''}<thead><tr>${d.cols.map(c=>`<th class="${c[2]?'r':''}">${c[1]==='verif'?'<span title="Verificación de la foto">Verif.</span>':c[1]==='cierre'?'<span title="Cierre de mantenimiento">Cierre</span>':d.fit?esc(c[0]).replace(/ \((kg|L)\)$/,'<small>($1)</small>'):c[0]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${d.cols.map(c=>{if(c[1]==='verif')return `<td>${vIcon(r.verif)}</td>`;if(c[1]==='cierre')return `<td style="text-align:center">${cIcon(r)}</td>`;if(c[1]==='comentario'&&bdTab==='paros'){const t=String(r.comentario||'');return `<td>${t?`<span class="vt cm" role="button" tabindex="0" aria-label="${esc(t)}"><span class="cmt">${esc(t)}</span><span class="tip">${esc(t)}</span></span>`:''}</td>`}if(c[1]==='foto')return `<td>${r.fotoData?`<img class="thumb" src="${r.fotoData}" alt="Foto ${r.id}" data-ph="${r.id}">`:/^https?:/.test(r.foto||'')?`<a href="${esc(r.foto)}" target="_blank" rel="noopener">Ver foto</a>`:`<span class="note">${esc(r.foto)}</span>`}</td>`;const v=cell(r,c);return `<td class="${c[2]?'r num':''}">${esc(c[2]&&typeof v==='number'?(Number.isInteger(v)?fmt(v):fmtQ(v)):v)}</td>`}).join('')}</tr>`).join('')||`<tr><td colspan="${d.cols.length}" class="note">Sin registros en el periodo.</td></tr>`}</tbody></table></div>
   ${bdTab==='paros'&&can('usr')?'<p class="note" style="margin-top:10px">La reclasificación de causas se hará en la hoja de Google (columnas «Categoría revisada» y «Subcategoría»).</p>':''}</section>`;
   bindFilters(renderBD);document.querySelectorAll('[data-bt]').forEach(b=>b.onclick=()=>{bdTab=b.dataset.bt;renderBD()});
