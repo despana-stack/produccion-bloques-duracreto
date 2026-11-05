@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ruta 360 · Duracreto 360</title>
+<meta name="theme-color" content="#12130F">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="data:image/png;base64,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" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--neg:#12130F;--am:#F9D600;--nar:#F49A29;--gris:#A0A19F;--hueso:#F2F2EE;
+--bg:#F4F4F1;--card:#fff;--tx:#1d1e1a;--mut:#6b6c68;--bd:#e3e3de;--soft:#F4F4F1;--hov:#fafaf6;
+--ok:#2E9B57;--warn:#E08A00;--bad:#D64534;--info:#3A6EA5;--biz:#F9D600}
+body.dark{--bg:#121310;--card:#1c1d19;--tx:#ECECE6;--mut:#a3a49e;--bd:#30312c;--soft:#25261f;--hov:#23241f}
+*{box-sizing:border-box}
+body{margin:0;font-family:Poppins,system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:13.5px}
+button{font-family:inherit}
+/* header */
+.hdr{background:var(--neg);color:#fff;display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:4px solid var(--biz);position:sticky;top:0;z-index:30}
+.ib{width:38px;height:38px;border-radius:10px;border:0;background:#ffffff14;color:#fff;font-size:19px;cursor:pointer;display:grid;place-items:center;position:relative}
+.ib:hover{background:#ffffff26}
+.logo{font-weight:700;font-size:17px;letter-spacing:.4px;line-height:1.1}.logo span{color:var(--am)}.logo small{display:block;font-weight:400;font-size:10.5px;color:#cfcfc9;letter-spacing:0}
+.sp{flex:1}
+.nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}.nav::-webkit-scrollbar{display:none}
+.nav button{background:none;border:0;color:#cfcfc9;padding:9px 11px;border-radius:9px;font-size:12.5px;white-space:nowrap;cursor:pointer;position:relative;font-weight:500}
+.nav button:hover{background:#ffffff12;color:#fff}.nav button.on{background:#ffffff1c;color:#fff;font-weight:600;box-shadow:inset 0 -3px 0 var(--biz)}
+.nav .bd{background:var(--bad);color:#fff;border-radius:9px;font-size:10px;padding:0 6px;margin-left:5px;font-weight:600}
+.bizw{position:relative}.bizdd{display:none;position:absolute;top:36px;left:0;background:var(--card);color:var(--tx);border-radius:12px;box-shadow:0 10px 30px #0005;padding:6px;min-width:230px;z-index:40}
+.bizdd.on{display:block}.bizdd div{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:12.5px}.bizdd div:hover{background:var(--soft)}.bizdd div.dis{opacity:.5;cursor:default}.bizdd div.on{font-weight:600}
+.demosel{background:#ffffff14;color:#fff;border:1px solid #ffffff2a;font-size:11.5px;padding:7px 8px;border-radius:9px;max-width:210px}.demosel option{color:#1d1e1a}
+@media(max-width:1560px){.hdr .logo small{display:none}.demosel{max-width:150px}}
+@media(max-width:1300px){.hdr{flex-wrap:wrap}.nav{order:10;flex-basis:100%;padding-top:4px}}
+.strip{display:flex;align-items:center;gap:8px;padding:8px 16px;background:var(--card);border-bottom:1px solid var(--bd);font-size:12.5px;position:sticky;top:62px;z-index:29}
+.bchip{padding:3px 10px;border-radius:20px;font-weight:600;font-size:12px;cursor:pointer;border:1px solid transparent}
+.bchip.B{background:#F9D600;color:#12130F}.bchip.P{background:#12130F;color:#F2F2EE;border-color:#555}
+.demo-user{margin-left:auto;font-size:11.5px;color:var(--mut)}
+/* drawer menu */
+.mnu{position:fixed;top:0;left:-320px;width:300px;height:100%;background:var(--card);z-index:60;transition:left .22s;box-shadow:6px 0 30px #0004;overflow-y:auto;display:flex;flex-direction:column}
+.mnu.on{left:0}.ovl{position:fixed;inset:0;background:#0006;z-index:55;display:none}.ovl.on{display:block}
+.mnu .who{background:var(--neg);color:#fff;padding:18px 16px;border-bottom:4px solid var(--biz)}.mnu .who b{display:block;font-size:15px}.mnu .who span{font-size:11.5px;color:#cfcfc9}
+.mnu h6{margin:14px 16px 6px;font-size:10.5px;letter-spacing:.8px;color:var(--mut);text-transform:uppercase}
+.mi{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;font-size:13px;border-left:4px solid transparent}
+.mi:hover{background:var(--hov)}.mi.on{border-left-color:var(--biz);background:var(--soft);font-weight:600}
+.mi .ico{width:22px;text-align:center}.mi .bd{margin-left:auto;background:var(--bad);color:#fff;border-radius:10px;font-size:10px;padding:1px 7px;font-weight:600}
+.mi.dis{opacity:.5;cursor:default}.pro{margin-left:auto;font-size:10px;background:var(--soft);padding:2px 6px;border-radius:6px;color:var(--mut)}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;border:1px solid #8885}
+.mnu select{margin:0 16px 10px;width:calc(100% - 32px)}
+/* layout */
+main{padding:16px;max-width:1400px;margin:auto}
+.grid{display:grid;gap:14px}.g2{grid-template-columns:1.5fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:1000px){.g2,.g3{grid-template-columns:1fr}.g4{grid-template-columns:1fr 1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px}
+.card h3{margin:0 0 10px;font-size:14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card h3 small{font-weight:400;color:var(--mut);font-size:11.5px}
+h2{font-size:17px;margin:2px 0 12px}
+.demo{background:#FFF8CC;color:#4a4100;border:1px solid #F0DC6A;border-radius:10px;padding:8px 12px;font-size:12px;margin-bottom:14px}
+body.dark .demo{background:#3a3510;color:#f5e9a8;border-color:#5b5320}
+.kpi{border-top:4px solid var(--biz)}.kpi .l{font-size:11.5px;color:var(--mut)}.kpi .v{font-size:23px;font-weight:700;margin:2px 0}.kpi .s{font-size:11.5px}
+.up{color:var(--ok)}.dn{color:var(--bad)}.muted{color:var(--mut)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;font-weight:600;color:var(--mut);font-size:11px;padding:7px 6px;border-bottom:1px solid var(--bd);white-space:nowrap}
+td{padding:7px 6px;border-bottom:1px solid var(--bd);vertical-align:middle}tr.cl{cursor:pointer}tr.cl:hover td{background:var(--hov)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.st{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:600;white-space:nowrap}
+.s-prog{background:#E9E9E4;color:#555}.s-cal{background:#ECE3F7;color:#6a3fa0}.s-lib{background:#E3ECF7;color:#2f5d8f}.s-par{background:#FFE9C7;color:#9a5b00}
+.s-ent{background:#DDF2E4;color:#237a44}.s-no{background:#FBDCD8;color:#b23a2b}.s-rech{background:#FBDCD8;color:#b23a2b}
+.tag{font-size:10px;padding:1px 6px;border-radius:5px;background:var(--soft);color:var(--mut);white-space:nowrap}.tag.pl{background:#12130F;color:#F9D600}
+.btn{border:0;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;background:var(--am);color:#12130F;font-size:12.5px}
+.btn.sec{background:var(--card);border:1px solid var(--bd);color:var(--tx)}.btn.dk{background:#12130F;color:#fff}.btn.ok{background:var(--ok);color:#fff}.btn.no{background:var(--bad);color:#fff}
+.btn:disabled{opacity:.4;cursor:not-allowed}.btn.sm{padding:5px 9px;font-size:11.5px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+select,input,textarea{font-family:inherit;padding:8px 9px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font-size:12.5px}
+.datebar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.datebar input{font-weight:600}
+/* calendar */
+.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.calg .h{font-size:11px;color:var(--mut);text-align:center;font-weight:600}
+.cell{border:1px solid var(--bd);border-radius:9px;min-height:78px;padding:6px;font-size:11px;cursor:pointer;background:var(--card);position:relative}
+.cell.out{opacity:.35}.cell.sel{outline:3px solid var(--biz);outline-offset:-1px}.cell.today .n{background:var(--neg);color:#fff;border-radius:6px;padding:0 5px}
+.cell .n{font-weight:600;display:inline-block}.cell .q{font-weight:700;font-size:12.5px;margin-top:3px}
+.cell .m{height:6px;border-radius:4px;background:var(--soft);margin-top:4px;overflow:hidden}.cell .m i{display:block;height:100%}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--mut);margin-top:8px}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+/* checklist */
+.chk{display:flex;gap:10px;align-items:flex-start;padding:8px 4px;border-bottom:1px solid var(--bd)}
+.chk .bx{width:20px;height:20px;border-radius:6px;border:2px solid var(--bd);flex:none;display:grid;place-items:center;font-size:12px;font-weight:700;margin-top:2px}
+.chk.done .bx{background:var(--ok);border-color:var(--ok);color:#fff}.chk.half .bx{background:var(--nar);border-color:var(--nar);color:#fff}.chk.no .bx{background:var(--bad);border-color:var(--bad);color:#fff}
+.chk.done .t{text-decoration:line-through;color:var(--mut)}.chk .t b{font-weight:600}.chk .t small{display:block;color:var(--mut);font-size:11px}
+.pbar{height:8px;background:var(--soft);border-radius:5px;overflow:hidden;margin:4px 0 10px}.pbar i{display:block;height:100%;background:var(--ok)}
+.hbar{display:grid;grid-template-columns:130px 1fr 42px;gap:8px;align-items:center;margin:6px 0;font-size:12px}
+.bar{height:10px;background:var(--soft);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%}
+.alert{display:flex;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:7px;align-items:center;border:1px solid var(--bd);background:var(--soft)}
+.alert .ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-weight:700;color:#fff;flex:none}
+.alert b{display:block;font-size:12.5px}.alert span{font-size:11.5px;color:var(--mut)}
+/* list cards for despachador */
+.tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}.tabs button{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:7px 12px;border-radius:20px;cursor:pointer;font-size:12px}
+.tabs button.on{background:#12130F;color:#F9D600;border-color:#12130F}.tabs button b{background:var(--bad);color:#fff;border-radius:8px;padding:0 6px;margin-left:4px;font-size:10px}
+.dl{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.di{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;cursor:pointer;border-left:5px solid var(--gris)}
+.di:hover{box-shadow:0 4px 14px #0001}.di .top{display:flex;justify-content:space-between;gap:6px;font-size:11.5px;color:var(--mut)}
+.di .c{font-weight:600;font-size:14px;margin:4px 0 2px}.di .p{font-size:12.5px}.di .ft{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center}
+.di.lib{border-left-color:var(--info)}.di.cal{border-left-color:#8a63c7}.di.par{border-left-color:var(--nar)}.di.ent{border-left-color:var(--ok)}.di.no{border-left-color:var(--bad)}
+/* modal */
+.mod{position:fixed;inset:0;background:#0007;z-index:70;display:none;align-items:flex-start;justify-content:center;padding:20px 10px;overflow-y:auto}.mod.on{display:flex}
+.mbox{background:var(--card);border-radius:16px;width:100%;max-width:620px;box-shadow:0 20px 50px #0005;overflow:hidden}
+.mbox.w{max-width:900px}
+.mhd{background:#12130F;color:#fff;padding:13px 16px;display:flex;align-items:center;gap:10px;border-bottom:4px solid var(--biz)}.mhd b{font-size:15px}
+.mhd .x{margin-left:auto;background:#ffffff1c;border:0;color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:15px}
+.mbd{padding:16px}
+.fld{margin-bottom:11px}.fld label{display:block;font-size:11.5px;font-weight:600;margin-bottom:4px}.fld input,.fld select,.fld textarea{width:100%}
+.fld .h{font-size:10.5px;color:var(--mut);margin-top:3px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:560px){.two,.three{grid-template-columns:1fr}}
+.auto{position:relative}.sug{position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--bd);border-radius:8px;box-shadow:0 8px 20px #0003;z-index:5;max-height:240px;overflow:auto;display:none}
+.sug div{padding:7px 10px;cursor:pointer;font-size:12px;display:flex;justify-content:space-between;gap:6px}.sug div:hover{background:var(--soft)}.sug small{color:var(--mut)}
+.ro{background:var(--soft)!important}
+.seg{display:flex;border:1px solid var(--bd);border-radius:9px;overflow:hidden}.seg button{flex:1;border:0;background:var(--card);color:var(--tx);padding:9px;cursor:pointer;font-size:12px}
+.seg button.on{background:#12130F;color:#F9D600;font-weight:600}
+.check{border-radius:10px;padding:10px 12px;font-size:12px;margin:4px 0 12px}
+.check.ok{background:#E3F5EA;border:1px solid #BFE6CD;color:#1d5a35}.check.no{background:#FDEEEC;border:1px solid #F3C4BD;color:#8f2a1f}.check.wa{background:#FFF4E2;border:1px solid #F4D7A6;color:#7a4b00}
+.info{background:var(--soft);border-radius:10px;padding:10px 12px;font-size:12px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}
+.info b{font-weight:600}
+.mini{display:grid;grid-template-columns:repeat(14,1fr);gap:3px;margin-top:6px}
+.mini div{border-radius:6px;padding:4px 0;text-align:center;font-size:10px;cursor:pointer;color:#fff;font-weight:600;line-height:1.2}.mini div small{display:block;font-weight:400;font-size:9px;opacity:.9}
+.mini div.sel{outline:3px solid var(--tx);outline-offset:1px}
+.trips{border:1px dashed var(--bd);border-radius:10px;padding:10px;margin-bottom:12px}
+.trips table td{padding:4px}.trips input{padding:5px 6px;width:100%}
+.photo{border:2px dashed var(--bd);border-radius:10px;padding:12px;text-align:center;cursor:pointer;font-size:12px;color:var(--mut)}
+.photo img{max-width:100%;max-height:200px;border-radius:8px;display:block;margin:0 auto 6px}
+.clock{font-weight:700;font-size:15px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#12130F;color:#fff;padding:10px 16px;border-radius:10px;z-index:90;font-size:12.5px;display:none;border-left:4px solid var(--am);max-width:90%}
+.rc canvas{width:100%;max-width:420px;display:block;margin:0 auto;border-radius:10px;box-shadow:0 4px 18px #0002}
+.share{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.wa{background:#25D366;color:#fff}.ml{background:#3A6EA5;color:#fff}
+.subtabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}.subtabs button{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:6px 12px;border-radius:20px;cursor:pointer;font-size:12px}
+.subtabs button.on{background:#12130F;color:#F9D600;border-color:#12130F}
+.pill{font-size:10.5px;padding:2px 7px;border-radius:6px;background:#FDEEEC;color:#b23a2b;font-weight:600}.pill.g{background:#DDF2E4;color:#237a44}.pill.o{background:#FFF1D6;color:#8a5600}
+.empty{padding:30px;text-align:center;color:var(--mut)}
+a{color:var(--info)}body.dark a{color:#8db8ea}
+.grid>*{min-width:0}html,body{overflow-x:hidden}
+@media(max-width:600px){main{padding:10px}.card{padding:12px}.logo small{display:none}.demosel{max-width:120px}
+.cell{min-height:54px;padding:3px;font-size:9.5px;border-radius:7px}.cell .q{font-size:10px}.cell .muted{display:none}.calg{gap:3px}
+.kpi .v{font-size:19px}.hbar{grid-template-columns:100px 1fr 38px}.strip{top:58px}.mini{grid-template-columns:repeat(7,1fr)}
+table{display:block;overflow-x:auto}.info{grid-template-columns:1fr}}
+.who{color:#cfcfc9;font-size:11.5px;text-align:right;line-height:1.25;white-space:nowrap}.who b{color:#fff;display:block;font-size:12px}
+.ib.on::after{content:"";position:absolute;right:6px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.ib.off::after{content:"";position:absolute;right:6px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--bad)}
+body.busy{cursor:progress}body.busy .mbox,body.busy main{opacity:.55;pointer-events:none}
+.carga{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:80;text-align:center;color:var(--mut)}.carga img{width:84px;border-radius:18px;margin-bottom:12px}
+@media(max-width:700px){.who{display:none}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <img src="data:image/png;base64,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" alt="" style="width:40px;height:40px;border-radius:9px"><div class="logo">RUTA <span>360</span><small>Duracreto 360 · Despachos e inventario</small></div>
+  <div class="bizw"><span class="bchip" id="sBiz"></span><div class="bizdd" id="bizdd"></div></div>
+  <nav class="nav" id="nav"></nav>
+  <span class="who" id="who"></span>
+  <button class="ib" id="bPush" title="Activar avisos en este dispositivo">🔔</button>
+  <button class="ib" id="bReload" title="Actualizar">⟳</button>
+  <button class="ib" id="bTheme" title="Modo claro / oscuro">☾</button>
+  <a class="ib" id="bHome" href="./" title="Volver a Duracreto 360" style="text-decoration:none">⌂</a>
+</div>
+<main id="main"></main>
+<div class="carga" id="carga"><div><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAATOElEQVR42u2deXhV1bXA19r7nHPPOTd3yA2BhASBIgVUFKMiFLAgokXgUVCs4nuKLeqDqi12UF/12fc9tWpLxYpa9TnUoaitYgCLFVCgIgLKEAmDaAiTkIQMdzz3nLOH98cJlEaGhDEJZ333Dz6+3OTe9dtr2GuvvQ7G8iLgy6kT4qvAB+AD8MUH4APwxQfgA/DFB+AD8MUH4APwxQfgA/DFB+AD8MUH4APwxQfQrkU5tX+eEgAA2ZK3IDS+BRGkACF9AEcriJBIoZBAmm+H8p+0hAA9IE0dGPcBHIXvI5CxcML3nOvGuijk/qV9JP0D5yABKIXaBvLoc4HyL2mHqJSyrZoCnpKuCIJg2fDtbmLVX5M0CMCap/4D3ZAAUKFmN/7q98ZLb2t6QBqBNmkKyilb/lm8YohLTUjuBaVFn0I2MpACYiH57MOZK4a4dz1qVO4isagUAqT0s6AjiZAQ0OCyAQw4KApQ0pIXBUqBElAUYAysOFw12v3H68mJY5z6BnQZKNQHcKTYm7Wha2dRchZnWSB4TL+KUsg0QKdc+fJjmT89momGZF0cFQqIPoBDp56ZLI4Z6uZ2l4yBEMCPzW8oFFwXrARMvNr5x6zU+BHu3gZkvG2YAjVM/eRbAOdQWMC75EFBTBoxUFVAAYyBlIB4NIsXEQiCnYa8qJwwxi3uKJZ9qtTGSdAA6QNoIlxA2MQ9X2vTX6avzVc2b6FEQqc8mRMDVQcqgDHgAqDlJAgBxoA50L8/HzvMrdhB1m6kmgqK0noj88kGQAkks+KyPvrCn+df0jMArvr+J/SpN+nzs5VPyyjLYodcyO0gVRMU2EcCWkDCMyA7DZ06yOvGuB1i8qNVSjyFpt5KTeFk7wMUArVp8eR1ubdeGuKOpBpms6Jspzv/c3ve2mzZTlcLsoHn8bHD+OUDec/uHHQAG9wsuLzRzzQThhAACHoUNpSTOx8y3l+mRkOSkFZnCicbgJSgUFj8s449O6oZWwKCQsDUEFUUrthcxRZusEtX2ysqHIew83rzMd/lVw5h5/XiSgiAAbPAdRu9TXNIMAZmEISEx14M/OYZnXOgtHUxOKkACIFkVg45M/C32/NtV+7XoJAgJFAEQ0WqIUi5o5Yt2eyUrsku2ezUZlnPbnzkYD5mKLu4Lw/GJAgQWbAdAAlIjpDICgEAoHeCN2apN90TDJrS+5/TEYDnfx78fvSXI8OJtFDIQTZoQgJBCCioaQgItQn+SYU9Z439/np7ewMrLGDDL+Zjh/EhF/D8AgEEIAtZG4QAgocs6gkBqgrVtXjh1aGMha3KCE5qKcL71t3zKBIQ4iCbEIKNy9lhMutKAAhqOOpcc9T5ZjrD12x3311n/22F/edSNyfCBpfw7w/jwwewbmcI0ACy4NjAvFBB/qW2JAGoDms30toGEgq2Lgs4qVkQAggJe1Ni1Dl6LIdajsRDZDhevCUIQkDWlbYjKcEe+cpl5+o3DzHGXaB3zlHXbaLPl9In31Te+4dSW0MiQSjoILUIqAoAA8b/uasQAlQDnno58PEaJcdoXXXTkx2ECULSlj3zlekTopf3NSxLuLzxWOaI1uPVnBUChopEQ+CyooZ9sMmes9r+aIuTZKzPmXzUJWz0JfyCs7kelcCAZ8F2GkEOvj70RSUxAqc3gMZShCOFhKnfzblvVCRikLglKGlBQXp/qNBVVDUEkFUNfNkWp3RNdtEGZ3fS7VLMLx/Ixw7jg85n0TwJObBiMR0+KaQH5Omehu63AwCoTYuSLtrvJkSH9tEzGcFEs0yhSVLrLeeAAoEAAQKJFF9V6cxba8//3P6yxo3F+OAS/u/j2YqVym9fCOTnytZ2ZoCn8JqqQiGZlRThJ8NDd48MB1WSsASlgEe1vfBIqBQMDUFB2xaf79vfrdvhdu2IAmB3nBsqnu4uqMnOQEqoS4sB3bXpE3IH9gykM4K33BQODBVCgIR9+zsFAeSHG7PXPFs7vJe+YquzN8X11sTgFBTjmqxcAAjpuK2Wz1qV5hwGn6mbGlpOS07q/zXR2p/L2gzSWakruKLC+Wybs7WW/2hQcEWl07I2gPYNYH9Q1VVEwPnrsx99aZ9brHbvpDqOlHBM5ypeLqsQvG9OvEe+urzCMTX80aDgnDLLUFH6jVnwrzVqBMgPkeUVzogZNb+bnwioaGp4LDFTStAV2F7HFm+2u8Zovy7qnFUZV8CDY6N7E6KVHNe0os44CcA4hA2UAL98u2HMzJqNe9xIiEgJTAAXwFry4gJsBqpGVlY6iQbGJfTvqpEA3j83PqxX4LbhOdVxoVLfBR1s2RKAnABuqnLf/DRjKDigR8A0SEBFXWvBK6ChqaPg8t7S+BdVrDhPGXmO/tYaSyH4cYX96g/zPt/lrtvl5uinOCAr0PpEAjABEYM4HH7yZv175dZZnVWHNa16SgkED3nwKyUoFFdvd5Z9aZtBsnEPO7dIK4rSlC3X7nDvLY2/PTV/wEN7yneziIFMnK5paHOiaCIrXSYPuTuQh8yHpISAgjkB9PLaNfcW3PNOw6yVmfwQrU7wubfll3TTvvPQnuqUMDXkot0BIHh8ekMI4lH/HilBCEkIxC259OcdK2vZNc/VdgpRyxFRk3x2X8H2On7FY9UOl4aKXBz8A5/QvkflBDb/uNJmx4WBPPZziGxKrKx0rr3QzM8hNpOGhl838Cmv1P/lp/kv3ph37f/trUsLggfJTaUETQFdxRNURFJOlPYd+a18pWuewoQ85S1SFCGelQQhr4My9NuBd9ZaKiWxIJm9NvPMe4lbx0SeTPOXlqeDWtOALAEUgttqWcVedoIYKCfC86QdeVFX7b078g2DtKJmBAnJOE/ZkhKUEgRAjk5+/W6ipKt243dDNw7KOVQssbJi5B9qVlY63yTUGmMAIrhMFucqPfKVjCMJtpbMSqGwJ863VP9zLRMEm8moQfoUquIQYV5IMDX8qobtrGeqcvyN4IQEYUTvTBEItq7sVqVNvTkiMA7e8edhKyWgKW3EBe0LXKirrawBBA+Sz3htMuHDKhcRhIS2FIS9L8Zl69vgHd1Hlf4tSfCvqfriA/AB+OID8AH44gPwAfjiA/AB+OID8AH44gPwAZw2QskJmT/hA4Bm9vzGUyiOoW3bB3D0DfSpDA7oxx6407IdTFmoKD6A43lMdoSuI9x3avaLO+33nk+d1YPX1CEhx63BnZzOqqeUcs5d5nr/PvxZJq+FIRexD19NTbvRTqUxax8fUyDtXstkn+ABQgjhnNfV1SmKEs4JZzKZRCJBKSWHEESkCqSToKty+q+tt59MdSnge+uR0mNtPCDt13cTALBtO5VKpVIpy7LsfeI4TiaTVlX1kYcfLlu3rry8fOGCBUOHDq2vr89kMul0OnXAK51OZ9OpbDYLAJSC4GDVw8jhbOms1E3jnfo4Osc2JA3b37MkvdVtWZau68XFxd27d+/cuSgcjqiq6rl7RHQc59/GjB406JI33nitomLr9ddPLCgoXLRoIfEc0QEdEIiCiZwOxiclnf6LC/S6FzkHTQNqwBul6l2/NXZVkdywPLr23vYGgBCSyaSDwZyBA78zYMDA4uJiXdcBQOybT+Bpv3Nh4aWXXvbTabc/PmMmABR27vj+3/9+zjn9OLdJ0/DKEXWRXsC2XQ5IAMQBbb9gRGH7djLtAWPuh2o452guISvtyd1LKdPp1IUX9h83bnxxcRfGXMdxUqlUkx/LZrM5oZy9e3fPnj07lhcJBoM7dn79TmnpWWf1ra+vV5rGVg6I1E4HDjovsB4K88Rbr6QfmxG4d4ZhGi0eRKG0G+0LIVzXvWbCD0ZeOYpznkwmvOB54M805p2E2Nmsaebk5+dv37ELAEBAly5dpORN3tKYiB4iVeUcFAXUICxZoJQuUlXldLUAT/tCiMmTbx48eEgikfDSSiEEIhqGQani/QCARERFUapr9ppmcObMmVOmTKmurpl25w033nCDEDwcDmPTpiyORJOoi2+OggqBbcP9v9Onv6AzBjnBowHQhmPA/pySMcY5v/XW/+zf/2Ivm/Scvmmarut+8cXmLVu2VFdXW1aGc4EIiMSyrJKS8x+f8XgoFE2n48FgZPbsvzzz7LOapjXRIkGZttT+Z1c9cNtKJ4uESCEAEQJRWL2a/vQB46PPlFhUejNZAE4bC6CUuq5rWRYAKIpyyy237te+p8FgMFhWVjZv3tyvvvqSMdZkx0sIKS9fv3z58itHXhnNja5evXrBggW241BCmgCgBCwLiCUJBQDZOAMN4PdPBx54Ss9kMT9PegM3T6M0lBCSSCRjsdy+5/S1stZ55/UbPHiIZVmEECklIgYCgdLSd+bOnQMAum5804FLCYSgZVmZjCUlKCoNh0LkYOUFSiCewisGOW8/mbQyYMbgi81k2oPG/KVqNCIVCpy3u1uSR1r7JJFIjho18ok/PFFU1BUAstnUog8+TKfTXggNBAKvvPLywoULQqGQFx4Oujw5h0AgYJomAEgpOef8oLqUwDkyJjAAJoHnX9XunWHUNmB+nuT8WLXf9nbChJBMJtOvX7/XZ71ZXV1z1VVjJ1wzvqys7PIRIyKRCOPcMAxP+5FIREopDuuYpZSMMS+EwGHH/hm6rKrBa+4I3nKfadkQDR+T22nDLkhVlao9tS+9+NzY74/re27fnTt3A0C3bmcs/3hZfX3DZ6vXvPXWX+fP/1soFBLHaTIcIjgOdCsWUkD5lzQ/JvlxnZDfllyQSqEmwa6+KHjtyLMXry6rrtpTVFQAALt27SwvX9/v/JLXX5+1aNHC46j9xssmGlTuIgCQHzv+856UNqT9urQY2st88QYKddt69xleXFRYUfk1AHTp0rmk5MJ335337rz5HTvlMcbguF/4UQHghDyho8WzIrw9jle59dwonJTZWglLfruj+vaU/JCOVt3uDhf9x8WDhqfitb379Hr6qaeLioqnTp1S11CnKIpsU4/QaFkM8LLvVCrFuUSEQEALBoNSypZ+5/0HIF76ccS1H7dkYYS8e1vHXgVK0kaVp9zOwyIj/hfMYgDYubPy9jvumD9/fjgc5py324f4UEqTyWQ0Ghk27NJevXolk8llHy1bvWZ1MBhUFdJ8BojUymbT6YyUoKo0FAoR79zvG9k6AjABdWnRp1B98+a8s4vUhCVVAq4gES2zpEK7/+NChcj168vr6xvC4ePp+lsdAEppIpkcOODiF194qVu3Hul03DRNRHXmzBl33/Mr21VJM0+GkDAn0fPMrleOHJUby/30008XLVpkC0qoAlLsf5iSlCCklAC5JplQYv736HCnME1lpUKBcTADuK1OXv7Y11v3pHQVA7qhqmqbW/stCMJe9t2nd+93ZpdWV9eMHv298g0bTNP84U03/exndwUNeO3FaaFQWBxJBUiIk0126z36N4/8KRIJp9OJxiLMQ7drhMsDNiW6Cvk59OxCdWivwNlFmu3IVFYqBFwOhoZxS0x8rmZXXHbMi3Ahm+PH2rYFUErr6upn/fm1ESOuKLng/K1bt0ejOYzxVNL6zcMP3n3XPbC9N7AvAPGwVzoRQAIWQrfyT1Zsmjr11qqqmmuvuWr672fKsj/KFQ9hIAqSe7dCiTd8D4E50rtujwguh5COSVte/ceaJVvsWJC06WfoNRcAInLONU1b//nnpXNKb548pbBzR8dxKKWWZXXtWrR46XojOY00PAVEAWCHszbBeOQWN/fpKy4rWblqXSwWqauNv/zaqxPHXpp8dQQFBkgOTP7kvpk3XgEyFCRfVbmTXqhbUWnnmoQJgNPkYZ5CCE3TAoFA7d5aohAhhGf1lFIrY1mWbdJQs2KwBKLEUqn0nqo9sVgkGAzW1cUrK7eiZgiiEe42WkmTm+wEckwihJz1Sfqe2Q17EqLdaL9ZAKSUqqo2NDTs2LFj8ODBUgrOuaIolNLdu6uHDP5O54IQqdkAIQByeAgCJAD5pLggNH7cVTNmPFVXFy8syBs3fgJJbInROOgmNBnjQAAE1KX4+xszzyxNLdyYNVQM69hutN+yGPDjH099fMbMn/9i2vTpMwgBweFbPc6YN/e9jvnKqnn9Aqo38EIetsuMuC4r7Pt63wsmvPHGKxUV2yZed23n4jMWPfYDWrUC1CDIRtVyCQlL7Kzn6792V1Y6W6pdBAwbeOJmNrT2NNQ7y575xBOTJk1euvSDZcuW5eXlTZx4PeN83Lixi5euNM2cI6bhiMgZi4SVu++6Z+LE60zT3LBh46//5/5FHyzRjKZv50Jy0Tgi3dDQmy3a/qQFAIQQjuNMmjRp8uTJXc/oms1aixcveeTRRzZt2hSJhAXnzZm6jYiuy5PJZG5urq7rtbW1QohwOPTNbgLExoDQ/lb9Ue6EvSO9hoaGQCAQjUZt225oaNB13TTNFqXhXmeg67pCCFVVvT4qOF2lxecBXrcBY4wQ4lW+jq4A4OGU7Xhtn6BytLdave6lY1m5vuqP6TzAVx/4FzR8AL74AHwAvvgAfAC++AB8AL74AHwAvvgAfAC++AB8AL74AHwAvvgAfAC++AB8AL74AHwAvvgAWq/8P8ZTgQxJNFGQAAAAAElFTkSuQmCC" alt=""><div id="cargaT">Cargando Ruta 360…</div></div></div>
+<div class="mod" id="mod"><div class="mbox" id="mbox"></div></div>
+<div class="toast" id="toast"></div>
+<script src="config.js"></script>
+
+<script>
+const _now=new Date();const TODAY=_now.getDate()+'/'+(_now.getMonth()+1)+'/'+_now.getFullYear();
+const asesAct=()=>ASES.filter(a=>a.act).map(a=>a.n);
+const fechaLarga=()=>{const d=new Date();return DIAS[d.getDay()]+' '+d.getDate()+' de '+MES[d.getMonth()]+' de '+d.getFullYear()};
+const $=s=>document.querySelector(s);
+const fmt=n=>n===Infinity?'sin límite':Math.round(n||0).toLocaleString('es-HN');
+const pct=x=>isFinite(x)?Math.round(x*100)+' %':'—';
+const pd=s=>{const[d,m,y]=s.split('/').map(Number);return new Date(y,m-1,d)};
+const fd=d=>d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();
+const iso=s=>{const d=pd(s);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const fromIso=v=>{const[y,m,d]=v.split('-').map(Number);return d+'/'+m+'/'+y};
+const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'],MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const largo=s=>{const d=pd(s);return DIAS[d.getDay()]+' '+d.getDate()+' de '+MES[d.getMonth()]};
+const addD=(s,n)=>{const d=pd(s);d.setDate(d.getDate()+n);return fd(d)};
+const nowHM=()=>{const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* ===================== Conexión con Duracreto 360 (misma sesión, mismos usuarios) ===================== */
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const SS='dc_bloques_sesion_v2',THM='dc_bloques_tema',RBIZ='dc_ruta_negocio',RSEC='dc_ruta_seccion';
+const API_URL=String(window.API_URL||'').trim();
+let SES=store.get(SS);
+if(!SES||!SES.token||!SES.ruta){location.replace('./')}
+async function api(action,payload={}){let r;
+ try{r=await fetch(API_URL,{method:'POST',body:JSON.stringify(Object.assign({action,token:SES&&SES.token},payload))})}catch(e){throw new Error('Sin conexión. Revise el internet e intente de nuevo.')}
+ const j=await r.json();if(!j.ok&&j.error==='sesion'){store.del(SS);location.replace('./');throw new Error('sesion')}return j}
+const D={B:[],P:[],cli:[],eqs:[],capB:[],capP:[],prodB:[],prodP:[],invB:[],invP:[],prodD:[],conteo:{B:'',P:''},cau:[],bit:[]};
+const AUT={B:[],P:[]};let ASES=[],CFG={tolerancia:.1,capB:28000,capP:6},CARGADO=0;
+const ST={Programado:'prog',Parcial:'par',Entregado:'ent','No realizado':'no','Saldo cerrado':'ent'};
+const RQ={Pendiente:'pend',Aprobada:'ok',Rechazada:'rech'};
+const isoDMY=v=>v?fromIso(String(v).slice(0,10)):'';
+function conv(x){const o=Object.assign({},x);o.f=isoDMY(x.f);o.cerr=x.st==='Saldo cerrado';o.st=ST[x.st]||'prog';o.req=RQ[x.req]||'';
+ o.entregas=(x.entregas||[]).map(e=>Object.assign({},e,{fe:isoDMY(e.fe)}));o.sol=o.st==='par'&&o.cant>o.ent;
+ if(o.cal)o.cal=Object.assign({},o.cal,{fe:isoDMY(o.cal.fe)});return o}
+const letras=t=>(/bloq/i.test(t)?'B':'')+(/prefa/i.test(t)?'P':'')||'B';
+async function cargarNeg(b){const j=await api('ruta_data',{neg:b});if(!j.ok)throw new Error(j.error||'No se pudo leer '+BIZ[b].n);
+ D[b]=j.despachos.map(conv);AUT[b]=j.autorizaciones||[];CFG=Object.assign(CFG,j.cfg||{});
+ const c=j.cat;D['cap'+b]=c.capacidades;D['prod'+b]=c.productos.map(p=>p.p);D['inv'+b]=j.inventario.items;D.conteo[b]=j.inventario.conteo||'';
+ if(b==='B')D.prodD=(j.inventario.produccion||[]).map(p=>({f:isoDMY(p.f),p:p.p,u:p.u}));
+ D.cli=c.clientes.map(k=>Object.assign({},k,{b:letras(k.b),k:0}));D.eqs=c.equipos;D.cau=c.causas;D.bit=c.bitacora||[];
+ ASES=c.asesores.map(a=>({n:a.n,act:a.act}));
+ if(SES.ruta.rol!==j.rol||String(SES.ruta.negocios)!==String(j.negocios)){SES.ruta={rol:j.rol,negocios:j.negocios};store.set(SS,SES)}}
+async function cargarTodo(){await Promise.all(S.user.biz.map(cargarNeg));
+ const k={};D.B.concat(D.P).forEach(x=>{const n=nz(x.cli);k[n]=(k[n]||0)+1});D.cli.forEach(c=>c.k=k[nz(c.n)]||0);CARGADO=Date.now()}
+async function guardar(action,payload,okMsg){const b=$('#mbox button.dk,#mbox button.ok,#mbox button.no');
+ document.body.classList.add('busy');try{const j=await api(action,Object.assign({neg:S.biz},payload));
+  if(!j.ok){if(j.pendiente){espera(j.error)}else toast('✖ '+esc(j.error||'No se pudo guardar'));return null}
+  await cargarTodo();if(okMsg)toast(okMsg);return j}
+ catch(e){toast('✖ '+esc(e.message));return null}finally{document.body.classList.remove('busy')}}
+function espera(msg){render();modal('Debe esperar autorización',`<div class="check wa" style="font-size:13px">⏳ <b>${esc(msg)}</b></div><p class="muted" style="font-size:12px">Fernando Murillo recibió el aviso. Cuando lo apruebe le llegará una notificación: vuelva a abrir este despacho y registre la misma cantidad. Si lo rechaza, despache como máximo el saldo.</p><button class="btn dk" style="width:100%" onclick="closeModal()">Entendido</button>`)}
+const autDe=id=>AUT[S.biz].find(a=>a.desp===id);
+/* Foto: se reduce en el teléfono antes de enviarla (máx. 1280 px) */
+function reducirFoto(dataUrl){return new Promise(ok=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1280/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.72))};im.onerror=()=>ok(dataUrl);im.src=dataUrl})}
+/* Notificaciones push (mismo proyecto Firebase que Duracreto 360) */
+const PTK='dc_bloques_push_token';let fbMsg=null;
+const esIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const instalada=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const pushSoportado=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+const pushActivo=()=>pushSoportado()&&Notification.permission==='granted'&&!!store.get(PTK);
+function cargarScript(src){return new Promise((ok,no)=>{if(document.querySelector(`script[src="${src}"]`))return ok();const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('No se pudo cargar Firebase'));document.head.appendChild(s)})}
+async function firebaseMsg(){if(fbMsg)return fbMsg;const v='10.12.5';await cargarScript(`https://www.gstatic.com/firebasejs/${v}/firebase-app-compat.js`);await cargarScript(`https://www.gstatic.com/firebasejs/${v}/firebase-messaging-compat.js`);if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE);fbMsg=firebase.messaging();return fbMsg}
+async function tokenPush(){const reg=await navigator.serviceWorker.register('sw.js');await navigator.serviceWorker.ready;const m=await firebaseMsg();return m.getToken({vapidKey:window.FIREBASE_VAPID,serviceWorkerRegistration:reg})}
+const nombreDisp=()=>{const u=navigator.userAgent;return (esIOS?'iPhone/iPad':/Android/.test(u)?'Android':/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Otro')+(instalada()?' · app instalada':' · navegador')};
+async function panelPush(){if(pushActivo()){toast('Los avisos ya están activados en este dispositivo.');return}
+ if(esIOS&&!instalada()){modal('Activar avisos',`<p style="margin-top:0">En iPhone los avisos llegan solo con la app instalada: toque <b>Compartir</b> › <b>Agregar a pantalla de inicio</b>, ábrala desde el ícono y vuelva a tocar la campana.</p>`);return}
+ if(!pushSoportado()){toast('Este navegador no permite avisos');return}
+ try{const p=await Notification.requestPermission();if(p!=='granted'){toast('No se dio permiso para los avisos');return}
+  const tk=await tokenPush();const j=await api('suscribir',{pushToken:tk,disp:nombreDisp()});if(!j.ok)throw new Error(j.error);store.set(PTK,tk);try{await api('probarPush')}catch(e){}
+  toast('Avisos activados en este dispositivo');renderShell()}catch(e){toast('No se pudieron activar los avisos: '+esc(e.message))}}
+
+function toast(t){const e=$('#toast');e.innerHTML=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',3200)}
+
+/* ---------- usuarios y permisos (demo) ---------- */
+const ROLN={ADMIN:'Administrador',PROGRAMADOR:'Programador de despachos',DESPACHO:'Despachador',CALIDAD:'Control de Calidad',CONSULTA:'Consulta'};
+const BIZ={B:{n:'Bloques',c:'#F9D600',u:'unid.',cap:28000,capL:'28,000 unid./día'},P:{n:'Prefabricados',c:'#F2F2EE',u:'piezas',cap:6,capL:'6 viajes/día'}};
+const SECS=[
+ {k:'tab',n:'Tablero',i:'▦',r:['ADMIN','PROGRAMADOR','CONSULTA']},
+ {k:'prog',n:'Programación',i:'🗓',r:['ADMIN','PROGRAMADOR']},
+ {k:'sal',n:'Saldos y solicitudes',i:'↺',r:['ADMIN','PROGRAMADOR'],badge:()=>pendSol().length+pendReq().length+AUT[S.biz].length},
+ {k:'cal',n:'Calidad',i:'✔',r:['ADMIN','CALIDAD'],only:'P',badge:()=>recs().filter(x=>x.f===TODAY&&needsCal(x)).length},
+ {k:'eje',n:'Ejecutar despachos',i:'🚚',r:['ADMIN','PROGRAMADOR','DESPACHO'],badge:()=>recs().filter(x=>x.f===TODAY&&saldo(x)>0&&x.st!=='no'&&x.req!=='pend').length},
+ {k:'inv',n:'Inventario',i:'▤',r:['ADMIN','PROGRAMADOR','CONSULTA']},
+ {k:'rep',n:'Reportes',i:'⬇',r:['ADMIN','PROGRAMADOR','CONSULTA']},
+ {k:'bd',n:'Bases de datos',i:'🔒',r:['ADMIN','PROGRAMADOR']}];
+let S={user:{u:SES&&SES.u,n:SES&&SES.nombre,rol:SES&&SES.ruta&&SES.ruta.rol,biz:(SES&&SES.ruta&&SES.ruta.negocios)||['B']},biz:'B',sec:'tab',date:TODAY,ejeTab:'hoy',bdTab:'cli',repT:'cumF'};
+{const b=store.get(RBIZ);S.biz=S.user.biz.includes(b)?b:S.user.biz[0];S.sec=store.get(RSEC)||({DESPACHO:'eje',CALIDAD:'cal'}[S.user.rol]||'tab')}
+
+/* ---------- datos ---------- */
+const recs=(b=S.biz)=>b==='B'?D.B:D.P;
+const saldo=x=>Math.max(0,x.cant-x.ent);
+const needsCal=x=>S.biz==='P'&&!x.cal&&x.st!=='no'&&saldo(x)>0;
+const pendSol=()=>recs().filter(x=>x.sol&&saldo(x)>0);
+const pendReq=()=>recs().filter(x=>x.req==='pend');
+const caps=()=>S.biz==='B'?D.capB:D.capP;
+const prods=()=>{const p=S.biz==='B'?D.prodB:D.prodP;return p.length?p:caps().map(c=>c.p)};
+const EQT=()=>S.biz==='B'?['Camión plataforma','Rastra 2 ejes','Rastra 3 ejes']:['Camión plataforma','Rastra'];
+function capOf(prod,eqT){const c=caps().find(c=>c.p===prod);if(!c)return null;return {'Camión plataforma':c.cam,'Rastra':c.ras,'Rastra 2 ejes':c.r2,'Rastra 3 ejes':c.r3}[eqT]||null}
+function viajes(x){const c=capOf(x.prod,x.eqT||'Camión plataforma')||capOf(x.prod,S.biz==='B'?'Rastra 2 ejes':'Rastra')||10;return Math.ceil(x.cant/c)}
+function cap(){return S.biz==='B'?(+CFG.capB||28000):(+CFG.capP||6)}
+function carga(f){const r=recs().filter(x=>x.f===f);return S.biz==='B'?r.reduce((s,x)=>s+x.cant,0):r.reduce((s,x)=>s+viajes(x),0)}
+const satCol=r=>r===0?'var(--soft)':r>1?'#D64534':r>.85?'#F49A29':'#2E9B57';
+function stInfo(x){
+ if(x.st==='ent')return[x.cerr?'Saldo cerrado':'Entregado','s-ent','ent'];
+ if(x.st==='no')return['No realizado','s-no','no'];
+ if(x.cal&&!x.cal.ok)return['Rechazado por calidad','s-rech','no'];
+ if(x.st==='par')return['Parcial · saldo '+fmt(saldo(x)),'s-par','par'];
+ if(S.biz==='P'&&!x.cal)return['Espera calidad','s-cal','cal'];
+ if(S.biz==='P')return['Liberado por calidad','s-lib','lib'];
+ return['Pendiente','s-prog','prog']}
+const st=x=>{const i=stInfo(x);return `<span class="st ${i[1]}">${i[0]}</span>`};
+const trTxt=x=>x.tr==='P'?`<span class="tag pl">Platino${x.eqT?' · '+x.eqT:''}</span>`:'<span class="tag">Transporte del cliente</span>';
+function invLibre(prod,hasta){if(!D.conteo[S.biz])return Infinity;const i=(S.biz==='B'?D.invB:D.invP).find(i=>i.p===prod);if(!i)return Infinity;
+ const comp=recs().filter(x=>x.prod===prod&&pd(x.f)>=pd(TODAY)&&pd(x.f)<=pd(hasta)&&x.req!=='pend'&&x.req!=='rech'&&(x.st==='prog'||x.st==='par')).reduce((s,x)=>s+saldo(x),0);
+ return i.disp+(pd(hasta)>=pd(addD(TODAY,1))?i.cur:0)-comp}
+
+/* ---------- equipos en taller ---------- */
+const enTaller=e=>/taller/i.test(e.e||'');
+const BIT=[];
+const eqTipo=e=>e.t==='Rastra'&&S.biz==='B'?'Rastra '+(e.ejes||2)+' ejes':e.t;
+function eqOpts(tipo,sel){const base=tipo?tipo.split(' ')[0]:'';return D.eqs.filter(e=>!base||e.t.split(' ')[0]===base).sort((a,b)=>(eqTipo(b)===tipo)-(eqTipo(a)===tipo)).map(e=>`<option value="${e.c}" ${e.c===sel?'selected':''}>${e.c} · ${eqTipo(e)} · ${e.m||'sin motorista'}${enTaller(e)?' · ⚠ en taller':''}</option>`).join('')}
+function wireEq(selId,warnId,onOk){const s=$('#'+selId);s.dataset.ok='1';
+ const chk=()=>{const e=D.eqs.find(q=>q.c===s.value);const w=$('#'+warnId);
+  if(e&&enTaller(e)){s.dataset.ok='';w.innerHTML=`<div class="check wa">⚠ <b>${e.c} figura «${e.e}» en el configurador.</b> ¿Ya está habilitado?<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn sm" id="${warnId}Y">Sí, ya está habilitado · usarlo</button><button type="button" class="btn sec sm" id="${warnId}N">Elegir otro equipo</button></div></div>`;
+   $('#'+warnId+'Y').onclick=()=>{e.e='Activa';s.dataset.ok='1';s.dataset.hab='1';
+    w.innerHTML=`<div class="check ok">✔ <b>${e.c}</b> quedará habilitado en el configurador al guardar${S.user.rol==='DESPACHO'?' y se avisará a Fernando Murillo':''}.</div>`;
+    s.innerHTML='<option value="">— Selecciona —</option>'+eqOpts(s.dataset.tipo,e.c);onOk&&onOk(e)};
+   $('#'+warnId+'N').onclick=()=>{s.value='';w.innerHTML='';s.dataset.ok='1';s.focus()}}
+  else{w.innerHTML='';s.dataset.ok='1';if(e&&onOk)onOk(e)}};
+ s.onchange=chk;if(s.value)chk()}
+async function togAse(i){const a=ASES[i];if(await guardar('ruta_catalogo',{tabla:'asesor',rec:{n:a.n,act:!a.act}},a.n+(a.act?' desactivado':' activado')))render()}
+async function nuevoAsesor(){const n=(prompt('Nombre del asesor')||'').trim();if(n&&await guardar('ruta_catalogo',{tabla:'asesor',rec:{n,act:true}},'Asesor agregado: '+esc(n)))render()}
+async function setEjes(c,v){if(await guardar('ruta_catalogo',{tabla:'equipo',rec:{c,ejes:+v}},c+': rastra de '+v+' ejes'))render()}
+async function setDni(c,v){if(await guardar('ruta_catalogo',{tabla:'equipo',rec:{c,dni:v.trim()}},c+': DNI guardado'))render()}
+async function toggleTaller(c){const e=D.eqs.find(q=>q.c===c);const n=enTaller(e)?'Activa':'Activa/Taller';if(await guardar('ruta_catalogo',{tabla:'equipo',rec:{c,e:n}},`${c}: ${n==='Activa'?'habilitado':'marcado en taller'}`))render()}
+
+/* ---------- shell ---------- */
+function allowed(){return SECS.filter(s=>s.r.includes(S.user.rol)&&(!s.only||s.only===S.biz))}
+function renderShell(){
+ document.documentElement.style.setProperty('--biz',BIZ[S.biz].c==='#F2F2EE'?'#A0A19F':BIZ[S.biz].c);
+ const multi=S.user.biz.length>1;
+ $('#sBiz').className='bchip '+S.biz;$('#sBiz').innerHTML='● '+BIZ[S.biz].n+(multi?' ▾':'');
+ $('#bizdd').innerHTML=[['B','Bloques','#F9D600',S.user.biz.includes('B')],['P','Prefabricados','#12130F',S.user.biz.includes('P')],['T','Trituración','#F49A29',0],['C','Concreto','#A0A19F',0]].filter(b=>b[3]||b[0]==='T'||b[0]==='C').map(b=>`<div class="${b[3]?'':'dis'} ${S.biz===b[0]?'on':''}" ${b[3]?`data-biz="${b[0]}"`:''}><span class="dot" style="background:${b[2]}"></span>${b[1]}${b[3]?(S.biz===b[0]?' ✓':''):'<span class="pro">Próximamente</span>'}</div>`).join('');
+ $('#sBiz').onclick=e=>{e.stopPropagation();if(multi)$('#bizdd').classList.toggle('on')};
+ document.querySelectorAll('#bizdd [data-biz]').forEach(e=>e.onclick=()=>{S.biz=e.dataset.biz;store.set(RBIZ,S.biz);$('#bizdd').classList.remove('on');if(!allowed().find(s=>s.k===S.sec))S.sec=allowed()[0].k;render()});
+ $('#nav').innerHTML=allowed().map(s=>{const b=s.badge?s.badge():0;return `<button class="${S.sec===s.k?'on':''}" data-sec="${s.k}">${s.n}${b?`<span class="bd">${b}</span>`:''}</button>`}).join('');
+ document.querySelectorAll('#nav [data-sec]').forEach(e=>e.onclick=()=>{S.sec=e.dataset.sec;store.set(RSEC,S.sec);render()});
+ const on=$('#nav .on');if(on)on.scrollIntoView({block:'nearest',inline:'nearest'});
+ $('#who').innerHTML=`<b>${esc(S.user.n)}</b>${ROLN[S.user.rol]||S.user.rol}`;
+ const pb=$('#bPush');pb.className='ib '+(pushActivo()?'on':'off');pb.title=pushActivo()?'Avisos activados en este dispositivo':'Activar avisos en este dispositivo';pb.onclick=panelPush;
+ $('#bHome').style.display=SES.rol?'':'none';
+}
+document.addEventListener('click',()=>$('#bizdd').classList.remove('on'));
+function closeMenu(){}
+function theme(x){if(x===undefined){x=!document.body.classList.contains('dark');store.set(THM,x?'dark':'light')}document.body.classList.toggle('dark',x);document.documentElement.dataset.theme=x?'dark':'light';$('#bTheme').textContent=x?'☀':'☾'}
+{const t=store.get(THM);theme(t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches)}
+$('#bTheme').onclick=()=>theme();
+async function reload(silencio){if(!silencio)$('#main').style.opacity=.3;try{await cargarTodo();if(!$('#mod').classList.contains('on'))render();if(!silencio)toast('Datos actualizados · '+nowHM())}catch(e){if(!silencio)toast('✖ '+esc(e.message))}finally{$('#main').style.opacity=1}}
+$('#bReload').onclick=reload;
+function render(){if(!allowed().find(s=>s.k===S.sec))S.sec=allowed()[0].k;renderShell();const f={tab:vTab,prog:vProg,sal:vSal,cal:vCal,eje:vEje,inv:vInv,rep:vRep,bd:vBd}[S.sec];$('#main').innerHTML='';f();window.scrollTo(0,0)}
+
+/* ---------- modal ---------- */
+function modal(title,body,wide){$('#mbox').className='mbox'+(wide?' w':'');$('#mbox').innerHTML=`<div class="mhd"><b>${title}</b><button class="x" onclick="closeModal()">✕</button></div><div class="mbd">${body}</div>`;$('#mod').classList.add('on')}
+function closeModal(){$('#mod').classList.remove('on')}
+$('#mod').onclick=e=>{if(e.target.id==='mod')closeModal()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+/* ========== TABLERO ========== */
+function calendarHTML(sel,onclickFn){
+ const d=pd(sel),first=new Date(d.getFullYear(),d.getMonth(),1);let start=new Date(first);start.setDate(1-((first.getDay()+6)%7));
+ let h=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(x=>`<div class="h">${x}</div>`).join('');
+ for(let i=0;i<42;i++){const c=new Date(start);c.setDate(start.getDate()+i);const k=fd(c);const r=recs().filter(x=>x.f===k);const q=carga(k),rt=q/cap();
+  const ent=r.filter(x=>x.st==='ent').length;
+  h+=`<div class="cell ${c.getMonth()!==d.getMonth()?'out':''} ${k===sel?'sel':''} ${k===TODAY?'today':''}" onclick="${onclickFn}('${k}')"><span class="n">${c.getDate()}</span>${r.length?`<div class="q">${S.biz==='B'?fmt(q):q+' viajes'}</div><div class="muted">${r.length} prog.${pd(k)<=pd(TODAY)?' · '+ent+' ✓':''}</div><div class="m"><i style="width:${Math.min(rt,1)*100}%;background:${satCol(rt)}"></i></div>`:''}</div>`}
+ return h}
+function vTab(){
+ const f=S.date,r=recs().filter(x=>x.f===f).sort((a,b)=>a.h.localeCompare(b.h)),p=r.reduce((s,x)=>s+x.cant,0),e=r.reduce((s,x)=>s+x.ent,0);
+ const done=r.filter(x=>x.st==='ent').length;const d=pd(f);
+ $('#main').innerHTML=`
+ <div class="tools"><div class="datebar"><button class="btn sec sm" onclick="goDay(-1)">◀</button><input type="date" value="${iso(f)}" onchange="S.date=fromIso(this.value);render()"><button class="btn sec sm" onclick="goDay(1)">▶</button>${f!==TODAY?'<button class="btn sm" onclick="S.date=TODAY;render()">Hoy</button>':''}</div>
+ <b style="font-size:15px;text-transform:capitalize">${largo(f)}</b><span class="sp"></span>${['ADMIN','PROGRAMADOR'].includes(S.user.rol)?'<button class="btn" onclick="formProg()">+ Nueva programación</button>':''}</div>
+ <div class="grid g4" style="margin-bottom:14px">
+  <div class="card kpi"><div class="l">Programado</div><div class="v">${fmt(p)}</div><div class="s">${r.length} despachos${S.biz==='P'?' · '+r.reduce((s,x)=>s+viajes(x),0)+' viajes':''}</div></div>
+  <div class="card kpi"><div class="l">Entregado</div><div class="v">${fmt(e)}</div><div class="s ${p&&e/p>=.95?'up':'dn'}">${pct(p?e/p:NaN)} de lo programado</div></div>
+  <div class="card kpi"><div class="l">Pendiente del día</div><div class="v">${fmt(p-e)}</div><div class="s">${r.filter(x=>saldo(x)>0&&x.st!=='no').length} por completar</div></div>
+  <div class="card kpi"><div class="l">Solicitudes de saldo</div><div class="v">${pendSol().length}</div><div class="s"><a href="#" onclick="S.sec='sal';render();return false">Definir próxima entrega ›</a></div></div>
+ </div>
+ <div class="grid g2">
+  <div class="card"><h3>Calendario de despachos <small>${MES[d.getMonth()]} ${d.getFullYear()} · saturación vs. capacidad (${BIZ[S.biz].capL})</small></h3>
+   <div class="calg">${calendarHTML(f,'pickDay')}</div>
+   <div class="legend"><span><i style="background:#2E9B57"></i>Holgado (≤ 85 %)</span><span><i style="background:#F49A29"></i>Ajustado (85–100 %)</span><span><i style="background:#D64534"></i>Saturado (> 100 %)</span><span>Toca un día para verlo</span></div></div>
+  <div class="card"><h3>Pendientes del día <small>${done} de ${r.length} completos</small></h3>
+   <div class="pbar"><i style="width:${r.length?done/r.length*100:0}%"></i></div>
+   <div style="max-height:470px;overflow:auto">${r.length?r.map(x=>{const i=stInfo(x)[2];const cls=i==='ent'?'done':i==='par'?'half':i==='no'?'no':'';return `<div class="chk ${cls}" onclick="detalle('${x.id}')" style="cursor:pointer"><div class="bx">${cls==='done'?'✓':cls==='half'?'½':cls==='no'?'✕':''}</div><div class="t"><b>${x.h} · ${esc(x.cli)}</b><small>${x.prod} · ${fmt(x.cant)} ${BIZ[S.biz].u} · ${x.tr==='P'?'Platino':'Cliente'} · ${esc(x.ase)}</small></div><div style="margin-left:auto">${st(x)}</div></div>`}).join(''):'<div class="empty">Sin despachos programados.</div>'}</div></div>
+ </div>
+ <div class="grid g3" style="margin-top:14px">
+  <div class="card"><h3>Atención <small>del día</small></h3>${alertas(f)}</div>
+  <div class="card"><h3>Cumplimiento por asesor <small>del día</small></h3>${asesorBars(f)}</div>
+  <div class="card"><h3>Causas de incumplimiento <small>del día</small></h3>${causas(f)}</div>
+ </div>`}
+function goDay(n){S.date=addD(S.date,n);render()}
+function pickDay(k){S.date=k;render()}
+function alertas(f){const a=[];const r=recs().filter(x=>x.f===f);
+ const sol=pendSol();if(sol.length)a.push(['#D64534','↺',`${sol.length} saldo${sol.length>1?'s esperan':' espera'} nueva fecha`,'Despachos parciales: el cliente retiró una parte']);
+ if(S.biz==='P'){const c=r.filter(needsCal);if(c.length)a.push(['#8a63c7','✔',`${c.length} despachos esperan validación de Calidad`,'Sin validación no se pueden despachar'])}
+ const rt=carga(addD(f,1))/cap();if(rt>.85)a.push(['#F49A29','▲',`Mañana está al ${pct(rt)} de la capacidad`,'Considera mover programaciones a otro día']);
+ const nr=recs().filter(x=>x.st==='no'&&pd(x.f)<pd(f)&&pd(x.f)>=pd(addD(f,-7))&&!x.rep);if(nr.length)a.push(['#D64534','✕',`${nr.length} no realizados en los últimos 7 días`,'Reprogramar o cerrar con el asesor']);
+ if(!D.conteo[S.biz])a.push(['#A0A19F','▤','Inventario sin conteo inicial','Mientras no se cargue el conteo físico, la programación no se bloquea por inventario']);
+ if(S.biz==='B'&&D.conteo.B){const lo=D.invB.filter(i=>i.disp<10000&&i.disp>0&&recs().some(x=>x.prod===i.p&&pd(x.f)>=pd(addD(f,-30))));lo.forEach(i=>a.push(['#F49A29','▼',`${i.p}: quedan ${fmt(i.disp)} en patio`,'Coordinar producción con planta']))}
+ if(AUT[S.biz].length)a.unshift(['#F49A29','!',`${AUT[S.biz].length} despacho${AUT[S.biz].length>1?'s':''} por encima del saldo esperan autorización`,'Hasta 10 % más · ve a Saldos y solicitudes']);
+ const rq=pendReq();if(rq.length)a.unshift(['#3A6EA5','＋',`${rq.length} despacho${rq.length>1?'s':''} sin programar por aprobar`,'Clientes que llegaron por pocas unidades · ve a Saldos y solicitudes']);
+ return a.length?a.map(x=>`<div class="alert"><div class="ic" style="background:${x[0]}">${x[1]}</div><div><b>${x[2]}</b><span>${x[3]}</span></div></div>`).join(''):'<div class="empty">Sin alertas.</div>'}
+function asesorBars(f){const r=recs().filter(x=>x.f===f);const g={};
+ r.forEach(x=>{g[x.ase]=g[x.ase]||[0,0];g[x.ase][0]+=x.cant;g[x.ase][1]+=x.ent});
+ const a=Object.entries(g).sort((a,b)=>b[1][0]-a[1][0]).slice(0,9);if(!a.length)return '<div class="empty">Sin datos.</div>';
+ return a.map(([n,[p,e]])=>{const v=p?e/p:0;return `<div class="hbar"><span>${n}</span><div class="bar"><i style="width:${v*100}%;background:${v>=.85?'#2E9B57':v>=.7?'#F49A29':'#D64534'}"></i></div><span class="num">${pct(v)}</span></div>`}).join('')}
+function causas(f){const g={};recs().filter(x=>x.f===f&&x.causa).forEach(x=>g[x.causa]=(g[x.causa]||0)+1);
+ const a=Object.entries(g).sort((a,b)=>b[1]-a[1]);if(!a.length)return '<div class="empty">Sin incumplimientos.</div>';const m=a[0][1];
+ return a.map(([c,n])=>`<div class="hbar" style="grid-template-columns:150px 1fr 26px"><span>${c}</span><div class="bar"><i style="width:${n/m*100}%;background:var(--tx)"></i></div><span class="num">${n}</span></div>`).join('')}
+function detalle(id){const x=recs().find(x=>x.id===id);
+ modal(`${x.id} · ${esc(x.cli)}`,`${S.user.rol==='CALIDAD'&&x.cal?`<p><button class="btn sec sm" onclick="reciboCal('${x.id}')">Comprobante de calidad</button></p>`:''}<div class="info"><span>Fecha: <b>${x.f} ${x.h}</b></span><span>Estatus: ${st(x)}</span><span>Asesor: <b>${esc(x.ase)}</b></span><span>Producto: <b>${x.prod}</b></span><span>Programado: <b>${fmt(x.cant)}</b></span><span>Entregado: <b>${fmt(x.ent)}</b> · saldo <b>${fmt(saldo(x))}</b></span><span>Transporte: ${trTxt(x)}</span>${x.causa?`<span>Causa: <b>${x.causa}</b></span>`:''}</div>
+ ${x.cal?`<p style="font-size:12px"><b>Calidad:</b> ${x.cal.ok?'✔ Conforme':'✕ No conforme'} · ${x.cal.u} · ${x.cal.h} · ${esc(x.cal.nota)}</p>`:''}
+ ${x.entregas.length?'<table><tr><th>Hora</th><th class="num">Cant.</th><th>Equipo</th><th>Motorista</th><th>Boleta SAP</th><th>Registró</th><th></th></tr>'+x.entregas.map((e,i)=>`<tr><td>${e.h}</td><td class="num">${fmt(e.c)}</td><td>${e.eq||e.placa||'—'}</td><td>${esc(e.mot)}</td><td>${e.bol||'—'}</td><td>${esc(e.u)}</td><td style="white-space:nowrap"><button class="btn sec sm" onclick="recibo('${x.id}',${i})">Comprobante</button>${e.foto&&/^http/.test(e.foto)?` <a class="btn sec sm" target="_blank" href="${esc(e.foto)}">Foto</a>`:''}</td></tr>`).join('')+'</table>':'<p class="muted">Aún sin entregas registradas.</p>'}`)}
+
+/* ========== PROGRAMACIÓN (Fernando) ========== */
+function vProg(){
+ $('#main').innerHTML=`<div class="tools"><button class="btn" onclick="formProg()">+ Nueva programación</button>
+ <div class="datebar"><button class="btn sec sm" onclick="goDay(-1)">◀</button><input type="date" id="pDate" value="${iso(S.date)}" onchange="S.date=fromIso(this.value);render()"><button class="btn sec sm" onclick="goDay(1)">▶</button></div>
+ <select id="pAse"><option value="">Todos los asesores</option>${ASES.map(a=>`<option>${esc(a.n)}</option>`).join('')}</select>
+ <input id="pTxt" placeholder="Buscar cliente…"><span class="sp"></span><button class="btn sec" onclick="reporteProg(S.date)">⬇ Reporte del día (PDF)</button></div>
+ <div class="card"><h3 style="text-transform:capitalize">${largo(S.date)}<small>${BIZ[S.biz].n}</small></h3><div id="pT"></div></div>
+ <p class="muted" style="font-size:11.5px">Fernando programa (cliente, asesor, producto, cantidad, fecha, hora y tipo de transporte). Motorista, equipo, boleta, notas y foto los llenan los despachadores al <b>ejecutar</b> el despacho.</p>`;
+ const draw=()=>{const a=$('#pAse').value,t=$('#pTxt').value.toLowerCase();const r=recs().filter(x=>x.f===S.date&&(!a||x.ase===a)&&(!t||x.cli.toLowerCase().includes(t))).sort((a,b)=>a.h.localeCompare(b.h));
+  $('#pT').innerHTML=r.length?'<table><tr><th>ID</th><th>Hora</th><th>Cliente</th><th>Asesor</th><th>Producto</th><th class="num">Programado</th><th class="num">Entregado</th><th class="num">Saldo</th><th>Transporte</th><th>Estatus</th><th></th></tr>'+r.map(x=>`<tr class="cl" onclick="detalle('${x.id}')"><td class="muted">${x.id}${x.grp?'<br><span class="tag">viaje '+x.grp+'</span>':''}</td><td>${x.h}</td><td><b>${esc(x.cli)}</b></td><td>${esc(x.ase)}</td><td>${x.prod}</td><td class="num">${fmt(x.cant)}</td><td class="num">${x.ent?fmt(x.ent):'—'}</td><td class="num">${saldo(x)?fmt(saldo(x)):'—'}</td><td>${trTxt(x)}</td><td>${st(x)}</td><td>${x.entregas.length?'':`<button class="btn sec sm" title="Eliminar programación" onclick="event.stopPropagation();eliminar('${x.id}')">🗑 Eliminar</button>`}</td></tr>`).join('')+`<tr><td colspan="5"><b>Total</b></td><td class="num"><b>${fmt(r.reduce((s,x)=>s+x.cant,0))}</b></td><td class="num"><b>${fmt(r.reduce((s,x)=>s+x.ent,0))}</b></td><td colspan="4"></td></tr></table>`:'<div class="empty">Nada programado este día.</div>'};
+ $('#pAse').onchange=draw;$('#pTxt').oninput=draw;draw()}
+const nz=s=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,'');
+function formProg(pre){
+ const prods_=prods();const F=Object.assign({f:addD(TODAY,1),h:'07:00',tr:'P',eqT:S.biz==='B'?'Rastra 2 ejes':'Rastra',prod:prods_.includes('Bloque 6"')?'Bloque 6"':prods_[0],cant:S.biz==='B'?3400:16,cli:'',ase:'',tipo:''},pre||{});
+ modal((F.reprogDe?'Reprogramar saldo de '+F.reprogDe:'Nueva programación')+' · '+BIZ[S.biz].n,`
+ <div class="fld auto"><label>Cliente</label><input id="fCli" autocomplete="off" placeholder="Escribe 2–3 letras del cliente…" value="${esc(F.cli)}"><div class="sug" id="fSug"></div><div class="h">Busca sin importar mayúsculas, tildes ni errores menores.</div></div>
+ <div class="two"><div class="fld"><label>Asesor <span class="muted" style="font-weight:400">(se llena solo, puedes cambiarlo)</span></label><select id="fAse"><option value="">— Selecciona —</option>${asesAct().map(a=>`<option ${a===F.ase?'selected':''}>${a}</option>`).join('')}</select></div>
+ <div class="fld"><label>Tipo de cliente</label><select id="fTipo">${['Distribuidor','Proyecto','Consumidor final'].map(t=>`<option ${t===F.tipo?'selected':''}>${t}</option>`).join('')}</select></div></div>
+ <div class="two"><div class="fld"><label>Producto</label><select id="fProd">${prods_.map(p=>`<option ${p===F.prod?'selected':''}>${esc(p)}</option>`).join('')}</select></div>
+ <div class="fld"><label>Cantidad total (${BIZ[S.biz].u})</label><input type="number" id="fCant" value="${F.cant}" min="1"></div></div>
+ <div class="fld"><label>Fecha de entrega · disponibilidad de los próximos 14 días</label><div class="mini" id="fMini"></div><div class="legend" style="margin-top:4px"><span><i style="background:#2E9B57"></i>Holgado</span><span><i style="background:#F49A29"></i>Ajustado</span><span><i style="background:#D64534"></i>Saturado</span></div></div>
+ <div class="two"><div class="fld"><label>Fecha</label><input type="date" id="fFec" value="${iso(F.f)}"></div><div class="fld"><label>Hora</label><input type="time" id="fHora" value="${F.h}"></div></div>
+ <div id="fChk" class="check ok"></div>
+ <div class="fld"><label>Transporte</label><div class="seg" id="fTr"><button data-t="P" class="${F.tr==='P'?'on':''}">Transportes Platino</button><button data-t="C" class="${F.tr==='C'?'on':''}">Transporte del cliente</button></div></div>
+ <div id="fEqBox"><div class="fld"><label>Tipo de equipo Platino <span class="muted" style="font-weight:400">(para calcular viajes)</span></label><select id="fEqT">${EQT().map(o=>`<option ${o===F.eqT?'selected':''}>${o}</option>`).join('')}</select></div>
+ <div class="fld"><label>Equipo Platino asignado <span class="muted" style="font-weight:400">(opcional · si no, lo elige el despachador)</span></label><select id="fEqC" data-tipo="${F.eqT}"><option value="">— Lo define el despachador —</option>${eqOpts(F.eqT,'')}</select></div><div id="fEqW"></div>
+ <div class="trips" id="fTrips"></div></div>
+ <button class="btn dk" style="width:100%" id="fSave">Programar</button>`);
+ let tr=F.tr,trips=[];
+ const fec=()=>fromIso($('#fFec').value);
+ const mini=()=>{let h='';for(let i=0;i<14;i++){const k=addD(TODAY,i);const rt=carga(k)/cap();const d=pd(k);h+=`<div class="${k===fec()?'sel':''}" style="background:${rt?satCol(rt):'#9aa39b'}" data-k="${k}">${DIAS[d.getDay()].slice(0,2)}<small>${d.getDate()}</small><small>${pct(rt).replace(' ','')}</small></div>`}
+  $('#fMini').innerHTML=h;$('#fMini').querySelectorAll('div').forEach(e=>e.onclick=()=>{$('#fFec').value=iso(e.dataset.k);upd()})};
+ const upd=()=>{mini();const prod=$('#fProd').value,q=+$('#fCant').value||0,eqT=$('#fEqT').value,f=fec();
+  const lib=invLibre(prod,f);const c=$('#fChk');const ok=q<=lib;if(lib===Infinity){c.className='check wa';c.innerHTML='▤ <b>Inventario sin conteo inicial.</b> Todavía no se valida el inventario al programar.';$('#fSave').disabled=!$('#fCli').value||!$('#fAse').value||q<=0}else{
+  c.className='check '+(ok?'ok':'no');c.innerHTML=ok?`✔ <b>Hay inventario.</b> Libre para el ${f}: ${fmt(lib)} ${prod}. Después de programar quedan ${fmt(lib-q)}.`:`✖ <b>No se puede programar: falta inventario.</b> Libre para el ${f}: ${fmt(Math.max(lib,0))}. Programa como máximo esa cantidad o elige otra fecha.`;
+  $('#fSave').disabled=!ok||!$('#fCli').value||!$('#fAse').value}
+  $('#fEqBox').style.display=tr==='P'?'':'none';const cap=tr==='P'?capOf(prod,eqT):null;const n=cap?Math.ceil(q/cap):1;
+  if(trips.length!==n||trips._q!==q||trips._cap!==cap){trips=[];let rest=q;for(let i=0;i<n;i++){const c2=Math.min(cap||q,rest);rest-=c2;trips.push({c:c2,f,h:i===0?$('#fHora').value:addH($('#fHora').value,i*2)})}trips._q=q;trips._cap=cap}
+  $('#fTrips').innerHTML=cap?`<b style="font-size:12.5px">Sugerencia: ${n} viaje${n>1?'s':''} de ${eqT.toLowerCase()} (capacidad ${fmt(cap)} ${BIZ[S.biz].u} por viaje)</b>
+   <table><tr><th>Viaje</th><th>Cantidad</th><th>Fecha</th><th>Hora</th></tr>${trips.map((t,i)=>`<tr><td>${i+1}</td><td><input type="number" value="${t.c}" data-i="${i}" data-k="c"></td><td><input type="date" value="${iso(t.f)}" data-i="${i}" data-k="f"></td><td><input type="time" value="${t.h}" data-i="${i}" data-k="h"></td></tr>`).join('')}</table>
+   <div class="h muted" style="font-size:10.5px;margin-top:4px">Cada viaje queda como un despacho propio, enlazado a esta programación. Puedes repartirlos en varios días u horas.</div>`:`<span class="muted">Sin capacidad cargada para ${prod} en ${eqT}. Se programa como un solo viaje.</span>`;
+  $('#fTrips').querySelectorAll('input').forEach(e=>e.onchange=()=>{const t=trips[+e.dataset.i];t[e.dataset.k]=e.dataset.k==='f'?fromIso(e.value):e.dataset.k==='c'?+e.value:e.value})};
+ $('#fCli').oninput=()=>{const q=nz($('#fCli').value);if(q.length<2){$('#fSug').style.display='none';return}
+  const r=D.cli.filter(c=>c.b.includes(S.biz)||true).filter(c=>nz(c.n).includes(q)||(c.alias&&nz(c.alias).includes(q))).slice(0,8);
+  $('#fSug').innerHTML=r.map(c=>`<div data-n="${esc(c.n)}"><span>${esc(c.n)}</span><small>${esc(c.a)} · ${esc(c.t)}</small></div>`).join('')+'<div style="color:#3A6EA5">+ Agregar cliente nuevo</div>';$('#fSug').style.display='block';
+  const nv=$('#fSug').lastElementChild;nv.onclick=()=>{$('#fSug').style.display='none';toast('Cliente nuevo: elige el asesor. Se agrega solo al catálogo al programar.');upd()};
+  $('#fSug').querySelectorAll('div[data-n]').forEach(e=>e.onclick=()=>{const c=D.cli.find(c=>c.n===e.dataset.n);$('#fCli').value=c.n;$('#fAse').value=asesAct().includes(c.a)?c.a:'';if(!asesAct().includes(c.a))toast('El asesor de este cliente está inactivo: elige uno');$('#fTipo').value=c.t;$('#fSug').style.display='none';
+   if(c.nota)toast('Asesor actualizado: '+c.a+' ('+c.nota+')');tr=c.tr;document.querySelectorAll('#fTr button').forEach(b=>b.classList.toggle('on',b.dataset.t===tr));trips=[];upd()})};
+ document.querySelectorAll('#fTr button').forEach(b=>b.onclick=()=>{tr=b.dataset.t;document.querySelectorAll('#fTr button').forEach(x=>x.classList.toggle('on',x===b));trips=[];upd()});
+ ['#fProd','#fCant','#fEqT','#fFec','#fHora','#fAse'].forEach(s=>$(s).oninput=$(s).onchange=()=>{trips=[];upd()});$('#fCli').addEventListener('input',()=>{$('#fSave').disabled=!$('#fCli').value||!$('#fAse').value});
+ const eqT0=$('#fEqT').onchange;$('#fEqT').onchange=()=>{$('#fEqC').dataset.tipo=$('#fEqT').value;$('#fEqC').innerHTML='<option value="">— Lo define el despachador —</option>'+eqOpts($('#fEqT').value,'');$('#fEqW').innerHTML='';$('#fEqC').dataset.ok='1';eqT0()};
+ wireEq('fEqC','fEqW');
+ $('#fSave').onclick=async()=>{if(tr==='P'&&$('#fEqC').value&&$('#fEqC').dataset.ok!=='1'){toast('Confirma si el equipo ya salió del taller o elige otro');return}
+  if(trips.some(t=>!(t.c>0)||!t.f||!t.h)){toast('Revisa cantidad, fecha y hora de cada viaje');return}
+  const cli=$('#fCli').value.trim(),eqC=tr==='P'?$('#fEqC').value:'';
+  const base={cli,ase:$('#fAse').value,tipo:$('#fTipo').value,prod:$('#fProd').value,tr,eqT:tr==='P'?$('#fEqT').value:'',eqC,habilitar:$('#fEqC').dataset.hab==='1',reprogDe:F.reprogDe||''};
+  const viajes=trips.map(t=>Object.assign({},base,{c:t.c,f:iso(t.f),h:t.h}));
+  const j=await guardar('ruta_programar',{viajes},`Programado: ${viajes.length} viaje${viajes.length>1?'s':''} · ${esc(cli)}`);if(!j)return;
+  closeModal();S.date=trips[0].f;render()};
+ upd()}
+function eliminar(id){const x=recs().find(x=>x.id===id);
+ modal('Eliminar programación',`<p style="margin-top:0">¿Eliminar la programación <b>${x.id}</b> de <b>${esc(x.cli)}</b> (${fmt(x.cant)} ${x.prod}, ${x.f} ${x.h})?</p><p class="muted" style="font-size:12px">Libera el inventario comprometido y desaparece de la lista de los despachadores. Queda registrado en la bitácora quién la eliminó.</p>
+ <div style="display:flex;gap:8px"><button class="btn no" id="dOk" style="flex:1">Sí, eliminar</button><button class="btn sec" onclick="closeModal()" style="flex:1">Cancelar</button></div>`);
+ $('#dOk').onclick=async()=>{if(await guardar('ruta_eliminar',{id},'Programación eliminada')){closeModal();render()}}}
+const PDFCSS=`body{font-family:Poppins,sans-serif;font-size:11px;margin:24px;color:#1d1e1a}h1{font-size:17px;margin:2px 0 0}h2{font-size:13px;margin:18px 0 6px;padding:5px 8px;background:#F4F4F1;border-left:5px solid #F9D600}.h{border-bottom:4px solid #F9D600;padding-bottom:8px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:end;gap:12px}table{width:100%;border-collapse:collapse}th{background:#12130F;color:#fff;text-align:left;padding:5px 6px}td{padding:5px 6px;border-bottom:1px solid #ddd}td.n,th.n{text-align:right}tr.t td{font-weight:700;background:#fafaf6}.k{display:flex;gap:10px;margin:8px 0}.k div{flex:1;border:1px solid #ddd;border-top:4px solid #F9D600;border-radius:8px;padding:6px 10px}.k b{display:block;font-size:16px}@page{margin:12mm}`;
+function printDoc(title,sub,body,land){const w=window.open('','_blank');w.document.write(`<html><head><meta charset="utf-8"><title>${title}</title><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"><style>${PDFCSS}${land?'@page{size:landscape}':''}</style></head><body><div class="h"><div><b style="font-size:18px">RUTA <span style="color:#c9a800">360</span></b> <span style="color:#6b6c68">· Duracreto</span><h1>${title}</h1><div style="color:#6b6c68">${sub}</div></div><div style="text-align:right;color:#6b6c68">Generado ${new Date().toLocaleString('es-HN')}<br>por ${S.user.n}</div></div>${body}<script>setTimeout(()=>print(),700)<\/script></body></html>`);w.document.close()}
+function tablaTr(rows,titulo){if(!rows.length)return `<h2>${titulo}</h2><p style="color:#6b6c68">Sin despachos.</p>`;
+ return `<h2>${titulo} · ${rows.length} despacho${rows.length>1?'s':''}</h2><table><tr><th>Hora</th><th>Cliente</th><th>Asesor</th><th>Producto</th><th class="n">Cantidad programada</th></tr>${rows.map(x=>`<tr><td>${x.h}</td><td>${esc(x.cli)}</td><td>${esc(x.ase)}</td><td>${x.prod}</td><td class="n">${fmt(x.cant)}</td></tr>`).join('')}<tr class="t"><td colspan="4">Total</td><td class="n">${fmt(rows.reduce((s,x)=>s+x.cant,0))}</td></tr></table>`}
+function reporteProg(f){const r=recs().filter(x=>x.f===f&&x.req!=='pend').sort((a,b)=>a.h.localeCompare(b.h));
+ printDoc('Programación de despachos · '+BIZ[S.biz].n,largo(f)+' de '+pd(f).getFullYear(),`<div class="k"><div>Total programado<b>${fmt(r.reduce((s,x)=>s+x.cant,0))} ${BIZ[S.biz].u}</b></div><div>Despachos<b>${r.length}</b></div><div>Transportes Platino<b>${r.filter(x=>x.tr==='P').length}</b></div><div>Flete propio del cliente<b>${r.filter(x=>x.tr!=='P').length}</b></div></div>`+tablaTr(r.filter(x=>x.tr!=='P'),'Flete propio del cliente')+tablaTr(r.filter(x=>x.tr==='P'),'Transportes Platino'))}
+function addH(h,n){let[a,b]=h.split(':').map(Number);a=Math.min(a+n,20);return String(a).padStart(2,'0')+':'+String(b).padStart(2,'0')}
+
+/* ========== SALDOS Y SOLICITUDES ========== */
+function vSal(){const r=pendSol(),q=pendReq();
+ const au=AUT[S.biz];
+ $('#main').innerHTML=`<h2>Saldos y solicitudes</h2>
+ <div class="card" style="margin-bottom:14px;border-left:5px solid var(--nar)"><h3>Autorizaciones para despachar de más <small>hasta ${Math.round((CFG.tolerancia||.1)*100)} % sobre lo programado · el despachador espera su respuesta</small></h3>${au.length?'<table><tr><th>Pedido</th><th>Despacho</th><th>Cliente · producto</th><th class="num">Saldo</th><th class="num">Quiere despachar</th><th class="num">Exceso</th><th></th></tr>'+au.map(a=>`<tr><td>${esc(a.f)} · ${esc(a.por)}</td><td>${esc(a.desp)}</td><td>${esc(a.det)}</td><td class="num">${fmt(a.saldo)}</td><td class="num"><b>${fmt(a.cant)}</b></td><td class="num">${a.pct} %</td><td style="white-space:nowrap"><button class="btn ok sm" onclick="autorizar('${a.id}',1)">Autorizar</button> <button class="btn sec sm" onclick="autorizar('${a.id}',0)">No autorizar</button></td></tr>`).join('')+'</table>':'<div class="empty">No hay pedidos de exceso.</div>'}</div>
+ <div class="card" style="margin-bottom:14px"><h3>Despachos sin programar por aprobar <small>clientes que llegaron por pocas unidades</small></h3>${q.length?'<table><tr><th>Solicitado</th><th>Cliente</th><th>Producto</th><th class="num">Cantidad</th><th>Transporte</th><th>Inventario</th><th>Nota</th><th></th></tr>'+q.map(x=>{const lib=invLibre(x.prod,TODAY);return `<tr><td>${x.h} · ${esc(x.reqBy)}</td><td><b>${esc(x.cli)}</b><br><span class="muted" style="font-size:10.5px">${esc(x.ase)}</span></td><td>${x.prod}</td><td class="num"><b>${fmt(x.cant)}</b></td><td>${trTxt(x)}</td><td>${lib===Infinity?'<span class="pill o">Sin conteo</span>':lib>=x.cant?'<span class="pill g">Hay '+fmt(lib)+'</span>':'<span class="pill">Solo '+fmt(Math.max(lib,0))+'</span>'}</td><td class="muted">${esc(x.reqNota||'')}</td><td style="white-space:nowrap"><button class="btn ok sm" ${lib>=x.cant?'':'disabled'} onclick="aprobarReq('${x.id}',1)">Aprobar</button> <button class="btn sec sm" onclick="aprobarReq('${x.id}',0)">Rechazar</button></td></tr>`}).join('')+'</table>':'<div class="empty">No hay solicitudes de despachadores.</div>'}</div>
+ <h3 style="font-size:14px;margin:0 0 8px">Saldos de despachos parciales</h3><p class="muted" style="font-size:12px;margin-top:-6px">Cuando un despacho se entrega por menos de lo programado, el saldo llega aquí para que Fernando defina la próxima entrega.</p>
+ <div class="card">${r.length?'<table><tr><th>Programado</th><th>Cliente</th><th>Producto</th><th class="num">Programado</th><th class="num">Entregado</th><th class="num">Saldo</th><th>Motivo</th><th></th></tr>'+r.map(x=>`<tr><td>${x.f} ${x.h}</td><td><b>${esc(x.cli)}</b><br><span class="muted" style="font-size:10.5px">${x.ase}</span></td><td>${x.prod}</td><td class="num">${fmt(x.cant)}</td><td class="num">${fmt(x.ent)}</td><td class="num"><b>${fmt(saldo(x))}</b></td><td>${x.causa||'—'}${x.entregas.at(-1)?.nota?`<br><span class="muted" style="font-size:10.5px">«${esc(x.entregas.at(-1).nota)}»</span>`:''}</td>
+ <td style="white-space:nowrap"><button class="btn sm" onclick="reprog('${x.id}',0)">Hoy más tarde</button> <button class="btn sec sm" onclick="reprog('${x.id}',1)">Otra fecha</button> <button class="btn sec sm" onclick="cerrarSaldo('${x.id}')">Cerrar saldo</button></td></tr>`).join('')+'</table>':'<div class="empty">No hay saldos pendientes.</div>'}</div>`}
+async function aprobarReq(id,ok){const x=recs().find(x=>x.id===id);if(await guardar('ruta_resolverSolicitud',{id,aprobar:!!ok},ok?'Aprobado: ya aparece en la lista de '+esc(x.reqBy):'Solicitud rechazada; se avisó a '+esc(x.reqBy)))render()}
+async function autorizar(id,ok){if(await guardar('ruta_autorizar',{id,aprobar:!!ok},ok?'Autorizado: se avisó al despachador':'No autorizado: se avisó al despachador'))render()}
+function reprog(id,otra){const x=recs().find(x=>x.id===id);const o={cli:x.cli,ase:x.ase,tipo:x.tipo,prod:x.prod,cant:saldo(x),tr:x.tr,eqT:x.eqT||(S.biz==='B'?'Rastra 2 ejes':'Rastra'),f:otra?addD(TODAY,1):TODAY,h:otra?'07:00':addH(nowHM(),2),reprogDe:x.id};formProg(o)}
+async function cerrarSaldo(id){if(!confirm('¿Cerrar el saldo? El cliente ya no retirará el resto.'))return;if(await guardar('ruta_cerrarSaldo',{id},'Saldo cerrado: el cliente ya no retirará el resto'))render()}
+
+/* ========== EJECUTAR DESPACHOS (Jordi / Heidi / Claudia) ========== */
+function vEje(){
+ const all=recs(),hoy=all.filter(x=>x.f===TODAY);
+ const T={hoy:['Pendientes de hoy',hoy.filter(x=>saldo(x)>0&&x.st!=='no'&&x.req!=='rech')],
+  ant:['Pendientes de días anteriores',all.filter(x=>pd(x.f)<pd(TODAY)&&pd(x.f)>=pd(addD(TODAY,-7))&&saldo(x)>0&&(x.st==='par'||x.st==='prog'))],
+  prox:['Próximos días',all.filter(x=>pd(x.f)>pd(TODAY)&&pd(x.f)<=pd(addD(TODAY,7)))],
+  reg:['Registrados hoy',all.filter(x=>x.entregas.some(e=>e.fe===TODAY))]};
+ if(!T[S.ejeTab])S.ejeTab='hoy';const r=T[S.ejeTab][1].sort((a,b)=>pd(a.f)-pd(b.f)||a.h.localeCompare(b.h));
+ $('#main').innerHTML=`<div class="tools"><div><b style="font-size:16px;text-transform:capitalize">${largo(TODAY)}</b><div class="muted" style="font-size:11.5px">${BIZ[S.biz].n} · toca un despacho para ejecutarlo</div></div><span class="sp"></span><button class="btn" onclick="solicitar()">＋ Cliente sin programar</button><button class="btn sec" onclick="reporteDia()">⬇ Reporte del día</button><span class="clock" id="clk">${nowHM()}</span></div>
+ <div class="tabs">${Object.entries(T).map(([k,v])=>`<button class="${S.ejeTab===k?'on':''}" onclick="S.ejeTab='${k}';render()">${v[0]}${k!=='reg'&&k!=='prox'&&v[1].length?`<b>${v[1].length}</b>`:` (${v[1].length})`}</button>`).join('')}</div>
+ <div class="dl">${r.length?r.map(x=>{const i=stInfo(x);if(x.req==='pend')return `<div class="di" style="border-left-color:#3A6EA5;opacity:.85;cursor:default"><div class="top"><span>Hoy · ${x.h}</span><span>${x.id}</span></div><div class="c">${esc(x.cli)}</div><div class="p">${x.prod} · <b>${fmt(x.cant)}</b> ${BIZ[S.biz].u}</div><div class="ft"><span class="st s-lib">⏳ Esperando aprobación de Fernando</span> <span class="tag">sin programar</span></div></div>`;
+  return `<div class="di ${i[2]}" onclick="${S.ejeTab==='reg'?`detalle('${x.id}')`:`ejecutar('${x.id}')`}"><div class="top"><span>${x.f===TODAY?'Hoy':x.f} · ${x.h}</span><span>${x.id}</span></div><div class="c">${esc(x.cli)}</div><div class="p">${x.prod} · <b>${fmt(saldo(x)||x.cant)}</b> ${BIZ[S.biz].u}${x.ent&&saldo(x)?` <span class="muted">(de ${fmt(x.cant)})</span>`:''}</div><div class="ft">${st(x)} ${trTxt(x)} <span class="tag">${esc(x.ase)}</span>${autDe(x.id)?' <span class="st s-par">⏳ Esperando autorización de Fernando</span>':''}</div></div>`}).join(''):'<div class="card empty">No hay despachos en esta lista.</div>'}</div>`;
+ clearInterval(window._clk);window._clk=setInterval(()=>{const c=$('#clk');if(c)c.textContent=nowHM()},10000)}
+let FOTO=null;
+function fotoInput(id){return `<div class="photo" onclick="$('#${id}').click()"><div id="${id}P">📷 Tomar o subir foto</div><input type="file" id="${id}" accept="image/*" capture="environment" style="display:none" onchange="leerFoto(this,'${id}P')"></div>`}
+function leerFoto(inp,pid){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{FOTO=await reducirFoto(r.result);$('#'+pid).innerHTML=`<img src="${FOTO}">Cambiar foto`};r.readAsDataURL(f)}
+function ejecutar(id){const x=recs().find(x=>x.id===id);FOTO=null;
+ if(x.f!==TODAY&&pd(x.f)>pd(TODAY)){detalle(id);return}
+ const bloq=S.biz==='P'&&(!x.cal||!x.cal.ok);
+ const eqs=D.eqs.filter(e=>x.eqT?e.t===x.eqT:true);
+ modal('Ejecutar despacho · '+x.id,`
+ <div class="info"><span>Cliente: <b>${esc(x.cli)}</b></span><span>Asesor: <b>${esc(x.ase)}</b></span><span>Producto: <b>${x.prod}</b></span><span>Programado: <b>${fmt(x.cant)}</b> · saldo <b>${fmt(saldo(x))}</b></span><span>Fecha: <b>${x.f} ${x.h}</b></span><span>${trTxt(x)}</span></div>
+ ${S.biz==='P'?(x.cal?`<div class="check ${x.cal.ok?'ok':'no'}">${x.cal.ok?'✔ <b>Liberado por Calidad</b>':'✕ <b>Rechazado por Calidad</b>'} · ${x.cal.u} a las ${x.cal.h} — ${esc(x.cal.nota)}</div>`:`<div class="check wa">⏳ <b>Esperando validación de Calidad.</b> Yobellssy Guardado o Cindy Peralta deben validar el producto antes de registrar la entrega.</div>`):''}
+ <fieldset ${bloq?'disabled style="opacity:.45;border:0;padding:0;margin:0"':'style="border:0;padding:0;margin:0"'}>
+ ${autDe(x.id)?`<div class="check wa">⏳ <b>Pidió despachar ${fmt(autDe(x.id).cant)}</b> (más que el saldo). Espere la autorización de Fernando; cuando llegue, registre esa cantidad.</div>`:''}
+ <div class="two"><div class="fld"><label>Cantidad despachada</label><input type="number" id="eCant" value="${saldo(x)}" min="1"><div class="h">Normalmente igual o menor al saldo (${fmt(saldo(x))}); si es menor, el resto queda como saldo y se avisa a Fernando. Hasta ${Math.round((CFG.tolerancia||.1)*100)} % más solo con autorización de Fernando.</div></div>
+ <div class="fld"><label>Fecha y hora del registro</label><input class="ro" readonly value="${fechaLarga()} · ${nowHM()}"><div class="h">Se toman solas del dispositivo al guardar.</div></div></div>
+ ${x.tr==='P'?`<div class="two"><div class="fld"><label>Código de equipo Platino</label><select id="eEq" data-tipo="${x.eqT||''}"><option value="">— Selecciona —</option>${eqOpts(x.eqT,x.eqC)}</select>${x.eqC?'<div class="h">Asignado por Fernando al programar</div>':''}</div>
+ <div class="fld"><label>Motorista</label><input id="eMot" placeholder="Se llena con el equipo"></div></div><div id="eEqW"></div>
+ <div class="fld"><label>DNI del motorista</label><input id="eDni" inputmode="numeric" placeholder="Se llena con el equipo"><div class="h" id="eDniH">Si el motorista no tiene DNI en el catálogo, escríbelo: queda guardado para la próxima vez.</div></div>`:
+ `<div class="two"><div class="fld"><label>Motorista</label><input id="eMot" placeholder="Nombre del motorista del cliente"></div><div class="fld"><label>Placa del equipo</label><input id="ePla" placeholder="Ej. HBC-1234"></div></div>
+ <div class="fld"><label>DNI del motorista</label><input id="eDni" inputmode="numeric" placeholder="Ej. 0501-1990-01234"></div>`}
+ <div class="two"><div class="fld"><label>N.º de boleta SAP</label><input id="eBol" inputmode="numeric"></div><div class="fld"><label>Foto de la carga</label>${fotoInput('eFoto')}</div></div>
+ <div class="fld"><label>Notas <span class="muted" style="font-weight:400">(opcional)</span></label><textarea id="eNot" rows="2"></textarea></div>
+ <button class="btn dk" style="width:100%" id="eSave">Registrar despacho</button></fieldset>`);
+ if($('#eEq'))wireEq('eEq','eEqW',q=>{$('#eMot').value=q.m||'';$('#eDni').value=q.dni||''});
+ if(!bloq)$('#eSave').onclick=async()=>{const c=+$('#eCant').value||0;if(c<=0){toast('Escribe la cantidad');return}
+  const tope=saldo(x)+Math.floor(x.cant*(CFG.tolerancia||.1));if(c>tope){toast(`No se permite: el máximo con autorización es ${fmt(tope)} (${Math.round((CFG.tolerancia||.1)*100)} % sobre lo programado)`);return}
+  const eq=$('#eEq')?$('#eEq').value:'';if(x.tr==='P'&&!eq){toast('Selecciona el código de equipo');return}if($('#eEq')&&$('#eEq').dataset.ok!=='1'){toast('Confirma si el equipo ya salió del taller o elige otro');return}
+  const dni=$('#eDni').value.trim();if(!dni){toast('Escribe el DNI del motorista');return}
+  const foto=FOTO,rec={c,eq,dni,mot:$('#eMot').value.trim(),placa:$('#ePla')?$('#ePla').value.trim():'',bol:$('#eBol').value.trim(),nota:$('#eNot').value.trim(),foto,habilitar:!!($('#eEq')&&$('#eEq').dataset.hab==='1')};
+  if(c>saldo(x)&&!confirm(`Va a despachar ${fmt(c)}, más que el saldo (${fmt(saldo(x))}). Se pedirá autorización a Fernando y deberá esperar su respuesta. ¿Continuar?`))return;
+  const j=await guardar('ruta_despachar',{id,rec});if(!j)return;
+  render();const y=recs().find(z=>z.id===id);if(y){const k=y.entregas.findIndex(e=>e.id===j.entrega.id);if(k>=0){y.entregas[k].fotoLocal=foto;recibo(id,k)}}
+  toast(j.saldo>0?`Quedó un saldo de ${fmt(j.saldo)}. Se avisó a Fernando Murillo para definir la próxima entrega.`:'Despacho registrado')}}
+
+function solicitar(){
+ modal('Cliente sin programar · solicitud a Fernando',`<p class="muted" style="font-size:12px;margin-top:0">Para clientes que llegan sin programación a retirar pocas unidades. Fernando la aprueba (si hay inventario) y aparece en tu lista para despacharla.</p>
+ <div class="fld auto"><label>Cliente</label><input id="sCli" autocomplete="off" placeholder="Escribe 2–3 letras, o el nombre si es nuevo"><div class="sug" id="sSug"></div></div>
+ <div class="two"><div class="fld"><label>Producto</label><select id="sProd">${prods().map(p=>`<option>${esc(p)}</option>`).join('')}</select></div><div class="fld"><label>Cantidad</label><input type="number" id="sCant" value="${S.biz==='B'?200:2}" min="1"></div></div>
+ <div class="fld"><label>Transporte</label><div class="seg" id="sTr"><button data-t="C" class="on">Transporte del cliente</button><button data-t="P">Transportes Platino</button></div></div>
+ <div class="fld"><label>Nota <span class="muted" style="font-weight:400">(opcional)</span></label><input id="sNot" placeholder="Ej. viene en pick-up, paga en caja"></div>
+ <div id="sChk"></div><button class="btn dk" style="width:100%" id="sSave">Enviar solicitud a Fernando</button>`);
+ let tr='C',ase='Sin asesor',tipo='Consumidor final';
+ document.querySelectorAll('#sTr button').forEach(b=>b.onclick=()=>{tr=b.dataset.t;document.querySelectorAll('#sTr button').forEach(z=>z.classList.toggle('on',z===b))});
+ $('#sCli').oninput=()=>{const q=nz($('#sCli').value);ase='Sin asesor';if(q.length<2){$('#sSug').style.display='none';return}const r=D.cli.filter(c=>nz(c.n).includes(q)).slice(0,6);
+  $('#sSug').innerHTML=r.map(c=>`<div data-n="${esc(c.n)}"><span>${esc(c.n)}</span><small>${esc(c.a)}</small></div>`).join('')+`<div style="color:#3A6EA5">+ Cliente nuevo: «${esc($('#sCli').value)}»</div>`;$('#sSug').style.display='block';
+  $('#sSug').querySelectorAll('div').forEach(e=>e.onclick=()=>{if(e.dataset.n){const c=D.cli.find(c=>c.n===e.dataset.n);$('#sCli').value=c.n;ase=c.a;tipo=c.t}$('#sSug').style.display='none'})};
+ const chk=()=>{const lib=invLibre($('#sProd').value,TODAY),q=+$('#sCant').value||0;$('#sChk').innerHTML=lib===Infinity?'':`<div class="check ${q<=lib?'ok':'no'}">${q<=lib?'✔ Hay inventario':'✖ No alcanza el inventario'}: libre hoy ${fmt(Math.max(lib,0))} ${esc($('#sProd').value)}.</div>`;$('#sSave').disabled=q>lib||q<=0};
+ ['#sProd','#sCant'].forEach(s=>$(s).oninput=$(s).onchange=chk);chk();
+ $('#sSave').onclick=async()=>{const cli=$('#sCli').value.trim();if(!cli){toast('Escribe el cliente');return}
+  if(await guardar('ruta_solicitar',{rec:{cli,prod:$('#sProd').value,cant:+$('#sCant').value,tr,nota:$('#sNot').value.trim()}},'Solicitud enviada a Fernando Murillo. Le llegará un aviso cuando la apruebe.')){closeModal();render()}}}
+function reporteDia(){const r=recs().filter(x=>x.f===TODAY&&x.req!=='pend'&&x.req!=='rech'&&(S.user.rol!=='DESPACHO'||true));const ent=[];r.forEach(x=>x.entregas.forEach(e=>ent.push([x,e])));
+ const no=r.filter(x=>saldo(x)>0);const tp=r.reduce((s,x)=>s+x.cant,0),te=r.reduce((s,x)=>s+x.ent,0);
+ const txt=`*Ruta 360 · Reporte de despachos ${BIZ[S.biz].n}*\n${fechaLarga()}\nProgramado: ${fmt(tp)} · Despachado: ${fmt(te)} (${pct(tp?te/tp:NaN)})\n\n*Despachado (${ent.length})*\n${ent.map(([x,e])=>`• ${e.h} ${x.cli} — ${fmt(e.c)} ${x.prod}`).join('\n')||'—'}\n\n*No despachado (${no.length})*\n${no.map(x=>`• ${x.cli} — ${fmt(saldo(x))} ${x.prod}${x.causa?' ('+x.causa+')':''}`).join('\n')||'—'}\n\nRegistró: ${S.user.n}`;
+ modal('Reporte del día · '+BIZ[S.biz].n,`<div class="grid g3" style="gap:8px;margin-bottom:12px"><div class="card kpi"><div class="l">Programado</div><div class="v">${fmt(tp)}</div></div><div class="card kpi"><div class="l">Despachado</div><div class="v">${fmt(te)}</div><div class="s">${pct(tp?te/tp:NaN)}</div></div><div class="card kpi"><div class="l">No despachado</div><div class="v">${fmt(tp-te)}</div><div class="s">${no.length} despachos</div></div></div>
+ <b style="font-size:13px">Despachado</b><table><tr><th>Hora</th><th>Cliente</th><th>Producto</th><th class="num">Cant.</th><th>Equipo / placa</th></tr>${ent.map(([x,e])=>`<tr><td>${e.h}</td><td>${esc(x.cli)}</td><td>${x.prod}</td><td class="num">${fmt(e.c)}</td><td>${e.eq||e.placa||'—'}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">Nada despachado aún.</td></tr>'}</table>
+ <b style="font-size:13px;display:block;margin-top:12px">No despachado</b><table><tr><th>Hora</th><th>Cliente</th><th>Producto</th><th class="num">Saldo</th><th>Estatus</th></tr>${no.map(x=>`<tr><td>${x.h}</td><td>${esc(x.cli)}</td><td>${x.prod}</td><td class="num">${fmt(saldo(x))}</td><td>${st(x)}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">Todo despachado.</td></tr>'}</table>
+ <div class="share"><button class="btn dk" id="rdPdf">PDF</button><a class="btn wa" target="_blank" href="https://wa.me/?text=${encodeURIComponent(txt)}">WhatsApp</a><a class="btn ml" href="mailto:?subject=${encodeURIComponent('Reporte de despachos '+BIZ[S.biz].n+' · '+TODAY)}&body=${encodeURIComponent(txt.replace(/\*/g,''))}">Correo</a></div>`,1);
+ $('#rdPdf').onclick=()=>printDoc('Reporte de despachos del día · '+BIZ[S.biz].n,fechaLarga(),`<div class="k"><div>Programado<b>${fmt(tp)}</b></div><div>Despachado<b>${fmt(te)}</b></div><div>No despachado<b>${fmt(tp-te)}</b></div><div>Cumplimiento<b>${pct(tp?te/tp:NaN)}</b></div></div>
+ <h2>Despachado · ${ent.length}</h2><table><tr><th>Hora</th><th>Cliente</th><th>Asesor</th><th>Producto</th><th class="n">Cantidad</th><th>Equipo / placa</th><th>Motorista</th><th>DNI</th><th>Boleta SAP</th></tr>${ent.map(([x,e])=>`<tr><td>${e.h}</td><td>${esc(x.cli)}</td><td>${esc(x.ase)}</td><td>${x.prod}</td><td class="n">${fmt(e.c)}</td><td>${e.eq||e.placa||'—'}</td><td>${esc(e.mot)}</td><td>${e.dni||'—'}</td><td>${e.bol||'—'}</td></tr>`).join('')}</table>
+ <h2>No despachado · ${no.length}</h2><table><tr><th>Hora</th><th>Cliente</th><th>Asesor</th><th>Producto</th><th class="n">Pendiente</th><th>Motivo</th></tr>${no.map(x=>`<tr><td>${x.h}</td><td>${esc(x.cli)}</td><td>${esc(x.ase)}</td><td>${x.prod}</td><td class="n">${fmt(saldo(x))}</td><td>${x.causa||stInfo(x)[0]}</td></tr>`).join('')}</table>`,1)}
+
+/* ========== VALIDACIÓN DE CALIDAD (Prefabricados) ========== */
+function vCal(){if(S.biz!=='P'){S.biz='P'}
+ const r=recs().filter(x=>pd(x.f)>=pd(TODAY)&&pd(x.f)<=pd(addD(TODAY,2))&&x.st!=='no'&&saldo(x)>0).sort((a,b)=>pd(a.f)-pd(b.f)||a.h.localeCompare(b.h));
+ const pend=r.filter(x=>!x.cal&&x.req!=='pend'&&x.req!=='rech'),hechas=recs().filter(x=>x.cal&&x.cal.fe===TODAY);
+ $('#main').innerHTML=`<div class="tools"><div><b style="font-size:16px;text-transform:capitalize">${largo(TODAY)}</b><div class="muted" style="font-size:11.5px">Prefabricados · valida el producto antes de que se despache</div></div></div>
+ <h3 style="font-size:14px">Por validar (${pend.length})</h3>
+ <div class="dl">${pend.length?pend.map(x=>`<div class="di cal" onclick="validar('${x.id}')"><div class="top"><span>${x.f===TODAY?'Hoy':x.f} · ${x.h}</span><span>${x.id}</span></div><div class="c">${esc(x.cli)}</div><div class="p">${x.prod} · <b>${fmt(saldo(x))}</b> piezas</div><div class="ft">${st(x)} ${trTxt(x)}</div></div>`).join(''):'<div class="card empty">Nada pendiente por validar.</div>'}</div>
+ <h3 style="font-size:14px;margin-top:18px">Validadas hoy (${hechas.length})</h3>
+ <div class="dl">${hechas.map(x=>`<div class="di ${x.cal.ok?'lib':'no'}" onclick="reciboCal('${x.id}')"><div class="top"><span>${x.cal.h} · ${esc(x.cal.u)}</span><span>${x.id}</span></div><div class="c">${esc(x.cli)}</div><div class="p">${x.prod} · ${fmt(x.cant)} piezas</div><div class="ft"><span class="st ${x.cal.ok?'s-lib':'s-rech'}">${x.cal.ok?'Cumple · autorizado':'No cumple'}</span> <span class="tag">ver comprobante</span></div></div>`).join('')}</div>`}
+function validar(id){const x=recs().find(x=>x.id===id);FOTO=null;let ok=1;
+ modal('Validación de calidad · '+x.id,`<div class="info"><span>Cliente: <b>${esc(x.cli)}</b></span><span>Fecha: <b>${x.f} ${x.h}</b></span><span>Producto: <b>${x.prod}</b></span><span>Cantidad: <b>${fmt(saldo(x))}</b> piezas</span></div>
+ <div class="fld"><label>¿El producto cumple?</label><div class="seg" id="qOk"><button class="on" data-v="1">✔ Cumple</button><button data-v="0">✕ No cumple</button></div></div>
+ <div class="fld"><label>Nota</label><textarea id="qNot" rows="2" placeholder="Ej. sin fisuras, curado completo, dimensiones correctas"></textarea></div>
+ <div class="fld"><label>Fotografía <span class="muted" style="font-weight:400">(obligatoria)</span></label>${fotoInput('qFoto')}</div>
+ <button class="btn ok" style="width:100%" id="qSave">Autorizar despacho</button>`);
+ document.querySelectorAll('#qOk button').forEach(b=>b.onclick=()=>{ok=+b.dataset.v;document.querySelectorAll('#qOk button').forEach(z=>z.classList.toggle('on',z===b));$('#qSave').textContent=ok?'Autorizar despacho':'Registrar rechazo';$('#qSave').className='btn '+(ok?'ok':'no');$('#qSave').style.width='100%'});
+ $('#qSave').onclick=async()=>{if(!FOTO){toast('La fotografía es obligatoria');return}const foto=FOTO;
+  if(await guardar('ruta_calidad',{id,rec:{ok:!!ok,nota:$('#qNot').value.trim()||(ok?'Conforme':'No conforme'),foto}},ok?'Despacho autorizado: ya aparece liberado para Heidi y Claudia':'Rechazo registrado: se avisó a Fernando')){const y=recs().find(z=>z.id===id);if(y&&y.cal)y.cal.fotoLocal=foto;render();reciboCal(id)}}}
+
+/* ========== COMPROBANTES ========== */
+function demoFoto(txt){const c=document.createElement('canvas');c.width=600;c.height=380;const g=c.getContext('2d');const gr=g.createLinearGradient(0,0,600,380);gr.addColorStop(0,'#8d8f88');gr.addColorStop(1,'#5f615b');g.fillStyle=gr;g.fillRect(0,0,600,380);
+ g.fillStyle='#c9cbc4';for(let i=0;i<5;i++)g.fillRect(40+i*110,200-i%2*30,90,140+i%2*30);g.fillStyle='#fff';g.font='600 22px Poppins';g.textAlign='center';g.fillText(txt,300,60);return c.toDataURL()}
+function drawRecibo(cv,o,cb){const W=720,img=new Image();img.onload=()=>{const ph=Math.round(img.height*(W-60)/img.width);const lines=o.rows.length;const H=150+ph+40+lines*34+90;cv.width=W;cv.height=H;const g=cv.getContext('2d');
+ g.fillStyle='#fff';g.fillRect(0,0,W,H);g.fillStyle='#12130F';g.fillRect(0,0,W,110);g.fillStyle=o.col;g.fillRect(0,110,W,8);
+ g.fillStyle='#fff';g.font='700 30px Poppins';g.textAlign='left';g.fillText('DURACRETO',30,52);g.fillStyle='#F9D600';g.fillText('360',222,52);
+ g.fillStyle='#cfcfc9';g.font='400 17px Poppins';g.fillText(o.sub,30,84);g.fillStyle='#fff';g.font='600 20px Poppins';g.textAlign='right';g.fillText(o.title,W-30,52);g.font='400 16px Poppins';g.fillStyle='#cfcfc9';g.fillText(o.folio,W-30,84);
+ g.drawImage(img,30,140,W-60,ph);let y=140+ph+44;g.textAlign='left';
+ o.rows.forEach(([k,v])=>{g.fillStyle='#6b6c68';g.font='400 17px Poppins';g.fillText(k,30,y);g.fillStyle='#1d1e1a';g.font='600 18px Poppins';g.fillText(String(v).slice(0,46),250,y);y+=34});
+ g.fillStyle=o.okCol;g.fillRect(30,y,W-60,52);g.fillStyle='#fff';g.font='700 20px Poppins';g.textAlign='center';g.fillText(o.banner,W/2,y+34);cb&&cb()};img.src=o.foto}
+function recibo(id,i){const x=recs().find(x=>x.id===id),e=x.entregas[i];const foto=e.fotoLocal||demoFoto(e.foto?'Foto guardada en Drive':'Sin foto');
+ const rows=[['Fecha y hora',(e.fe||x.f)+' · '+e.h],['Cliente',x.cli],['Asesor',x.ase],['Producto',x.prod],['Despachado',fmt(e.c)+' '+BIZ[S.biz].u],['Saldo pendiente',fmt(saldo(x))],['Transporte',x.tr==='P'?'Transportes Platino · '+(e.eq||''):'Del cliente · '+(e.placa||'')],['Motorista',e.mot],['DNI motorista',e.dni||'—'],['Boleta SAP',e.bol||'—'],['Registró',e.u]];if(e.nota)rows.push(['Notas',e.nota]);
+ const txt=`*Duracreto · Comprobante de despacho ${x.id}*\n${BIZ[S.biz].n}\nFecha: ${e.fe||x.f} ${e.h}\nCliente: ${x.cli}\nAsesor: ${x.ase}\nProducto: ${x.prod}\nDespachado: ${fmt(e.c)} ${BIZ[S.biz].u}\nSaldo pendiente: ${fmt(saldo(x))}\nTransporte: ${x.tr==='P'?'Transportes Platino '+e.eq:'Cliente '+(e.placa||'')}\nMotorista: ${e.mot}\nDNI: ${e.dni||'—'}\nBoleta SAP: ${e.bol||'—'}${e.nota?'\nNotas: '+e.nota:''}\nRegistró: ${e.u}`;
+ modal('Comprobante de despacho',`<div class="rc"><canvas id="rcv"></canvas></div>
+ <div class="share"><a class="btn wa" target="_blank" href="https://wa.me/?text=${encodeURIComponent(txt)}">WhatsApp</a><a class="btn ml" href="mailto:?subject=${encodeURIComponent('Comprobante de despacho '+x.id+' · '+x.cli)}&body=${encodeURIComponent(txt.replace(/\*/g,''))}">Correo</a><button class="btn sec" onclick="bajar('${x.id}')">Descargar imagen</button></div>
+ <p class="muted" style="font-size:11px;text-align:center">El despachador comparte un <b>mensaje con los detalles</b>.${e.foto&&/^http/.test(e.foto)?` La foto queda en Drive: <a target="_blank" href="${esc(e.foto)}">ver foto</a>.`:''}</p>`);
+ drawRecibo($('#rcv'),{title:'COMPROBANTE DE DESPACHO',sub:BIZ[S.biz].n+' · '+(x.tr==='P'?'Transportes Platino':'Transporte del cliente'),folio:x.id+'-'+(i+1),col:BIZ[S.biz].c==='#F2F2EE'?'#A0A19F':BIZ[S.biz].c,foto,rows,okCol:saldo(x)?'#E08A00':'#2E9B57',banner:saldo(x)?'DESPACHO PARCIAL · SALDO '+fmt(saldo(x)):'DESPACHO COMPLETO'})}
+function reciboCal(id){const x=recs().find(x=>x.id===id),q=x.cal;const foto=q.fotoLocal||demoFoto(q.foto?'Foto guardada en Drive':'Sin foto');
+ const rows=[['Fecha y hora',(q.fe||TODAY)+' · '+q.h],['Cliente',x.cli],['Programado',x.f+' · '+x.h],['Producto',x.prod],['Cantidad',fmt(saldo(x)||x.cant)+' piezas'],['Resultado',q.ok?'Cumple':'No cumple'],['Nota',q.nota],['Validó',q.u]];
+ modal('Comprobante de validación de calidad',`<div class="rc"><canvas id="rcv"></canvas></div>
+ <div class="share"><button class="btn wa" onclick="compartirImg('${x.id}')">Compartir imagen (WhatsApp)</button><button class="btn ml" onclick="compartirImg('${x.id}',1)">Correo</button><button class="btn sec" onclick="bajar('${x.id}')">Descargar imagen</button></div>
+ <p class="muted" style="font-size:11px;text-align:center">Calidad comparte <b>solo la imagen</b>. En el teléfono se abre el menú de compartir (WhatsApp, correo…) con la imagen adjunta.</p>`);
+ drawRecibo($('#rcv'),{title:'VALIDACIÓN DE CALIDAD',sub:'Prefabricados · Control de Calidad',folio:x.id+'-QC',col:'#8a63c7',foto,rows,okCol:q.ok?'#2E9B57':'#D64534',banner:q.ok?'CUMPLE · DESPACHO AUTORIZADO':'NO CUMPLE · DESPACHO RETENIDO'})}
+function bajar(id){const a=document.createElement('a');a.href=$('#rcv').toDataURL('image/png');a.download='Comprobante_'+id+'.png';a.click()}
+async function compartirImg(id,mail){const b=await new Promise(r=>$('#rcv').toBlob(r,'image/png'));const f=new File([b],'Validacion_'+id+'.png',{type:'image/png'});
+ if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Validación de calidad '+id})}catch(e){}}else{bajar(id);toast('En la computadora se descarga la imagen para adjuntarla'+(mail?' al correo':' en WhatsApp Web'))}}
+
+/* ========== INVENTARIO ========== */
+function vInv(){const inv=S.biz==='B'?D.invB:D.invP;
+ if(S.biz==='P'){$('#main').innerHTML=`<h2>Inventario · Prefabricados</h2><div class="demo">Prefabricados aún no tiene módulo de producción en Duracreto 360. Arranca con el <b>conteo físico</b> y se actualiza con lo despachado y los ajustes; cuando exista el módulo, la producción y los rechazos de Calidad entrarán solos. ${D.conteo.P?'Conteo inicial: <b>'+esc(D.conteo.P)+'</b>.':'<b>Falta cargar el conteo inicial.</b>'}</div>
+ <div class="card"><table><tr><th>Producto</th><th class="num">Disponible en patio</th><th class="num">Comprometido (próx. 7 días)</th><th class="num">Libre para programar</th><th>Estado</th></tr>${inv.map(i=>{const comp=recs().filter(x=>x.prod===i.p&&pd(x.f)>=pd(TODAY)&&pd(x.f)<=pd(addD(TODAY,7))).reduce((s,x)=>s+saldo(x),0);const lib=i.disp-comp;return `<tr><td><b>${i.p}</b></td><td class="num">${fmt(i.disp)}</td><td class="num">${fmt(comp)}</td><td class="num"><b class="${lib<0?'dn':''}">${fmt(lib)}</b></td><td>${lib<0?'<span class="pill">Faltante</span>':i.disp===0?'<span class="pill o">Sin existencia</span>':'<span class="pill g">OK</span>'}</td></tr>`}).join('')}</table></div>`;return}
+ const dias=[...new Set(D.prodD.map(p=>p.f))].slice(-7),prods=[...new Set(D.prodD.filter(p=>dias.includes(p.f)).map(p=>p.p))];
+ $('#main').innerHTML=`<h2>Inventario · Bloques</h2>
+ <div class="demo"><b>Se alimenta solo de Duracreto 360.</b> Cada vez que un líder reporta producción en la app de la planta, entra aquí como «en curado» y pasa a disponible a los 3 días. Se restan los No conformes que registra Calidad (desecho y segunda) y lo que registran los despachadores. ${D.conteo.B?'Conteo físico inicial: <b>'+esc(D.conteo.B)+'</b>.':'<b>Falta cargar el conteo físico inicial:</b> hasta entonces las cifras no son definitivas y la programación no se bloquea por inventario.'}</div>
+ <div class="card" style="margin-bottom:14px"><table><tr><th>Producto</th><th class="num">Saldo inicial (conteo)</th><th class="num">+ Producción liberada (D360)</th><th class="num">− Desecho</th><th class="num">− Segunda</th><th class="num">− Despachado</th><th class="num">= Disponible en patio</th><th class="num">En curado</th><th class="num">Comprometido (próx. 7 días)</th><th class="num">Libre para programar</th><th>Estado</th></tr>${inv.map(i=>{const comp=recs().filter(x=>x.prod===i.p&&pd(x.f)>=pd(TODAY)&&pd(x.f)<=pd(addD(TODAY,7))).reduce((s,x)=>s+saldo(x),0);const lib=i.disp+i.cur-comp;
+ return `<tr><td><b>${i.p}</b></td><td class="num muted">${fmt(i.ini)}</td><td class="num">${fmt(i.prod)}</td><td class="num">${fmt(i.des)}</td><td class="num">${fmt(i.seg)}</td><td class="num">${fmt(i.dsp)}</td><td class="num"><b>${fmt(i.disp)}</b></td><td class="num">${fmt(i.cur)}</td><td class="num">${fmt(comp)}</td><td class="num"><b class="${lib<0?'dn':''}">${fmt(lib)}</b></td><td>${lib<0?'<span class="pill">Faltante</span>':i.disp+i.cur===0?'<span class="pill o">Sin existencia</span>':'<span class="pill g">OK</span>'}</td></tr>`}).join('')}</table>
+ <p class="muted" style="font-size:11px;margin:8px 0 0">Período: desde el conteo físico inicial.</p></div>
+ <div class="card"><h3>Producción reportada en Duracreto 360 <small>últimos 7 días con producción · unidades · fuente: hoja Produccion de Bloques</small></h3>
+ <table><tr><th>Producto</th>${dias.map(d=>`<th class="num">${d.slice(0,-5)}</th>`).join('')}<th class="num">Total</th></tr>${prods.map(p=>{const v=dias.map(d=>D.prodD.filter(x=>x.f===d&&x.p===p).reduce((s,x)=>s+x.u,0));return `<tr><td><b>${p}</b></td>${v.map(n=>`<td class="num">${n?fmt(n):'—'}</td>`).join('')}<td class="num"><b>${fmt(v.reduce((a,b)=>a+b,0))}</b></td></tr>`}).join('')}</table></div>`}
+
+/* ========== REPORTES ========== */
+const REPS={cumF:'Cumplimiento por fecha',desp:'Despachos programados y entregados',ase:'Cumplimiento por asesor',sal:'Saldos pendientes',cau:'Causas de incumplimiento',cal:'Validaciones de calidad (Prefabricados)',ent:'Detalle de entregas (motorista, equipo, boleta)'};
+function repData(){const t=S.repT,d1=pd(fromIso($('#rD1').value)),d2=pd(fromIso($('#rD2').value)),bz=$('#rBiz').value,ase=$('#rAse').value;
+ let r=[];['B','P'].filter(b=>bz==='T'||b===bz).forEach(b=>(b==='B'?D.B:D.P).forEach(x=>{const t2=pd(x.f);if(t2>=d1&&t2<=d2&&(!ase||x.ase===ase))r.push(Object.assign({neg:BIZ[b].n},x))}));
+ r=r.filter(x=>x.req!=='pend');
+ if(t==='cumF'){const g={};r.forEach(x=>{const k=x.neg+'|'+x.f;g[k]=g[k]||{_d:pd(x.f),Negocio:x.neg,Fecha:x.f,Despachos:0,Programado:0,Entregado:0,Completos:0,Parciales:0,'No realizados':0};const o=g[k];o.Despachos++;o.Programado+=x.cant;o.Entregado+=x.ent;if(x.st==='ent')o.Completos++;else if(x.st==='par')o.Parciales++;else if(x.st==='no')o['No realizados']++});
+  const a=Object.values(g).sort((a,b)=>a._d-b._d).map(o=>{delete o._d;o['Cumplimiento %']=o.Programado?Math.round(o.Entregado/o.Programado*1000)/10:0;o['OTIF %']=o.Despachos?Math.round(o.Completos/o.Despachos*1000)/10:0;return o});
+  if(a.length){const T={Negocio:'TOTAL',Fecha:'',Despachos:0,Programado:0,Entregado:0,Completos:0,Parciales:0,'No realizados':0};a.forEach(o=>['Despachos','Programado','Entregado','Completos','Parciales','No realizados'].forEach(k=>T[k]+=o[k]));T['Cumplimiento %']=T.Programado?Math.round(T.Entregado/T.Programado*1000)/10:0;T['OTIF %']=T.Despachos?Math.round(T.Completos/T.Despachos*1000)/10:0;a.push(T)}return a}
+ if(t==='desp')return r.map(x=>({Negocio:x.neg,ID:x.id,Fecha:x.f,Hora:x.h,Cliente:x.cli,Asesor:x.ase,Tipo:x.tipo,Producto:x.prod,Programado:x.cant,Entregado:x.ent,Saldo:Math.max(0,x.cant-x.ent),Transporte:x.tr==='P'?'Transportes Platino':'Cliente',Estatus:x.st==='ent'?'Entregado':x.st==='par'?'Parcial':x.st==='no'?'No realizado':'Pendiente',Causa:x.causa}));
+ if(t==='ase'){const g={};r.forEach(x=>{const k=x.neg+'|'+x.ase;g[k]=g[k]||{Negocio:x.neg,Asesor:x.ase,Despachos:0,Programado:0,Entregado:0};g[k].Despachos++;g[k].Programado+=x.cant;g[k].Entregado+=x.ent});return Object.values(g).map(o=>Object.assign(o,{Cumplimiento:o.Programado?Math.round(o.Entregado/o.Programado*1000)/10+' %':'—'})).sort((a,b)=>b.Programado-a.Programado)}
+ if(t==='sal')return r.filter(x=>x.cant>x.ent&&x.st!=='no').map(x=>({Negocio:x.neg,ID:x.id,Fecha:x.f,Cliente:x.cli,Asesor:x.ase,Producto:x.prod,Programado:x.cant,Entregado:x.ent,Saldo:x.cant-x.ent}));
+ if(t==='cau'){const g={};r.filter(x=>x.causa).forEach(x=>{g[x.causa]=(g[x.causa]||0)+1});return Object.entries(g).sort((a,b)=>b[1]-a[1]).map(([c,n])=>({Causa:c,Despachos:n}))}
+ if(t==='cal')return r.filter(x=>x.cal).map(x=>({ID:x.id,Fecha:x.f,Cliente:x.cli,Producto:x.prod,Cantidad:x.cant,Resultado:x.cal.ok?'Cumple':'No cumple',Validó:x.cal.u,Hora:x.cal.h,Nota:x.cal.nota}));
+ if(t==='ent'){const o=[];r.forEach(x=>x.entregas.forEach(e=>o.push({Negocio:x.neg,ID:x.id,Fecha:x.f,Hora:e.h,Cliente:x.cli,Producto:x.prod,Despachado:e.c,Equipo:e.eq||e.placa,Motorista:e.mot,'Boleta SAP':e.bol,Registró:e.u,Notas:e.nota})));return o}}
+function vRep(){
+ $('#main').innerHTML=`<h2>Reportes</h2><div class="card" style="margin-bottom:14px"><div class="three">
+ <div class="fld"><label>Reporte</label><select id="rT">${Object.entries(REPS).map(([k,v])=>`<option value="${k}" ${k===S.repT?'selected':''}>${v}</option>`).join('')}</select></div>
+ <div class="fld"><label>Desde</label><input type="date" id="rD1" value="${iso(addD(TODAY,-30))}"></div><div class="fld"><label>Hasta</label><input type="date" id="rD2" value="${iso(TODAY)}"></div>
+ <div class="fld"><label>Negocio</label><select id="rBiz">${S.user.biz.length>1?'<option value="T">Bloques y Prefabricados</option>':''}${S.user.biz.map(b=>`<option value="${b}" ${S.biz===b?'selected':''}>${BIZ[b].n}</option>`).join('')}</select></div>
+ <div class="fld"><label>Asesor</label><select id="rAse"><option value="">Todos</option>${ASES.map(a=>`<option>${esc(a.n)}</option>`).join('')}</select></div>
+ <div class="fld"><label>Descargar</label><div style="display:flex;gap:8px"><button class="btn" id="rX" style="flex:1">Excel</button><button class="btn dk" id="rP" style="flex:1">PDF</button></div></div></div></div>
+ <div class="card"><h3 id="rH"></h3><div id="rV" style="max-height:520px;overflow:auto"></div></div>`;
+ const draw=()=>{S.repT=$('#rT').value;const d=repData();$('#rH').innerHTML=REPS[S.repT]+` <small>${d.length} filas</small>`;
+  $('#rV').innerHTML=d.length?'<table><tr>'+Object.keys(d[0]).map(k=>`<th>${k}</th>`).join('')+'</tr>'+d.slice(0,200).map(o=>'<tr>'+Object.values(o).map(v=>`<td class="${typeof v==='number'?'num':''}">${typeof v==='number'?fmt(v):esc(v)}</td>`).join('')+'</tr>').join('')+'</table>':'<div class="empty">Sin datos para ese filtro.</div>'};
+ ['#rT','#rD1','#rD2','#rBiz','#rAse'].forEach(s=>$(s).onchange=draw);draw();
+ $('#rX').onclick=()=>{const d=repData();if(!window.XLSX){toast('No se pudo cargar el generador de Excel');return}const ws=XLSX.utils.json_to_sheet(d),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Reporte');XLSX.writeFile(wb,'Duracreto_'+S.repT+'_'+$('#rD1').value+'_'+$('#rD2').value+'.xlsx')};
+ $('#rP').onclick=()=>{const d=repData();if(true){printDoc(REPS[S.repT],$('#rD1').value.split('-').reverse().join('/')+' al '+$('#rD2').value.split('-').reverse().join('/')+' · '+$('#rBiz').selectedOptions[0].text+($('#rAse').value?' · '+$('#rAse').value:''),'<table><tr>'+(d.length?Object.keys(d[0]).map(k=>`<th>${k}</th>`).join(''):'')+'</tr>'+d.map(o=>'<tr'+(o.Negocio==='TOTAL'?' class="t"':'')+'>'+Object.values(o).map(v=>`<td class="${typeof v==='number'?'n':''}">${typeof v==='number'?fmt(v):esc(v)}</td>`).join('')+'</tr>').join('')+'</table>',1);return}const w=window.open('','_blank');w.document.write(`<html><head><title>${REPS[S.repT]}</title><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"><style>body{font-family:Poppins,sans-serif;font-size:10px;margin:24px}h1{font-size:16px;margin:0}.h{border-bottom:4px solid #F9D600;padding-bottom:8px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:end}table{width:100%;border-collapse:collapse}th{background:#12130F;color:#fff;text-align:left;padding:5px}td{padding:4px 5px;border-bottom:1px solid #ddd}@page{size:landscape;margin:12mm}</style></head><body><div class="h"><div><b style="font-size:18px">DURACRETO <span style="color:#c9a800">360</span></b><h1>${REPS[S.repT]}</h1></div><div>${$('#rD1').value} a ${$('#rD2').value} · generado ${new Date().toLocaleString('es-HN')} por ${S.user.n}</div></div><table><tr>${d.length?Object.keys(d[0]).map(k=>`<th>${k}</th>`).join(''):''}</tr>${d.map(o=>'<tr>'+Object.values(o).map(v=>`<td>${typeof v==='number'?fmt(v):esc(v)}</td>`).join('')+'</tr>').join('')}</table><script>setTimeout(()=>print(),600)<\/script></body></html>`);w.document.close()}}
+
+/* ========== BASES DE DATOS ========== */
+function vBd(){const T={cli:'Clientes',ase:'Asesores',eq:'Equipos Transportes Platino',cap:'Capacidades por equipo',prod:'Productos',cau:'Causas',bit:'Bitácora'};if(!T[S.bdTab])S.bdTab='cli';
+ $('#main').innerHTML=`<div class="demo" style="background:#12130F;color:#fff;border:0">🔒 Solo <b>Fernando Murillo</b> (programador de despachos) y los administradores ven y editan esta sección. Cada cambio queda en la bitácora: quién, cuándo y valor anterior. Los usuarios y sus permisos se manejan en Duracreto 360 › Usuarios.</div>
+ <div class="subtabs">${Object.entries(T).map(([k,v])=>`<button class="${S.bdTab===k?'on':''}" onclick="S.bdTab='${k}';render()">${v}</button>`).join('')}</div><div class="card" id="bdB"></div>`;
+ const b=$('#bdB'),t=S.bdTab;
+ if(t==='cli'){b.innerHTML=`<div class="tools"><input id="bq" placeholder="Buscar entre ${D.cli.length} clientes…" style="min-width:260px"><span class="sp"></span><span class="muted" style="font-size:11.5px">Los clientes nuevos se agregan solos al programar. Toca ✎ para cambiar el asesor.</span></div><div id="bcl"></div>`;
+  const dr=()=>{const q=nz($('#bq').value);$('#bcl').innerHTML='<table><tr><th>Cliente</th><th>Negocios</th><th>Tipo</th><th>Asesor asignado</th><th>Transporte habitual</th><th class="num">Despachos</th><th></th></tr>'+D.cli.filter(c=>!q||nz(c.n).includes(q)).slice(0,60).map(c=>`<tr><td><b>${esc(c.n)}</b>${c.alias?`<br><span class="muted" style="font-size:10px">también escrito: ${esc(c.alias)}</span>`:''}</td><td>${c.b.split('').map(z=>`<span class="tag">${BIZ[z].n}</span>`).join(' ')}</td><td>${esc(c.t)}</td><td>${esc(c.a)}</td><td>${c.tr==='P'?'Platino':'Cliente'}</td><td class="num">${c.k}</td><td><button class="btn sec sm" onclick="editCli('${encodeURIComponent(c.n)}')">✎</button></td></tr>`).join('')+'</table>'};$('#bq').oninput=dr;dr()}
+ if(t==='ase')b.innerHTML=`<div class="tools"><span class="muted">Solo los asesores <b>activos</b> aparecen al programar. Los inactivos se conservan en el histórico.</span><span class="sp"></span><button class="btn sec" onclick="S.sec='rep';S.repT='cumF';render()">⬇ Reporte de cumplimiento por fechas</button><button class="btn" onclick="nuevoAsesor()">+ Asesor</button></div><table><tr><th>Asesor</th><th class="num">Clientes asignados</th><th>Estado</th><th></th></tr>`+ASES.map((a,i)=>`<tr><td><b>${esc(a.n)}</b></td><td class="num">${D.cli.filter(c=>c.a===a.n).length}</td><td>${a.act?'<span class="pill g">Activo</span>':'<span class="pill">Inactivo</span>'}</td><td><button class="btn sec sm" onclick="togAse(${i})">${a.act?'Desactivar':'Activar'}</button></td></tr>`).join('')+'</table>';
+ if(t==='eq')b.innerHTML='<div class="tools"><span class="muted">Equipos de Transportes Platino. Los CF son camiones plataforma.</span><span class="sp"></span><button class="btn" onclick="nuevoEquipo()">+ Equipo</button></div><table><tr><th>Código</th><th>Tipo</th><th>Ejes</th><th>Motorista</th><th>DNI motorista</th><th>Estado</th><th></th></tr>'+D.eqs.map(e=>`<tr><td><b>${e.c}</b></td><td>${e.t}</td><td>${e.t==='Rastra'?`<select onchange="setEjes('${e.c}',this.value)" style="padding:4px"><option ${e.ejes!=3?'selected':''} value="2">2 ejes</option><option ${e.ejes==3?'selected':''} value="3">3 ejes</option></select>`:'—'}</td><td>${e.m?esc(e.m):'<span class="pill o">Sin asignación</span>'}</td><td><input value="${esc(e.dni||'')}" placeholder="por cargar" style="padding:4px 6px;width:140px" onchange="setDni('${e.c}',this.value)"></td><td>${enTaller(e)?`<span class="pill o">${e.e}</span>`:`<span class="pill g">${e.e}</span>`}</td><td><button class="btn sec sm" onclick="toggleTaller('${e.c}')">${enTaller(e)?'Habilitar':'Marcar en taller'}</button></td></tr>`).join('')+'</table><p class="muted" style="font-size:11.5px">Un equipo en taller se puede elegir igual: la app avisa y, si se confirma que ya está habilitado, lo cambia aquí automáticamente.</p>';
+ if(t==='cap')b.innerHTML=S.biz==='B'?`<p style="font-size:12px;margin-top:0">Capacidad máxima de carga por viaje, tabla de Transportes Platino (unidades).</p><table><tr><th>Producto</th><th class="num">Camión plataforma</th><th class="num">Rastra 2 ejes</th><th class="num">Rastra 3 ejes</th></tr>${caps().map(c=>`<tr><td>${c.p}</td><td class="num">${fmt(c.cam)}</td><td class="num">${fmt(c.r2)}</td><td class="num">${fmt(c.r3)}</td></tr>`).join('')}</table>`:`<p style="font-size:12px;margin-top:0">Tomado de la hoja «Capacidad por Unidad» de Plan de entregas Prefabricados. Las celdas vacías no aplican o faltan por definir.</p><table><tr><th>Producto</th><th class="num">Camión plataforma</th><th class="num">Rastra</th><th>Por tarima</th><th class="num">Peso (lb)</th></tr>${caps().map(c=>`<tr><td>${c.p}</td><td class="num">${c.cam?fmt(c.cam):'—'}</td><td class="num">${c.ras?fmt(c.ras):'—'}</td><td>${c.tar||'—'}</td><td class="num">${c.lb?fmt(c.lb):'—'}</td></tr>`).join('')}</table>`;
+ if(t==='prod')b.innerHTML='<table><tr><th>Producto</th><th>Negocio</th><th>Unidad</th><th>Requiere validación de Calidad</th></tr>'+prods().map(p=>({p})).map(c=>`<tr><td>${esc(c.p)}</td><td>${BIZ[S.biz].n}</td><td>${BIZ[S.biz].u}</td><td>${S.biz==='P'?'Sí':'No'}</td></tr>`).join('')+'</table>';
+ if(t==='cau')b.innerHTML='<table><tr><th>Causa</th><th>Responsable</th></tr>'+D.cau.map(c=>[c.c,c.r]).map(c=>`<tr><td>${c[0]}</td><td>${c[1]}</td></tr>`).join('')+'</table>';
+ if(t==='bit')b.innerHTML=D.bit.length?'<table><tr><th>Fecha y hora</th><th>Registro</th><th>Antes</th><th>Ahora</th><th>Quién</th><th>Detalle</th></tr>'+D.bit.map(b=>`<tr><td>${esc(b.h)}</td><td>${esc(b.c)}</td><td>${esc(b.a)}</td><td>${esc(b.n)}</td><td>${esc(b.u)}</td><td>${esc(b.m)}</td></tr>`).join('')+'</table>':'<div class="empty">Sin cambios registrados.</div>'}
+async function editCli(n){n=decodeURIComponent(n);const c=D.cli.find(c=>c.n===n);if(!c)return;
+ modal('Cliente · '+esc(c.n),`<div class="fld"><label>Nombre</label><input id="kN" value="${esc(c.n)}"></div><div class="two"><div class="fld"><label>Asesor</label><select id="kA">${ASES.filter(a=>a.act||a.n===c.a).map(a=>`<option ${a.n===c.a?'selected':''}>${esc(a.n)}</option>`).join('')}</select></div><div class="fld"><label>Tipo</label><select id="kT">${['Distribuidor','Proyecto','Consumidor final'].map(t=>`<option ${t===c.t?'selected':''}>${t}</option>`).join('')}</select></div></div>
+ <div class="fld"><label>Transporte habitual</label><select id="kR"><option value="P" ${c.tr==='P'?'selected':''}>Transportes Platino</option><option value="C" ${c.tr!=='P'?'selected':''}>Transporte del cliente</option></select></div><button class="btn dk" style="width:100%" id="kS">Guardar</button>`);
+ $('#kS').onclick=async()=>{if(await guardar('ruta_catalogo',{tabla:'cliente',rec:{antes:c.n,n:$('#kN').value.trim(),a:$('#kA').value,t:$('#kT').value,tr:$('#kR').value}},'Cliente actualizado')){closeModal();render()}}}
+async function nuevoEquipo(){const c=(prompt('Código del equipo (ej. R-12)')||'').trim().toUpperCase();if(!c)return;const t=/^CF/.test(c)?'Camión plataforma':'Rastra';
+ if(await guardar('ruta_catalogo',{tabla:'equipo',rec:{c,t,e:'Activa',ejes:t==='Rastra'?2:''}},'Equipo agregado: '+esc(c)))render()}
+
+(async function boot(){try{await cargarTodo();$('#carga').remove();render()}catch(e){if(e.message!=='sesion')$('#cargaT').innerHTML=esc(e.message)+'<br><button class="btn" style="margin-top:12px" onclick="location.reload()">Reintentar</button>'}})();
+setInterval(()=>{if(document.visibilityState==='visible'&&CARGADO&&Date.now()-CARGADO>120000&&!$('#mod').classList.contains('on'))reload(1)},30000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&CARGADO&&Date.now()-CARGADO>60000&&!$('#mod').classList.contains('on'))reload(1)});
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
+</body></html>

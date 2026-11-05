@@ -500,6 +500,7 @@ async function api(action,payload={}){let r;try{r=await fetch(API_URL,{method:'P
 async function cargarDatos(){const j=await api('data');SEED=j.seed;initCat();loadDB();lastLoad=Date.now();if(j.user){S=Object.assign({},S,j.user);store.set(SS,S)}}
 function pantallaCarga(msg){$('#app').innerHTML=`<div class="wrap" style="position:fixed;inset:0;display:grid;place-items:center;z-index:70;background:var(--bg)"><div style="text-align:center"><img src="${temaActual()==='dark'?LOGO_D:LOGO_L}" alt="Duracreto" style="width:240px;max-width:60vw;margin:0 auto 20px;display:block"><p class="note" style="font-size:16px">${msg}</p></div></div>`}
 async function boot(){if(!ONLINE){if(!SEED){pantallaCarga('Falta configurar la dirección del servidor en config.js.');return}initCat();loadDB();render();return}if(!S||!S.token){S=null;render();return}
+  if(soloRuta()){location.replace('ruta.html');return}
   pantallaCarga('Cargando información…');try{await cargarDatos();render()}catch(e){if(e.message!=='sesion')pantallaCarga('No hay conexión. Revise el internet y vuelva a abrir la app.')}}
 function initCat(){CFG=SEED.config;if(CFG.descansoDespuesDe==null)CFG.descansoDespuesDe=4;UMBRAL={bueno:CFG.umbralOptimo,aceptable:CFG.umbralMejorar};EQ=Object.fromEntries(SEED.equipos.map(e=>[e.id,e]));PR=Object.fromEntries(SEED.productos.map(p=>[p.id,p]));CA=Object.fromEntries(SEED.causas.map(c=>[c.id,c]));aplicarRotacion()}
 /* Rotación semanal de turnos (lunes 6:00 am): A → B → C → A. Semana base 12-oct-2026: Grupo 1 = C, Grupo 2 = A, Grupo 3 = B */
@@ -614,6 +615,7 @@ function listo360(){const md=$('#modal');if(!md.hidden)return;
 const MOD='dc_plataforma_modulo';
 const MODULOS=[
  {id:'bloques',nom:'Bloques',letra:'B',col:'#F9D600',ink:'#12130F',listo:true},
+ {id:'ruta',nom:'Ruta 360',nomLargo:'Ruta 360 · Despachos e inventario',letra:'R',col:'#F49A29',ink:'#12130F',listo:true,href:'ruta.html'},
  {id:'trituracion',nom:'Trituración',nomLargo:'Trituración de agregados',letra:'T',col:'#F49A29',ink:'#12130F',listo:false,
   tit:'¡Calma, que aquí no se tritura la paciencia!',txt:'No hay prisa: Diego y su equipo están picando piedra (literalmente) para que la plataforma de Trituración de agregados esté disponible lo antes posible.'},
  {id:'concreto',nom:'Concreto',letra:'C',col:'#A0A19F',ink:'#12130F',listo:false,
@@ -629,8 +631,10 @@ const escritorio=()=>ESCR.matches,menuFijo=()=>escritorio()&&store.get(MFIJO)===
 function marcarFijo(){document.documentElement.classList.toggle('mnu-fijo',!!S&&menuFijo());const h=document.querySelector('header.top');if(h)document.documentElement.style.setProperty('--hh',h.offsetHeight+'px')}
 ESCR.addEventListener&&ESCR.addEventListener('change',()=>{if(S){menuAbierto=false;document.body.style.overflow='';render()}});
 addEventListener('resize',()=>{if(S)marcarFijo()});
-function misNegocios(){const n=Object.assign({},S&&S.negocios||{});if(S&&!n.bloques&&S.rol)n.bloques=S.rol;return n}
-function moduloActual(){const n=misNegocios();let m=store.get(MOD);if(!m||!MODX[m]||!MODX[m].listo||!n[m])m=MODULOS.find(x=>x.listo&&n[x.id])?.id||'bloques';return MODX[m]}
+function misNegocios(){const n=Object.assign({},S&&S.negocios||{});if(S&&!n.bloques&&S.rol)n.bloques=S.rol;if(S&&S.ruta)n.ruta=S.ruta.rol;return n}
+/* Ruta 360 vive en ruta.html (misma sesión). Quien solo tiene rol en Ruta 360 entra directo allí. */
+const soloRuta=()=>!!S&&!!S.ruta&&!ROLES[S.rol];
+function moduloActual(){const n=misNegocios();let m=store.get(MOD);if(!m||!MODX[m]||!MODX[m].listo||MODX[m].href||!n[m])m=MODULOS.find(x=>x.listo&&!x.href&&n[x.id])?.id||'bloques';return MODX[m]}
 function negociosMenu(){const n=misNegocios(),listos=MODULOS.filter(m=>m.listo&&n[m.id]);
   const prox=ROLES_PLANTA.includes(S.rol)?[]:MODULOS.filter(m=>!m.listo);
   return listos.length+prox.length>1?listos.concat(prox):[]}
@@ -667,6 +671,7 @@ function conectarMenu(){
   if(negociosMenu().length)document.querySelectorAll('[data-mchip]').forEach(c=>c.onclick=()=>{negAbierto=true;if(escritorio())store.set(MFIJO,true);render();if(!escritorio())abrirMenu(true)});
   if($('#negCur'))$('#negCur').onclick=()=>{negAbierto=!negAbierto;$('#negCur').setAttribute('aria-expanded',negAbierto);$('#negList').hidden=!negAbierto};
   document.querySelectorAll('[data-neg]').forEach(b=>b.onclick=()=>{const m=MODX[b.dataset.neg];
+    if(m.href){location.href=m.href;return}
     if(!m.listo){proximamente(m);return}
     if(m.id===moduloActual().id){negAbierto=false;abrirMenu(false);return}
     store.set(MOD,m.id);negAbierto=false;menuAbierto=false;render();toast('Está en '+m.nom)});
@@ -735,7 +740,7 @@ function renderLogin(){
   $('#lf').onsubmit=async e=>{e.preventDefault();const u=$('#lu').value.trim().toLowerCase();
     if(ONLINE){const b=$('#lf button[type=submit]');b.disabled=true;b.textContent='Ingresando…';try{const j=await api('login',{u,p:$('#lp').value});
       if(!j.ok){$('#le').textContent=j.error==='credenciales'?'Usuario o contraseña incorrectos. Revise e intente de nuevo.':j.error;$('#le').hidden=false;b.disabled=false;b.textContent='Ingresar';return}
-      S=Object.assign({token:j.token},j.user);store.set(SS,S);tab=null;pantallaCarga('Cargando información…');await cargarDatos();render()}
+      S=Object.assign({token:j.token},j.user);store.set(SS,S);tab=null;if(soloRuta()){location.replace('ruta.html');return}pantallaCarga('Cargando información…');await cargarDatos();render()}
       catch(err){$('#le').textContent='No hay conexión. Revise el internet e intente de nuevo.';$('#le').hidden=false;b.disabled=false;b.textContent='Ingresar'}return}
     const h=await sha($('#lp').value);
     const usr=SEED.usuarios.find(x=>x.u===u&&x.hash===h);if(!usr){$('#le').hidden=false;return}
