@@ -209,7 +209,20 @@ async function cargarNeg(b){const j=await api('ruta_data',{neg:b});if(!j.ok)thro
  D.cli=c.clientes.map(k=>Object.assign({},k,{b:letras(k.b),k:0}));D.eqs=c.equipos;D.cau=c.causas;D.bit=c.bitacora||[];
  ASES=c.asesores.map(a=>({n:a.n,act:a.act}));
  if(SES.ruta.rol!==j.rol||String(SES.ruta.negocios)!==String(j.negocios)){SES.ruta={rol:j.rol,negocios:j.negocios};store.set(SS,SES)}}
+/* Mientras Fernando no cargue sus catálogos: asesores y clientes salen también del historial de despachos */
+const NO_ASES=['','sin asesor','kenneth romero'];
+function completarCatalogos(){const todos=D.B.concat(D.P).slice().sort((a,b)=>pd(a.f)-pd(b.f));
+ const ya=new Set(ASES.map(a=>nz(a.n)));
+ todos.concat(D.cli.map(c=>({ase:c.a}))).forEach(x=>{const n=String(x.ase||'').trim();if(!NO_ASES.includes(nz(n))&&!ya.has(nz(n))){ya.add(nz(n));ASES.push({n,act:true})}});
+ ASES.sort((a,b)=>a.n.localeCompare(b.n,'es'));
+ const cli=new Map(D.cli.map(c=>[nz(c.n),c]));
+ todos.forEach(x=>{const n=String(x.cli||'').trim();if(!n)return;const k=nz(n);const b=D.B.includes(x)?'B':'P';let c=cli.get(k);
+  if(!c){c={n,alias:'',t:x.tipo||'Distribuidor',a:'',tr:x.tr||'C',b:'',k:0,hist:1};cli.set(k,c);D.cli.push(c)}
+  if(c.hist){if(x.ase&&!NO_ASES.includes(nz(x.ase)))c.a=x.ase;if(x.tipo)c.t=x.tipo;c.tr=x.tr||c.tr}
+  if(!c.b.includes(b))c.b+=b});
+ D.cli.sort((a,b)=>a.n.localeCompare(b.n,'es'))}
 async function cargarTodo(){await Promise.all(S.user.biz.map(cargarNeg));
+ completarCatalogos();
  const k={};D.B.concat(D.P).forEach(x=>{const n=nz(x.cli);k[n]=(k[n]||0)+1});D.cli.forEach(c=>c.k=k[nz(c.n)]||0);CARGADO=Date.now()}
 async function guardar(action,payload,okMsg){const b=$('#mbox button.dk,#mbox button.ok,#mbox button.no');
  document.body.classList.add('busy');try{const j=await api(action,Object.assign({neg:S.biz},payload));
@@ -243,7 +256,7 @@ function toast(t){const e=$('#toast');e.innerHTML=t;e.style.display='block';clea
 const ROLN={ADMIN:'Administrador',PROGRAMADOR:'Programador de despachos',DESPACHO:'Despachador',CALIDAD:'Control de Calidad',CONSULTA:'Consulta'};
 const BIZ={B:{n:'Bloques',c:'#F9D600',u:'unid.',cap:28000,capL:'28,000 unid./día'},P:{n:'Prefabricados',c:'#F2F2EE',u:'piezas',cap:6,capL:'6 viajes/día'}};
 const SECS=[
- {k:'tab',n:'Tablero',i:'▦',r:['ADMIN','PROGRAMADOR','CONSULTA']},
+ {k:'tab',n:'Tablero',i:'▦',r:['ADMIN','PROGRAMADOR','CONSULTA','DESPACHO','CALIDAD']},
  {k:'prog',n:'Programación',i:'🗓',r:['ADMIN','PROGRAMADOR']},
  {k:'sal',n:'Saldos y solicitudes',i:'↺',r:['ADMIN','PROGRAMADOR'],badge:()=>pendSol().length+pendReq().length+AUT[S.biz].length},
  {k:'cal',n:'Calidad',i:'✔',r:['ADMIN','CALIDAD'],only:'P',badge:()=>recs().filter(x=>x.f===TODAY&&needsCal(x)).length},
@@ -351,7 +364,7 @@ function vTab(){
   <div class="card kpi"><div class="l">Programado</div><div class="v">${fmt(p)}</div><div class="s">${r.length} despachos${S.biz==='P'?' · '+r.reduce((s,x)=>s+viajes(x),0)+' viajes':''}</div></div>
   <div class="card kpi"><div class="l">Entregado</div><div class="v">${fmt(e)}</div><div class="s ${p&&e/p>=.95?'up':'dn'}">${pct(p?e/p:NaN)} de lo programado</div></div>
   <div class="card kpi"><div class="l">Pendiente del día</div><div class="v">${fmt(p-e)}</div><div class="s">${r.filter(x=>saldo(x)>0&&x.st!=='no').length} por completar</div></div>
-  <div class="card kpi"><div class="l">Solicitudes de saldo</div><div class="v">${pendSol().length}</div><div class="s"><a href="#" onclick="S.sec='sal';render();return false">Definir próxima entrega ›</a></div></div>
+  <div class="card kpi"><div class="l">Solicitudes de saldo</div><div class="v">${pendSol().length}</div><div class="s">${allowed().some(s=>s.k==='sal')?`<a href="#" onclick="S.sec='sal';render();return false">Definir próxima entrega ›</a>`:'Los define Fernando'}</div></div>
  </div>
  <div class="grid g2">
   <div class="card"><h3>Calendario de despachos <small>${MES[d.getMonth()]} ${d.getFullYear()} · saturación vs. capacidad (${BIZ[S.biz].capL})</small></h3>
