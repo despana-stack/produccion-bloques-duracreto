@@ -503,8 +503,10 @@ function vEje(){
   return `<div class="di ${i[2]}" onclick="${S.ejeTab==='reg'?`detalle('${x.id}')`:`ejecutar('${x.id}')`}"><div class="top"><span>${x.f===TODAY?'Hoy':x.f} · ${x.h}</span><span>${x.id}</span></div><div class="c">${esc(x.cli)}</div><div class="p">${x.prod} · <b>${fmt(saldo(x)||x.cant)}</b> ${BIZ[S.biz].u}${x.ent&&saldo(x)?` <span class="muted">(de ${fmt(x.cant)})</span>`:''}</div><div class="ft">${st(x)} ${trTxt(x)} <span class="tag">${esc(x.ase)}</span>${autDe(x.id)?' <span class="st s-par">⏳ Esperando autorización de Fernando</span>':''}</div></div>`}).join(''):'<div class="card empty">No hay despachos en esta lista.</div>'}</div>`;
  clearInterval(window._clk);window._clk=setInterval(()=>{const c=$('#clk');if(c)c.textContent=nowHM()},10000)}
 let FOTO=null;
-function fotoInput(id){return `<div class="photo" onclick="$('#${id}').click()"><div id="${id}P">📷 Tomar o subir foto</div><input type="file" id="${id}" accept="image/*" capture="environment" style="display:none" onchange="leerFoto(this,'${id}P')"></div>`}
-function leerFoto(inp,pid){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{FOTO=await reducirFoto(r.result);$('#'+pid).innerHTML=`<img src="${FOTO}">Cambiar foto`};r.readAsDataURL(f)}
+function fotoInput(id){return `<div class="photo"><div id="${id}P" class="muted">Aún sin foto</div>
+ <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px"><button type="button" class="btn sm" onclick="$('#${id}C').click()">📷 Tomar foto</button><button type="button" class="btn sec sm" onclick="$('#${id}').click()">🖼 Elegir de la galería</button></div>
+ <input type="file" id="${id}C" accept="image/*" capture="environment" style="display:none" onchange="leerFoto(this,'${id}P')"><input type="file" id="${id}" accept="image/*" style="display:none" onchange="leerFoto(this,'${id}P')"></div>`}
+function leerFoto(inp,pid){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{FOTO=await reducirFoto(r.result);$('#'+pid).innerHTML=`<img src="${FOTO}">✔ Foto lista · si quiere cambiarla, use los botones`;inp.value=''};r.readAsDataURL(f)}
 function ejecutar(id){const x=recs().find(x=>x.id===id);FOTO=null;
  if(x.f!==TODAY&&pd(x.f)>pd(TODAY)){detalle(id);return}
  const bloq=S.biz==='P'&&(!x.cal||!x.cal.ok);
