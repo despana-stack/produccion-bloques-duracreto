@@ -145,6 +145,8 @@ a{color:var(--info)}body.dark a{color:#8db8ea}
 .gcard{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;overflow-x:auto}.gcard h4{margin:0 0 4px;font-size:13.5px}
 .glg{display:flex;gap:14px;font-size:11.5px;color:var(--mut);margin-bottom:8px}.glg i{display:inline-block;width:12px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .gbar:hover rect[rx]{opacity:.8}
+.rsec{margin-bottom:22px}.rtit{display:flex;align-items:center;gap:10px;font-size:15px;margin:4px 0 10px}.rtit small{font-weight:400;color:var(--mut);font-size:12px}
+.rhoy{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}.rhoy b{display:block;font-size:20px}.rhoy span{font-size:11px;color:var(--mut)}
 @media(max-width:800px){.gks{grid-template-columns:1fr 1fr}}html,body{overflow-x:hidden}
 @media(max-width:600px){main{padding:10px}.card{padding:12px}.logo small{display:none}.demosel{max-width:120px}
 .cell{min-height:54px;padding:3px;font-size:9.5px;border-radius:7px}.cell .q{font-size:10px}.cell .muted{display:none}.calg{gap:3px}
@@ -262,17 +264,42 @@ function toast(t){const e=$('#toast');e.innerHTML=t;e.style.display='block';clea
 /* ---------- usuarios y permisos (demo) ---------- */
 const ROLN={ADMIN:'Administrador',PROGRAMADOR:'Programador de despachos',DESPACHO:'Despachador',CALIDAD:'Control de Calidad',CONSULTA:'Consulta'};
 const BIZ={B:{n:'Bloques',c:'#F9D600',u:'unid.',cap:28000,capL:'28,000 unid./día'},P:{n:'Prefabricados',c:'#F2F2EE',u:'piezas',cap:6,capL:'6 viajes/día'}};
+/* ========== RESUMEN EJECUTIVO (gerencia) ========== */
+function rangoRes(k){const h=pd(TODAY);if(k==='sem'){const d=new Date(h);d.setDate(h.getDate()-((h.getDay()+6)%7));return [d,h]}
+ if(k==='30')return [pd(addD(TODAY,-29)),h];if(k==='mesant'){const a=new Date(h.getFullYear(),h.getMonth()-1,1),b=new Date(h.getFullYear(),h.getMonth(),0);return [a,b]}
+ return [new Date(h.getFullYear(),h.getMonth(),1),h]}
+const RESP={sem:'Esta semana',mes:'Este mes',30:'Últimos 30 días',mesant:'Mes anterior'};
+function vRes(){const k=S.resP||'mes',[d1,d2]=rangoRes(k),c=GC.app;
+ const filas=b=>(b==='B'?D.B:D.P).filter(x=>{const t=pd(x.f);return t>=d1&&t<=d2&&x.req!=='pend'&&x.req!=='rech'});
+ const hoyF=b=>(b==='B'?D.B:D.P).filter(x=>x.f===TODAY&&x.req!=='pend'&&x.req!=='rech');
+ const tarjeta=b=>{const r=filas(b),t=sumas(r),pl=sumas(r.filter(x=>x.tr==='P')),cl=sumas(r.filter(x=>x.tr!=='P')),h=sumas(hoyF(b)),u=BIZ[b].u;
+  const cau={};r.filter(x=>x.ent<x.cant&&x.causa).forEach(x=>cau[x.causa]=(cau[x.causa]||0)+1);const top=Object.entries(cau).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  const g={};r.forEach(x=>{g[x.f]=g[x.f]||{lbl:x.f,_d:pd(x.f),p:0,e:0};g[x.f].p+=x.cant;g[x.f].e+=x.ent});const dias=Object.values(g).sort((a,b)=>a._d-b._d);
+  const inv=(b==='B'?D.invB:D.invP)||[];
+  const k4=(l,v,s)=>`<div class="gk"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  return `<section class="rsec"><h3 class="rtit"><span class="bchip ${b}">${BIZ[b].n}</span><small>${RESP[k]} · ${fd(d1)} al ${fd(d2)}</small></h3>
+  <div class="gks">${k4('Cumplimiento',pctTxt(t.e,t.p),fmt(t.e)+' de '+fmt(t.p)+' '+u)}${k4('Despachos completos',pctTxt(t.c,t.n),t.c+' de '+t.n+' despachos')}${k4('Transportes Platino',pctTxt(pl.e,pl.p),pl.n+' despachos')}${k4('Cliente recoge',pctTxt(cl.e,cl.p),cl.n+' despachos')}</div>
+  <div class="grid g2" style="margin-top:14px"><div class="gcard"><h4>Programado contra despachado por día</h4>${leyenda(c)}${dias.length?svgVBar(dias,c):'<div class="empty">Sin despachos en el período.</div>'}</div>
+  <div style="display:grid;gap:14px;align-content:start">
+   <div class="gcard"><h4>Hoy · ${largo(TODAY)}</h4><div class="rhoy"><div><b>${fmt(h.p)}</b><span>programado</span></div><div><b>${fmt(h.e)}</b><span>despachado</span></div><div><b>${pctTxt(h.e,h.p)}</b><span>avance</span></div></div></div>
+   <div class="gcard"><h4>Principales causas de incumplimiento</h4>${top.length?top.map(([n,v])=>`<div class="hbar" style="grid-template-columns:1fr 34px"><span>${esc(n)}</span><span class="num"><b>${v}</b></span></div>`).join(''):'<div class="muted" style="font-size:12px">Sin incumplimientos registrados.</div>'}</div>
+   <div class="gcard"><h4>Inventario disponible</h4>${!D.conteo[b]?'<div class="muted" style="font-size:12px">Pendiente del conteo físico inicial.</div>':inv.filter(i=>i.disp||i.cur).map(i=>`<div class="hbar" style="grid-template-columns:1fr 90px"><span>${esc(i.p)}</span><span class="num"><b>${fmt(i.disp)}</b></span></div>`).join('')||'<div class="muted" style="font-size:12px">Sin existencias.</div>'}</div>
+  </div></div></section>`};
+ $('#main').innerHTML=`<div class="tools"><h2 style="margin:0">Resumen ejecutivo · Despachos</h2><span class="sp"></span><div class="subtabs" style="margin:0">${Object.entries(RESP).map(([kk,v])=>`<button class="${kk===k?'on':''}" onclick="S.resP='${kk}';render()">${v}</button>`).join('')}</div></div>
+ ${S.user.biz.map(tarjeta).join('')}<p class="muted" style="font-size:11.5px">Para el detalle por día o por despacho, use <a href="#" onclick="S.sec='rep';S.repT='dia';render();return false">Reportes</a> (PDF y Excel).</p>`}
+
 const SECS=[
+ {k:'res',n:'Resumen',i:'◎',r:['ADMIN','CONSULTA']},
  {k:'tab',n:'Tablero',i:'▦',r:['ADMIN','PROGRAMADOR','CONSULTA','DESPACHO','CALIDAD']},
  {k:'prog',n:'Programación',i:'🗓',r:['ADMIN','PROGRAMADOR']},
  {k:'sal',n:'Saldos y solicitudes',i:'↺',r:['ADMIN','PROGRAMADOR'],badge:()=>pendSol().length+pendReq().length+AUT[S.biz].length},
  {k:'cal',n:'Calidad',i:'✔',r:['ADMIN','CALIDAD'],only:'P',badge:()=>recs().filter(x=>x.f===TODAY&&needsCal(x)).length},
  {k:'eje',n:'Ejecutar despachos',i:'🚚',r:['ADMIN','PROGRAMADOR','DESPACHO'],badge:()=>recs().filter(x=>x.f===TODAY&&saldo(x)>0&&x.st!=='no'&&x.req!=='pend').length},
- {k:'inv',n:'Inventario',i:'▤',r:['ADMIN','PROGRAMADOR','CONSULTA']},
+ {k:'inv',n:'Inventario',i:'▤',r:['ADMIN','PROGRAMADOR']},
  {k:'rep',n:'Reportes',i:'⬇',r:['ADMIN','PROGRAMADOR','CONSULTA']},
  {k:'bd',n:'Bases de datos',i:'🔒',r:['ADMIN','PROGRAMADOR']}];
 let S={user:{u:SES&&SES.u,n:SES&&SES.nombre,rol:SES&&SES.ruta&&SES.ruta.rol,biz:(SES&&SES.ruta&&SES.ruta.negocios)||['B']},biz:'B',sec:'tab',date:TODAY,ejeTab:'hoy',bdTab:'cli',repT:'cumF'};
-{const b=store.get(RBIZ);S.biz=S.user.biz.includes(b)?b:S.user.biz[0];S.sec=store.get(RSEC)||({DESPACHO:'eje',CALIDAD:'cal'}[S.user.rol]||'tab')}
+{const b=store.get(RBIZ);S.biz=S.user.biz.includes(b)?b:S.user.biz[0];S.sec=store.get(RSEC)||({DESPACHO:'eje',CALIDAD:'cal',CONSULTA:'res'}[S.user.rol]||'tab')}
 
 /* ---------- datos ---------- */
 const recs=(b=S.biz)=>b==='B'?D.B:D.P;
@@ -345,7 +372,7 @@ function theme(x){if(x===undefined){x=!document.body.classList.contains('dark');
 $('#bTheme').onclick=()=>theme();
 async function reload(silencio){if(!silencio)$('#main').style.opacity=.3;try{await cargarTodo();if(!$('#mod').classList.contains('on'))render();if(!silencio)toast('Datos actualizados · '+nowHM())}catch(e){if(!silencio)toast('✖ '+esc(e.message))}finally{$('#main').style.opacity=1}}
 $('#bReload').onclick=reload;
-function render(){if(!allowed().find(s=>s.k===S.sec))S.sec=allowed()[0].k;renderShell();const f={tab:vTab,prog:vProg,sal:vSal,cal:vCal,eje:vEje,inv:vInv,rep:vRep,bd:vBd}[S.sec];$('#main').innerHTML='';f();window.scrollTo(0,0)}
+function render(){if(!allowed().find(s=>s.k===S.sec))S.sec=allowed()[0].k;renderShell();const f={res:vRes,tab:vTab,prog:vProg,sal:vSal,cal:vCal,eje:vEje,inv:vInv,rep:vRep,bd:vBd}[S.sec];$('#main').innerHTML='';f();window.scrollTo(0,0)}
 
 /* ---------- modal ---------- */
 function modal(title,body,wide){$('#mbox').className='mbox'+(wide?' w':'');$('#mbox').innerHTML=`<div class="mhd"><b>${title}</b><button class="x" onclick="closeModal()">✕</button></div><div class="mbd">${body}</div>`;$('#mod').classList.add('on')}
@@ -525,9 +552,8 @@ function ejecutar(id){const x=recs().find(x=>x.id===id);FOTO=null;
  ${autDe(x.id)?`<div class="check wa">⏳ <b>Pidió despachar ${fmt(autDe(x.id).cant)}</b> (más que el saldo). Espere la autorización de Fernando; cuando llegue, registre esa cantidad.</div>`:''}
  <div class="two"><div class="fld"><label>Cantidad despachada</label><input type="number" id="eCant" value="${saldo(x)}" min="1"><div class="h">Normalmente igual o menor al saldo (${fmt(saldo(x))}); si es menor, el resto queda como saldo y se avisa a Fernando. Hasta ${Math.round((CFG.tolerancia||.1)*100)} % más solo con autorización de Fernando.</div></div>
  <div class="fld"><label>Fecha y hora del registro</label><input class="ro" readonly value="${fechaLarga()} · ${nowHM()}"><div class="h">Se toman solas del dispositivo al guardar.</div></div></div>
- ${x.tr==='P'?`<div class="two"><div class="fld"><label>Código de equipo Platino</label><select id="eEq" data-tipo="${x.eqT||''}"><option value="">— Selecciona —</option>${eqOpts(x.eqT,x.eqC)}</select>${x.eqC?'<div class="h">Asignado por Fernando al programar</div>':''}</div>
- <div class="fld"><label>Motorista</label><input id="eMot" placeholder="Se llena con el equipo"></div></div><div id="eEqW"></div>
- <div class="fld"><label>DNI del motorista <span class="muted" style="font-weight:400">(opcional)</span></label><input id="eDni" inputmode="numeric" placeholder="Se llena con el equipo"><div class="h" id="eDniH">Se llena solo con el equipo. Si falta en el catálogo puede escribirlo, pero no es obligatorio.</div></div>`:
+ ${x.tr==='P'?`<div class="two"><div class="fld"><label>Equipo Platino</label><select id="eEq" data-tipo="${x.eqT||''}"><option value="">— Selecciona —</option>${eqOpts(x.eqT,x.eqC)}</select>${x.eqC?'<div class="h">Asignado por Fernando al programar</div>':''}</div>
+ <div class="fld" style="align-self:end"><div class="h" style="margin:0 0 10px">🚚 Los datos del motorista quedan en la boleta de SAP.</div></div></div><div id="eEqW"></div><input type="hidden" id="eMot"><input type="hidden" id="eDni">`:
  `<div class="check ok" style="margin-top:0">🚚 <b>Transporte del cliente:</b> los datos del motorista y del vehículo quedan en la boleta de SAP.</div>`}
  <div class="two"><div class="fld"><label>N.º de boleta SAP</label><input id="eBol" inputmode="numeric" placeholder="Obligatorio"><div class="h">Es la referencia para ver en SAP todo lo del despacho.</div></div><div class="fld"><label>Foto de la carga</label>${fotoInput('eFoto')}</div></div>
  <div class="fld"><label>Notas <span class="muted" style="font-weight:400">(opcional)</span></label><textarea id="eNot" rows="2"></textarea></div>
@@ -686,7 +712,7 @@ function repData(){const t=S.repT;let r=repFilas();
 function vRep(){
  $('#main').innerHTML=`<h2>Reportes</h2><div class="card" style="margin-bottom:14px"><div class="three">
  <div class="fld"><label>Reporte</label><select id="rT">${Object.entries(REPS).map(([k,v])=>`<option value="${k}" ${k===S.repT?'selected':''}>${v}</option>`).join('')}</select></div>
- <div class="fld"><label id="rL1">Desde</label><input type="date" id="rD1" value="${iso(addD(TODAY,-30))}"></div><div class="fld" id="rF2"><label>Hasta</label><input type="date" id="rD2" value="${iso(TODAY)}"></div>
+ <div class="fld"><label id="rL1">Desde</label><input type="date" id="rD1" value="${iso(S.repT==='dia'?TODAY:addD(TODAY,-30))}"></div><div class="fld" id="rF2"><label>Hasta</label><input type="date" id="rD2" value="${iso(TODAY)}"></div>
  <div class="fld"><label>Negocio</label><select id="rBiz">${S.user.biz.length>1?'<option value="T">Bloques y Prefabricados</option>':''}${S.user.biz.map(b=>`<option value="${b}" ${S.biz===b?'selected':''}>${BIZ[b].n}</option>`).join('')}</select></div>
  <div class="fld"><label>Asesor</label><select id="rAse"><option value="">Todos</option>${ASES.map(a=>`<option>${esc(a.n)}</option>`).join('')}</select></div>
  <div class="fld"><label>Descargar</label><div style="display:flex;gap:8px"><button class="btn" id="rX" style="flex:1">Excel</button><button class="btn dk" id="rP" style="flex:1">PDF</button></div></div></div></div>
