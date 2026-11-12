@@ -330,6 +330,23 @@ th small{text-transform:none;font-weight:500;letter-spacing:0}
 .sos.on{background:var(--ok);animation:none;box-shadow:none}
 .alertbar{background:var(--bad);color:#fff}
 .alertbar.rec{background:#F9D600;color:#12130F}.alertbar.rec button{background:#12130F;color:#F9D600}.alertbar.rec button.ghost{background:transparent;color:#12130F;border:1px solid #12130F}
+.plhero{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;border-top:4px solid var(--yellow)}.plhero h2{margin:8px 0 2px;font-size:26px}
+.plact{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.plfases{display:flex;height:14px;border-radius:7px;overflow:hidden;gap:2px;margin-top:10px}.plfases i{display:block;min-width:0}
+.plfases i.bad,.plleg i.bad{background:var(--bad)}.plfases i.warn,.plleg i.warn{background:var(--warn)}.plfases i.blue,.plleg i.blue{background:var(--blue)}.plfases i.ok,.plleg i.ok{background:var(--ok)}
+.plleg{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:13px}.plleg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.plcat{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}.plcat li{display:grid;grid-template-columns:minmax(110px,1.1fr) 1.4fr auto;gap:10px;align-items:center;font-size:13px}
+.plist{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.plr{border:1px solid var(--line);border-radius:12px;background:var(--surface)}.plr.open{border-color:var(--fg)}
+.plh{all:unset;box-sizing:border-box;cursor:pointer;width:100%;display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px;padding:12px 14px;align-items:start}
+.plh:focus-visible{outline:2px solid var(--accent);border-radius:12px}
+.plk{width:30px;height:30px;border-radius:50%;background:var(--yellow);color:#12130F;display:grid;place-items:center;font-weight:800;font-size:13px}
+.pln{display:flex;flex-direction:column;gap:3px;min-width:0}.pln b{font-size:14px;line-height:1.3}
+.plbar{display:grid;grid-template-columns:minmax(60px,1fr) auto;gap:10px;align-items:center;font-size:12px;margin-top:4px}
+.plm{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right;font-size:12px}
+.pld{padding:0 14px 14px 60px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px 18px;font-size:13px}.pld p{margin:4px 0 0}.pld .lbl{font-weight:700;font-size:12px}
+.plobs{grid-column:1/-1;background:var(--warn-bg);border-radius:8px;padding:8px 10px}
+@media (max-width:640px){.plh{grid-template-columns:30px minmax(0,1fr)}.plm{grid-column:2;align-items:flex-start;text-align:left;flex-direction:row;flex-wrap:wrap}.pld{padding-left:14px}}
 .alertbar .al select{font:inherit;font-size:13px;padding:7px 8px;border-radius:8px;border:1px solid #12130F;background:#fff;color:#12130F;max-width:230px}
 .alertbar .in{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:6px;padding-block:10px}
 .alertbar .al{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:14px}
@@ -635,7 +652,7 @@ const MICON={registro:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor
  dash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V11M10 20V5M16 20v-7M21 20H3"/></svg>',
  rank:null,bd:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>',
  mp:null,usr:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M16 4.5a3.5 3.5 0 010 7M18 14.8c1.9.7 3.1 2.4 3.5 5.2"/></svg>'};
-const micon=id=>MICON[id]||(id==='cierre'?ICON.cierre:id==='rank'?ICON.trofeo:id==='mp'?ICON.cons:'');
+const micon=id=>MICON[id]||(id==='plan'?ICON.diana:id==='cierre'?ICON.cierre:id==='rank'?ICON.trofeo:id==='mp'?ICON.cons:'');
 function menuHTML(tabs,mod){const negs=negociosMenu(),dark=temaActual()==='dark';
   const nPend=can('cierre')&&typeof pendCierre==='function'?pendCierre().length:0;
   const opt=m=>{const on=m.id===mod.id,rol=misNegocios()[m.id];
@@ -686,6 +703,7 @@ function render(){
   else if(can('cierre'))tabs.push(['cierre','Cierre de paros']);
   if(can('rep'))tabs.push(['rep','Reporte del día']);
   if(can('dash'))tabs.push(['dash','Dashboard']);
+  if(ROLES[S.rol])tabs.push(['plan','Plan correctivo']);
   tabs.push(['rank','Ranking']);
   if(can('bd'))tabs.push(['bd','Bases de datos']);else if(bdPermit().length)tabs.push(['bd',bdPermit().length>1?'Bases de datos':BDDEF[bdPermit()[0]].n]);
   if((can('costos')||can('param'))&&SEED.mp)tabs.push(['mp',SEED.mp.verCostos?'Consumo vs ficha':'Ficha y factores']);
@@ -699,7 +717,7 @@ function render(){
   $('#refb').onclick=actualizarTodo;conectarMenu();
   if(DEMO)$('#demoReset').onclick=()=>{LOCAL={produccion:[],cortes:[],noconf:[],paros:[],alertas:[],consumos:[]};store.set(LS,LOCAL);loadDB();view='home';render();toast('Demostración reiniciada.')};
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=async()=>{menuAbierto=negAbierto=false;document.body.style.overflow='';tab=b.dataset.tab;cierreSel=null;store.set(TAB,tab);view='home';if(ONLINE&&Date.now()-lastLoad>60000){pantallaCarga('Actualizando…');try{await cargarDatos()}catch(e){if(e.message==='sesion')return}}render()});
-  if(tab==='registro')renderRegistro();else if(tab==='rep')renderRep();else if(tab==='dash')renderDash();else if(tab==='rank')renderRank();else if(tab==='bd')renderBD();else if(tab==='mp')renderMP();else if(tab==='cierre')renderCierre(true);else renderUsers();
+  if(tab==='registro')renderRegistro();else if(tab==='rep')renderRep();else if(tab==='dash')renderDash();else if(tab==='rank')renderRank();else if(tab==='bd')renderBD();else if(tab==='mp')renderMP();else if(tab==='plan')renderPlan();else if(tab==='cierre')renderCierre(true);else renderUsers();
   pintarAlertas();refrescarPush();pintarRecordatorio();
   marcarFijo();revisar360();
   if(menuAbierto&&!escritorio()){document.body.style.overflow='hidden'}else{document.body.style.overflow='';window.scrollTo(0,0)}
@@ -1377,6 +1395,52 @@ function rankDatos(ym){const metaG=metaMes(ym)/3,hab=diasMes(ym).filter(habil),m
     return {e,v,u,p:v/metaG,idx:P.length?cy/(P.length*1260):0,n:P.length,des,pdes:u?des/u:null,pa,best,enMeta}}).sort((a,b)=>b.v-a.v||b.idx-a.idx)}
 function contar(el){const to=+el.dataset.to,dec=+el.dataset.dec||0,suf=el.dataset.suf||'';if(matchMedia('(prefers-reduced-motion: reduce)').matches){el.textContent=(dec?to.toFixed(dec):fmt(to))+suf;return}
   const t0=performance.now(),d=1100;const f=n=>{const k=Math.min(1,(n-t0)/d),e=1-Math.pow(1-k,3),x=to*e;el.textContent=(dec?x.toFixed(dec):fmt(x))+suf;if(k<1)requestAnimationFrame(f)};requestAnimationFrame(f)}
+/* ===================== Plan correctivo (plan de acciones correctivas) =====================
+   Lee el Sheets del plan (su base de datos) a través del servidor. Aquí solo se consulta; el plan se edita en el Sheets. */
+let PLAN=null,planAbierto=null;
+const nPl=s=>{const v=parseFloat(String(s||'').replace(/[^\d.\-]/g,''));return isFinite(v)?v:0};
+const faseCol=f=>/cerrad/i.test(f)?'ok':/^3/.test(f)?'blue':/^2/.test(f)?'warn':'bad';
+const faseTxt=f=>String(f||'').replace(/^\d\.\s*/,'')||'—';
+async function renderPlan(fresco){const m=$('#main');
+  if(!PLAN||fresco||Date.now()-PLAN._t>5*60e3){
+    if(!ONLINE){m.innerHTML='<p class="note">El plan correctivo se consulta en línea; no está disponible en la demostración.</p>';return}
+    m.innerHTML='<p class="note" style="padding:24px 0">Cargando el plan de acciones correctivas…</p>';
+    try{const j=await api('plan',{fresco:!!fresco});if(!j.ok)throw new Error(j.error||'error');PLAN=j;PLAN._t=Date.now()}
+    catch(e){if(e.message==='sesion')return;m.innerHTML=`<p class="note">No se pudo leer el plan de acciones: ${esc(e.message==='red'?'sin conexión':e.message)}.</p><button class="btn ghost small" id="plRe">Intentar de nuevo</button>`;$('#plRe').onclick=()=>renderPlan(true);return}
+    if(tab!=='plan')return}
+  const P=PLAN,K=k=>P.kpis.find(x=>x.ind.toLowerCase().startsWith(k.toLowerCase()))||{};
+  const E=k=>(P.estado.find(x=>x.ind.toLowerCase().startsWith(k.toLowerCase()))||{}).valor||'0';
+  const kt=(lbl,k,hint)=>{const x=K(k);return `<div class="card s3 tile-k kc" style="border-top-color:var(--accent)"><span class="l">${lbl}</span><span class="v num">${esc(x.plan||'–')}</span><span class="l">${hint||`de ${esc(x.todos||'–')} en todos los paros${x.pct?' · '+esc(x.pct)+' por fallas del plan':''}`}</span></div>`};
+  const fases=[['Diagnóstico',+E('En fase 1'),'bad'],['Acción local',+E('En fase 2'),'warn'],['Solución definitiva',+E('En fase 3'),'blue'],['Cerradas',+E('Cerradas'),'ok']],totF=fases.reduce((s,f)=>s+f[1],0)||1;
+  const mxH=Math.max(...P.ranking.map(r=>nPl(r.horas)),1);
+  const fila=r=>{const d=r.det||{},at=nPl(r.atraso),a=nPl(r.antes),b=nPl(r.despues),hayAD=r.antes&&r.despues,ab=planAbierto===r.id;
+    return `<li class="plr${ab?' open':''}"><button class="plh" data-pl="${esc(r.id)}" aria-expanded="${ab}"><span class="plk num">${esc(r.rank)}</span>
+     <span class="pln"><b>${esc(r.falla)}</b><span class="note">${esc(r.id)}${d.responsable?' · '+esc(d.responsable):''}${d.prioridad?' · Prioridad '+esc(d.prioridad.toLowerCase()):''}</span>
+      <span class="plbar"><span class="bar"><i style="width:${nPl(r.horas)/mxH*100}%;background:var(--bad)"></i></span><span class="num"><b>${esc(r.horas)}</b> · ${esc(r.paros)} paros · ${esc(r.pctPlan)} del plan</span></span></span>
+     <span class="plm"><span class="pill ${faseCol(r.fase)}">${esc(faseTxt(r.fase))}</span>${at>0?`<span class="pill bad">${at} días de atraso</span>`:''}<span class="num note">${esc(r.ingresos)} perdidos</span>
+      ${hayAD?`<span class="num note">Paro diario: ${esc(r.antes)} → <b style="color:var(--${b<a?'ok':b>a?'bad':'fg'})">${esc(r.despues)}</b></span>`:''}</span></button>
+     ${ab?`<div class="pld">${[['Diagnóstico / causa raíz',d.diagnostico,d.est1],['Acción local (corto plazo)',d.accion,d.est2+(d.finProp2?' · meta '+d.finProp2:'')],['Solución definitiva',d.solucion,d.est3+(d.finProp3?' · meta '+d.finProp3:'')],['Repuesto o dependencia',d.repuesto,''],['Proveedor',d.proveedor,''],['Mantenimientos',d.mantenimientos||r.mant&&r.mant+' trabajos','']].filter(x=>x[1]).map(x=>`<div><span class="lbl">${x[0]}${x[2]?` <span class="pill ${/complet/i.test(x[2])?'ok':/curso/i.test(x[2])?'warn':''}">${esc(x[2])}</span>`:''}</span><p>${esc(x[1])}</p></div>`).join('')||'<p class="note">Sin detalle en el plan.</p>'}
+      ${d.obs?`<div class="plobs"><b>Observaciones / decisiones requeridas:</b> ${esc(d.obs)}</div>`:''}
+      ${r.presupuesto?`<p class="note">Presupuesto total: <b>${esc(r.presupuesto)}</b>${d.metaFase?' · Meta de la fase actual: '+esc(d.metaFase):''}</p>`:d.metaFase?`<p class="note">Meta de la fase actual: ${esc(d.metaFase)}</p>`:''}</div>`:''}</li>`};
+  const tablaBar=(L,lbl)=>{const mx=Math.max(...L.filter(x=>x.nombre!=='Total').map(x=>nPl(x.horas)),1);return `<ul class="plcat">${L.filter(x=>x.nombre!=='Total').map(x=>`<li><span>${esc(lbl?lbl+' '+x.nombre:x.nombre)}</span><span class="bar"><i style="width:${nPl(x.horas)/mx*100}%;background:var(--accent)"></i></span><span class="num"><b>${esc(x.horas)}</b> · ${esc(x.paros)} paros</span></li>`).join('')}</ul>`};
+  m.innerHTML=`<div class="grid">
+   <section class="card s12 plhero"><div><span class="pill ok" style="background:var(--yellow);color:#12130F">Planta de bloques</span><h2>Plan de acciones correctivas</h2><p class="note">${esc(P.periodo.replace(/\s*·\s*Fuente.*$/,''))}</p></div>
+    <div class="plact"><span class="note">Leído ${esc((P.leido||'').slice(11))}</span><button class="btn ghost small" id="plRef">Actualizar</button>${can('bd')?`<a class="btn ghost small" href="${esc(P.url)}" target="_blank" rel="noopener">Abrir el plan</a>`:''}</div></section>
+   ${kt('Horas de paro por fallas del plan','Horas de paro')}${kt('Ciclos perdidos','Ciclos perdidos')}${kt('Ingresos perdidos','Ingresos perdidos (')}${kt('Horas de paro por día','Horas de paro promedio')}
+   <section class="card s6"><h3>Avance del plan</h3><p class="cap">${esc(E('Fallas recurrentes'))} fallas recurrentes en seguimiento</p>
+    <div class="plfases">${fases.map(f=>`<i class="${f[2]}" style="flex:${f[1]||0}" title="${f[0]}: ${f[1]}"></i>`).join('')}</div>
+    <div class="plleg">${fases.map(f=>`<span><i class="${f[2]}"></i>${f[0]} <b class="num">${f[1]}</b></span>`).join('')}</div>
+    <div class="kv num" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px"><div><b style="color:var(--${+E('Fallas con atraso')>0?'bad':'ok'})">${esc(E('Fallas con atraso'))}</b><span class="note"> fallas con atraso</span></div><div><b>${esc(E('Presupuesto total'))}</b><span class="note"> presupuesto total</span></div>
+     <div><b>${esc(E('Ingresos perdidos por fallas'))}</b><span class="note"> lo perdido en paros frente al presupuesto del plan</span></div><div><b>${esc(K('Tiempo programado').plan||'–')}</b><span class="note"> del tiempo programado se perdió en paros</span></div></div></section>
+   <section class="card s6"><h3>Dónde se pierde el tiempo</h3><p class="cap">Horas de paro por categoría (todos los paros)</p>${tablaBar(P.categorias)}<h3 style="margin-top:16px">Por turno</h3>${tablaBar(P.turnos,'Turno')}</section>
+   <section class="card s12"><div class="ih"><h3>Fallas del plan, de mayor a menor impacto</h3>${info('Ordenadas por horas de paro. Toque una falla para ver el diagnóstico, la acción local, la solución definitiva y las decisiones pendientes. «Paro diario» compara las horas de paro por día antes y después del último mantenimiento.')}</div>
+    <ol class="plist">${P.ranking.map(fila).join('')}</ol>
+    ${P.total?`<p class="note" style="margin-top:10px">Total fallas del plan: <b>${esc(P.total.paros)}</b> paros · <b>${esc(P.total.horas)}</b> · ${esc(P.total.ciclos)} ciclos · ${esc(P.total.ingresos)} en ingresos perdidos.</p>`:''}</section>
+   <p class="note s12">Fuente: plan de acciones correctivas (Google Sheets), conectado al registro de paros de esta app. El plan se actualiza en el Sheets; aquí se consulta.</p></div>`;
+  $('#plRef').onclick=()=>renderPlan(true);
+  m.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>{planAbierto=planAbierto===b.dataset.pl?null:b.dataset.pl;const y=scrollY;renderPlan();scrollTo(0,y)});
+  m.querySelectorAll('.vt,.info').forEach(x=>{});
+}
 function renderRank(){const m=$('#main');const ms=monthsAvail();if(!rankMes||!ms.includes(rankMes))rankMes=ms[0];
   const D=rankDatos(rankMes),mesN=MESES[+rankMes.slice(5)-1];
   const hay=D.some(d=>d.n>0);
