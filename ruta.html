@@ -552,18 +552,16 @@ function ejecutar(id){const x=recs().find(x=>x.id===id);FOTO=null;
  ${autDe(x.id)?`<div class="check wa">⏳ <b>Pidió despachar ${fmt(autDe(x.id).cant)}</b> (más que el saldo). Espere la autorización de Fernando; cuando llegue, registre esa cantidad.</div>`:''}
  <div class="two"><div class="fld"><label>Cantidad despachada</label><input type="number" id="eCant" value="${saldo(x)}" min="1"><div class="h">Normalmente igual o menor al saldo (${fmt(saldo(x))}); si es menor, el resto queda como saldo y se avisa a Fernando. Hasta ${Math.round((CFG.tolerancia||.1)*100)} % más solo con autorización de Fernando.</div></div>
  <div class="fld"><label>Fecha y hora del registro</label><input class="ro" readonly value="${fechaLarga()} · ${nowHM()}"><div class="h">Se toman solas del dispositivo al guardar.</div></div></div>
- ${x.tr==='P'?`<div class="two"><div class="fld"><label>Equipo Platino</label><select id="eEq" data-tipo="${x.eqT||''}"><option value="">— Selecciona —</option>${eqOpts(x.eqT,x.eqC)}</select>${x.eqC?'<div class="h">Asignado por Fernando al programar</div>':''}</div>
- <div class="fld" style="align-self:end"><div class="h" style="margin:0 0 10px">🚚 Los datos del motorista quedan en la boleta de SAP.</div></div></div><div id="eEqW"></div><input type="hidden" id="eMot"><input type="hidden" id="eDni">`:
+ ${x.tr==='P'?`<div class="check ok" style="margin-top:0">🚚 <b>Transportes Platino:</b> el equipo y el motorista quedan en la boleta de SAP.</div>`:
  `<div class="check ok" style="margin-top:0">🚚 <b>Transporte del cliente:</b> los datos del motorista y del vehículo quedan en la boleta de SAP.</div>`}
  <div class="two"><div class="fld"><label>N.º de boleta SAP</label><input id="eBol" inputmode="numeric" placeholder="Obligatorio"><div class="h">Es la referencia para ver en SAP todo lo del despacho.</div></div><div class="fld"><label>Foto de la carga</label>${fotoInput('eFoto')}</div></div>
  <div class="fld"><label>Notas <span class="muted" style="font-weight:400">(opcional)</span></label><textarea id="eNot" rows="2"></textarea></div>
  <button class="btn dk" style="width:100%" id="eSave">Registrar despacho</button></fieldset>`);
- if($('#eEq'))wireEq('eEq','eEqW',q=>{$('#eMot').value=q.m||'';$('#eDni').value=q.dni||''});
  if(!bloq)$('#eSave').onclick=async()=>{const c=+$('#eCant').value||0;if(c<=0){toast('Escribe la cantidad');return}
   const tope=saldo(x)+Math.floor(x.cant*(CFG.tolerancia||.1));if(c>tope){toast(`No se permite: el máximo con autorización es ${fmt(tope)} (${Math.round((CFG.tolerancia||.1)*100)} % sobre lo programado)`);return}
-  const eq=$('#eEq')?$('#eEq').value:'';if(x.tr==='P'&&!eq){toast('Selecciona el código de equipo');return}if($('#eEq')&&$('#eEq').dataset.ok!=='1'){toast('Confirma si el equipo ya salió del taller o elige otro');return}
-  const dni=$('#eDni')?$('#eDni').value.trim():'';if(!$('#eBol').value.trim()){toast('Escribe el número de boleta SAP');$('#eBol').focus();return}
-  const foto=FOTO,rec={c,eq,dni,mot:$('#eMot')?$('#eMot').value.trim():'',placa:$('#ePla')?$('#ePla').value.trim():'',bol:$('#eBol').value.trim(),nota:$('#eNot').value.trim(),foto,habilitar:!!($('#eEq')&&$('#eEq').dataset.hab==='1')};
+  const eq=x.tr==='P'?(x.eqC||''):'';
+  const dni='';if(!$('#eBol').value.trim()){toast('Escribe el número de boleta SAP');$('#eBol').focus();return}
+  const foto=FOTO,rec={c,eq,dni,mot:'',placa:$('#ePla')?$('#ePla').value.trim():'',bol:$('#eBol').value.trim(),nota:$('#eNot').value.trim(),foto,habilitar:false};
   if(c>saldo(x)&&!confirm(`Va a despachar ${fmt(c)}, más que el saldo (${fmt(saldo(x))}). Se pedirá autorización a Fernando y deberá esperar su respuesta. ¿Continuar?`))return;
   const j=await guardar('ruta_despachar',{id,rec});if(!j)return;
   render();const y=recs().find(z=>z.id===id);if(y){const k=y.entregas.findIndex(e=>e.id===j.entrega.id);if(k>=0){y.entregas[k].fotoLocal=foto;recibo(id,k)}}

@@ -502,7 +502,9 @@ function turnoRot(id,d){const i0=ROT.orden.indexOf(ROT.ini[id]);if(i0<0)return n
 function aplicarRotacion(){Object.values(EQ).forEach(e=>{const t=turnoRot(e.id);if(t)e.turno=t})}
 const TURNOS={A:{ini:'06:00',fin:'14:00',lbl:'Turno A · 6:00 am a 2:00 pm'},B:{ini:'14:00',fin:'22:00',lbl:'Turno B · 2:00 pm a 10:00 pm'},C:{ini:'22:00',fin:'06:00',lbl:'Turno C · 10:00 pm a 6:00 am'}};
 const DEMO=!!window.DEMO;
-const ROLES={DEMO:{nom:'Demostración',perm:['prod','corte','paro','alerta','cons','nc','rep','dash','aviso']},LIDER:{nom:'Líder de grupo',perm:['prod','corte','paro','alerta','cons']},CALIDAD:{nom:'Control de calidad',perm:['nc','param']},MANTENIMIENTO:{nom:'Mantenimiento',perm:['paro','alerta','cierre']},SUPERVISOR:{nom:'Supervisión',perm:['rep','dash','bd','aviso']},GERENCIA:{nom:'Gerencia',perm:['rep','dash','aviso']},VISOR:{nom:'Consulta',perm:['rep','dash']},ADMIN:{nom:'Administrador',perm:['prod','corte','paro','alerta','cons','nc','rep','dash','bd','usr','aviso','costos','param','cierre']}};
+const DANO='Daño / avería',DANO_MOT=[['Dañado en la máquina','Se quebró o deformó en la prensa, el paletizador o el volteador'],['Caído en el traslado','Se cayó con el montacargas, la multiforca o en el patio'],['Otra avería','Cualquier otro daño durante la producción']];
+const esDes=r=>esDes(r)||r.clase===DANO,esNC=t=>t==='nc'||t==='descarte';
+const ROLES={DEMO:{nom:'Demostración',perm:['prod','corte','paro','alerta','cons','nc','rep','dash','aviso']},LIDER:{nom:'Líder de grupo',perm:['prod','corte','paro','alerta','cons']},CALIDAD:{nom:'Control de calidad',perm:['nc','descarte']},MANTENIMIENTO:{nom:'Mantenimiento',perm:['paro','alerta','cierre']},SUPERVISOR:{nom:'Supervisión',perm:['rep','dash','bd','aviso']},GERENCIA:{nom:'Gerencia',perm:['rep','dash','aviso']},VISOR:{nom:'Consulta',perm:['rep','dash']},ADMIN:{nom:'Administrador',perm:['prod','corte','paro','alerta','cons','nc','rep','dash','bd','usr','aviso','costos','param','cierre']}};
 const LS=DEMO?'dc_bloques_demo_registros':'dc_bloques_registros_v2', SS=DEMO?'dc_bloques_demo_sesion':'dc_bloques_sesion_v2', TAB='dc_bloques_tab';
 const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 let LOCAL=store.get(LS)||{produccion:[],cortes:[],noconf:[],paros:[],alertas:[],consumos:[]};if(!LOCAL.alertas)LOCAL.alertas=[];
@@ -680,12 +682,12 @@ function render(){
   if(!S){menuAbierto=negAbierto=false;document.documentElement.classList.remove('mnu-fijo');document.body.style.overflow='';renderLogin();return}
   const r=ROLES[S.rol];const team=S.equipo?EQ[S.equipo].nombre:(S.cargo||r.nom);
   const tabs=[];
-  if(r.perm.some(p=>['prod','corte','paro','nc'].includes(p)))tabs.push(['registro','Registro']);
+  if(r.perm.some(p=>['prod','corte','paro','nc'].includes(p))||can('descarte'))tabs.push(['registro','Registro']);
   else if(can('cierre'))tabs.push(['cierre','Cierre de paros']);
   if(can('rep'))tabs.push(['rep','Reporte del día']);
   if(can('dash'))tabs.push(['dash','Dashboard']);
   tabs.push(['rank','Ranking']);
-  if(can('bd'))tabs.push(['bd','Bases de datos']);else if(can('consumos'))tabs.push(['bd','Consumos']);
+  if(can('bd'))tabs.push(['bd','Bases de datos']);else if(bdPermit().length)tabs.push(['bd',bdPermit().length>1?'Bases de datos':BDDEF[bdPermit()[0]].n]);
   if((can('costos')||can('param'))&&SEED.mp)tabs.push(['mp',SEED.mp.verCostos?'Consumo vs ficha':'Ficha y factores']);
   if(can('usr'))tabs.push(['usr','Usuarios y equipos']);
   if(!tabs.find(t=>t[0]===tab))tab=tabs[0][0];
@@ -759,9 +761,9 @@ function renderRegistro(){
   if(view==='cierre')return renderCierre(false);
   const m=$('#main');const eq=S.equipo?EQ[S.equipo]:null;
   const h=new Date().getHours();const sal=h<12?'Buenos días':h<19?'Buenas tardes':'Buenas noches';
-  const tiles=[['prod','t1','Reporte de producción','Al terminar el turno: ciclos, unidades y foto del tablero'],['corte','t2','Hacer corte','Muestreo durante el turno para medir el rendimiento'],['paro','t4','Reportar paro','Paros por fallas, energía, materiales o personal'],['cons','t5','Reportar consumo','Materiales usados en el turno: cemento, arenas, grava, aditivo y agua'],['nc','t3','Producto no conforme','Producto de segunda o desecho (Control de calidad)'],['cierre','t6','Cierre de paros','Contexto y solución de los paros terminados']].filter(t=>can(t[0])&&(t[0]!=='cierre'||ROLES[S.rol].perm.includes('paro')));
+  const tiles=[['prod','t1','Reporte de producción','Al terminar el turno: ciclos, unidades y foto del tablero'],['corte','t2','Hacer corte','Muestreo durante el turno para medir el rendimiento'],['paro','t4','Reportar paro','Paros por fallas, energía, materiales o personal'],['cons','t5','Reportar consumo','Materiales usados en el turno: cemento, arenas, grava, aditivo y agua'],['nc','t3','Producto no conforme','Producto de segunda o desecho (Control de calidad)'],['descarte','t3','Descarte por daño','Unidades que se dañan en la máquina o se caen en el traslado'],['cierre','t6','Cierre de paros','Contexto y solución de los paros terminados']].filter(t=>can(t[0])&&(t[0]!=='cierre'||ROLES[S.rol].perm.includes('paro')));
   const nPend=can('cierre')?pendCierre().length:0;
-  const tileB=t=>`<button class="tile ${t[1]}" data-f="${t[0]}"><div class="ic">${ICON[t[0]]}</div><div><b>${t[2]}</b><span>${t[3]}</span></div>${t[0]==='cierre'&&nPend?`<span class="badge" aria-label="${nPend} pendientes">${nPend}</span>`:''}</button>`;
+  const tileB=t=>`<button class="tile ${t[1]}" data-f="${t[0]}"><div class="ic">${ICON[t[0]]||ICON.nc}</div><div><b>${t[2]}</b><span>${t[3]}</span></div>${t[0]==='cierre'&&nPend?`<span class="badge" aria-label="${nPend} pendientes">${nPend}</span>`:''}</button>`;
   const conSos=can('alerta')&&(!!S.equipo||S.rol==='MANTENIMIENTO');
   const tilesHTML=tiles.length?`<div class="tiles">${tiles.map(t=>t[0]==='paro'&&conSos?`<div class="tile-row">${tileB(t)}<button class="sos" id="sos" aria-label="Avisar a jefes y gerencia que hay un paro" title="Avisar que hay un paro">${ICON.sos}</button></div><div id="alstate"></div>`:tileB(t)).join('')}</div>`:'';
   let body;
@@ -770,10 +772,10 @@ function renderRegistro(){
     body=tilesHTML+`<div class="recent"><h3>Último corte</h3>${lista(uc?[[`${dmy(uc.fecha)} · ${uc.hora}`,fmt(uc.unidades)+' u']]:[])}
       <h3 style="margin-top:18px">Producción · últimos 3 días</h3>${lista(ultimos3(eq.id).map(([d,u])=>[dmy(d),fmt(u)+' u']))}</div>`+`<div style="margin-top:22px">${metaBar(eq.id)}</div>`;
   }else if(S.rol==='CALIDAD'){
-    const ym=todayISO().slice(0,7),N=DB.noconf.filter(r=>r.fecha.slice(0,7)===ym),seg=N.filter(r=>r.clase==='Segunda').reduce((s,r)=>s+r.cantidad,0),des=N.filter(r=>r.clase==='Desecho').reduce((s,r)=>s+r.cantidad,0);
+    const ym=todayISO().slice(0,7),N=DB.noconf.filter(r=>r.fecha.slice(0,7)===ym),seg=N.filter(r=>r.clase==='Segunda').reduce((s,r)=>s+r.cantidad,0),des=N.filter(r=>esDes(r)).reduce((s,r)=>s+r.cantidad,0);
     const last=DB.noconf.filter(r=>r.usuario===S.u).sort((a,b)=>b.registro.localeCompare(a.registro)).slice(0,5);
     body=tilesHTML+`<div class="recent"><h3>Mis últimos registros</h3>${lista(last.map(r=>[`${dmy(r.fechaProd)} · ${r.clase}`,fmt(r.cantidad)+' u']))}</div>`+`<div style="margin-top:22px">`+`<section class="metacard"><div class="mh"><span class="lbl">No conformes acumulados en ${MESES[+ym.slice(5)-1].toLowerCase()}</span></div>
-      <div class="ncsum num"><div><b style="color:var(--gold)">${fmt(seg)}</b><span>De segunda</span></div><div><b style="color:var(--bad)">${fmt(des)}</b><span>Desecho</span></div><div><b>${fmt(seg+des)}</b><span>Total</span></div></div></section>`+`</div>`;
+      <div class="ncsum num"><div><b style="color:var(--gold)">${fmt(seg)}</b><span>De segunda</span></div><div><b style="color:var(--bad)">${fmt(des)}</b><span>Desecho y daños</span></div><div><b>${fmt(seg+des)}</b><span>Total</span></div></div></section>`+`</div>`;
   }else if(S.rol==='MANTENIMIENTO'){
     const P=pendCierre().slice(0,6);
     body=tilesHTML+`<div class="recent"><h3>Paros pendientes de cierre</h3>${lista(P.map(i=>[itemTitulo(i),i.cierre?i.cierre.estado:'Sin revisar']))}</div>`;
@@ -804,9 +806,9 @@ const photoField=(lbl='Foto del tablero de la máquina',hint='La foto es la evid
 
 function renderForm(){
   const t=form.tipo,m=$('#main');const eq=S.equipo?EQ[S.equipo]:null;const defT=eq?eq.turno:turnoSugerido();
-  const head={prod:['Reporte de producción','Cierre del turno'],corte:['Hacer corte','Muestreo de rendimiento · hora '+nowHM()],nc:['Producto no conforme','Control de calidad'],paro:['Reportar paro','Paro de producción'],cons:['Reportar consumo','Materiales usados en el turno']}[t];
+  const head={prod:['Reporte de producción','Cierre del turno'],corte:['Hacer corte','Muestreo de rendimiento · hora '+nowHM()],nc:['Producto no conforme','Control de calidad'],descarte:['Descarte por daño','Unidades dañadas o caídas durante la producción'],paro:['Reportar paro','Paro de producción'],cons:['Reportar consumo','Materiales usados en el turno']}[t];
   let body='';
-  const fecha=`<div class="field" data-k="fecha"><label for="fecha">${t==='nc'?'Fecha de registro':'Fecha de producción'}</label><input class="in-ctl" type="date" id="fecha" value="${t==='nc'?todayISO():fechaJornada(defT)}"><span class="hint">${t==='nc'?'Hoy por defecto.':'El Turno C se reporta con la fecha del día en que inició (10:00 pm), aunque termine a las 6:00 am del día siguiente.'}</span></div>`;
+  const fecha=`<div class="field" data-k="fecha"><label for="fecha">${esNC(t)?'Fecha de registro':'Fecha de producción'}</label><input class="in-ctl" type="date" id="fecha" value="${esNC(t)?todayISO():fechaJornada(defT)}"><span class="hint">${esNC(t)?'Hoy por defecto.':'El Turno C se reporta con la fecha del día en que inició (10:00 pm), aunque termine a las 6:00 am del día siguiente.'}</span></div>`;
   const turno=`<div class="field" data-k="turno"><label for="turno">Turno trabajado</label><select class="in-ctl" id="turno">${turnoOptions(defT)}</select></div>`;
   if(t==='prod'||t==='corte'){
     body=fecha+turno+eqField('equipo')+`<div class="field" data-k="producto"><label for="producto">Producto</label><select class="in-ctl" id="producto">${prodOptions('')}</select></div>`+
@@ -822,6 +824,12 @@ function renderForm(){
      numField('cantidad','Cantidad de unidades')+
      `<div class="field" data-k="clase"><span class="lbl">Clasificación</span><div class="choice-grid" id="clase"><button type="button" class="choice" data-v="Segunda" aria-pressed="false">Segunda calidad<small>Se almacena aparte y se vende a menor precio</small></button><button type="button" class="choice" data-v="Desecho" aria-pressed="false">Desecho<small>Se descarta, no se vende</small></button></div></div>`+
      photoField('Foto del producto no conforme','Tome la foto del lote o de las piezas defectuosas.')+`<div class="field"><label for="obs">Observación (opcional)</label><textarea class="in-ctl" id="obs" placeholder="Ej. fisuras, aristas rotas, color disparejo"></textarea></div>`;
+  }else if(t==='descarte'){
+    body=fecha+`<div class="field" data-k="fechaProd"><label for="fechaProd">Fecha de producción de las unidades</label><input class="in-ctl" type="date" id="fechaProd" value="${todayISO()}"><span class="hint">¿Qué día se fabricaron las unidades dañadas?</span></div>`+
+     eqField('equipo','', true)+`<div class="field" data-k="producto"><label for="producto">Producto</label><select class="in-ctl" id="producto">${prodOptions('')}</select></div>`+
+     numField('cantidad','Unidades descartadas')+
+     `<div class="field" data-k="clase"><span class="lbl">¿Qué pasó?</span><div class="choice-grid" id="clase">${DANO_MOT.map(([v,d])=>`<button type="button" class="choice" data-v="${v}" aria-pressed="false">${v}<small>${d}</small></button>`).join('')}</div></div>`+
+     photoField('Foto de las unidades dañadas','Tome la foto de las piezas descartadas.')+`<div class="field"><label for="obs">Observación (opcional)</label><textarea class="in-ctl" id="obs" placeholder="Ej. se cayó una tarima del montacargas en el patio"></textarea></div>`;
   }else{
     body=fecha+turno+eqField('equipo')+`<div class="row2"><div class="field" data-k="inicio"><label for="inicio">Hora inicio del paro</label><input class="in-ctl" type="time" id="inicio"></div><div class="field" data-k="fin"><label for="fin">Hora en que arrancó</label><input class="in-ctl" type="time" id="fin"></div></div><div class="note" id="dur" style="margin:-8px 0 14px"></div>`+
      `<div class="field" data-k="comentario"><label for="comentario">Explique qué pasó</label><textarea class="in-ctl" id="comentario" placeholder="Ej. se rompió la balinera del vibrador; se esperó al mecánico"></textarea></div>`+
@@ -829,12 +837,12 @@ function renderForm(){
   }
   m.innerHTML=`<div class="col"><div class="formhead"><button id="back" aria-label="Volver">←</button><div><h2>${head[0]}</h2><p>${head[1]}</p></div></div><form id="ff" novalidate>${body}<button class="btn primary" type="submit" id="send">${t==='cons'?'Verificar':'Cargar'}</button></form></div>`;
   $('#back').onclick=()=>{view='home';render()};
-  if(t!=='nc'&&$('#turno')&&$('#fecha')){let manual=false;$('#fecha').addEventListener('input',()=>manual=true);$('#turno').addEventListener('change',()=>{if(!manual)$('#fecha').value=fechaJornada($('#turno').value)})}
+  if(!esNC(t)&&$('#turno')&&$('#fecha')){let manual=false;$('#fecha').addEventListener('input',()=>manual=true);$('#turno').addEventListener('change',()=>{if(!manual)$('#fecha').value=fechaJornada($('#turno').value)})}
   document.querySelectorAll('input[inputmode="numeric"]').forEach(i=>i.addEventListener('input',()=>{i.value=i.value.replace(/\D/g,'').slice(0,7);checkUnits()}));
   document.querySelectorAll('input[data-mat]').forEach(i=>i.addEventListener('input',()=>{i.value=i.value.replace(/[^\d.,]/g,'').slice(0,12)}));
   document.querySelectorAll('.choice-grid').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('.choice');if(!b)return;g.querySelectorAll('.choice').forEach(x=>x.setAttribute('aria-pressed',x===b));form.v[g.id]=b.dataset.v}));
   ['fcam','fgal'].forEach(id=>{const i=$('#'+id);if(i)i.onchange=()=>i.files[0]&&loadPhoto(i.files[0])});
-  const pr=$('#producto');if(pr&&t!=='nc')pr.onchange=checkUnits;
+  const pr=$('#producto');if(pr&&!esNC(t))pr.onchange=checkUnits;
   if(t==='paro'){form.sug='';form.causaManual=false;let tmS;$('#comentario').addEventListener('input',()=>{clearTimeout(tmS);tmS=setTimeout(()=>{form.sug=sugerirCausa($('#comentario').value);pintarSugerencia()},250)});
     $('#causa').addEventListener('click',e=>{if(e.target.closest('.choice')){form.causaManual=true;setTimeout(pintarSugerencia,0)}});}
   if(t==='paro'){const al=form.alerta||paroActivo(S.equipo);if(al&&!al.prol&&!$('#inicio').value){$('#inicio').value=al.registro.slice(11);$('#turno').value=al.turno;$('#fecha').value=fechaTurnoAl(al)}const u=()=>{const a=$('#inicio').value,b=$('#fin').value;$('#dur').textContent=a&&b?`Duración: ${minutos(a,b)} minutos (${(minutos(a,b)/60).toFixed(1)} h)`:''};$('#inicio').oninput=u;$('#fin').oninput=u}
@@ -920,8 +928,8 @@ async function submit(){
   if(form.tipo==='cons')return verificarConsumo();
   const t=form.tipo,v=form.v,g=id=>{const e=$('#'+id);return e?e.value.trim():''};
   document.querySelectorAll('.field.err').forEach(f=>{f.classList.remove('err');f.querySelector('.errmsg')?.remove()});
-  const need={prod:['fecha','turno','equipo','producto','ciclos','unidades','foto'],corte:['fecha','turno','equipo','producto','ciclos','unidades','foto'],nc:['fecha','fechaProd','equipo','producto','cantidad','clase','foto'],paro:['fecha','turno','equipo','inicio','fin','causa','comentario'],cons:['fecha','turno','equipo','producto',...MATS.map(x=>x[0]),'foto']}[t];
-  const val={};need.forEach(k=>val[k]=t==='cons'&&MATS.some(x=>x[0]===k)?numMat(g(k)):k==='equipo'?(S.equipo&&t!=='nc'?S.equipo:g('equipo')):['foto','clase','causa'].includes(k)?v[k]:g(k));
+  const need={prod:['fecha','turno','equipo','producto','ciclos','unidades','foto'],corte:['fecha','turno','equipo','producto','ciclos','unidades','foto'],nc:['fecha','fechaProd','equipo','producto','cantidad','clase','foto'],descarte:['fecha','fechaProd','equipo','producto','cantidad','clase','foto'],paro:['fecha','turno','equipo','inicio','fin','causa','comentario'],cons:['fecha','turno','equipo','producto',...MATS.map(x=>x[0]),'foto']}[t];
+  const val={};need.forEach(k=>val[k]=t==='cons'&&MATS.some(x=>x[0]===k)?numMat(g(k)):k==='equipo'?(S.equipo&&!esNC(t)?S.equipo:g('equipo')):['foto','clase','causa'].includes(k)?v[k]:g(k));
   const bad=need.filter(k=>!val[k]||(['ciclos','unidades','cantidad'].includes(k)&&+val[k]<=0));
   if(t==='paro'&&val.inicio&&val.fin&&val.inicio===val.fin)bad.push('fin');
   const matIds=MATS.map(x=>x[0]);if(t==='cons')matIds.forEach(k=>{if(val[k]==='x'&&!bad.includes(k))bad.push(k)});
@@ -934,6 +942,7 @@ async function submit(){
   let rec,kind;const base={registro:stamp(),usuario:S.u};
   if(t==='prod'||t==='corte'){kind=t==='prod'?'produccion':'cortes';rec={id:nextId(kind,t==='prod'?'PR':'CO'),...base,fecha:val.fecha,turno:val.turno,equipo:val.equipo,producto:val.producto,ciclos:+val.ciclos,unidades:+val.unidades,foto:'Foto adjunta',fotoData:val.foto};if(t==='corte')rec.hora=nowHM()}
   else if(t==='nc'){kind='noconf';rec={id:nextId(kind,'NC'),...base,fecha:val.fecha,fechaProd:val.fechaProd,equipo:val.equipo,producto:val.producto,cantidad:+val.cantidad,clase:val.clase,obs:g('obs'),foto:'Foto adjunta',fotoData:val.foto}}
+  else if(t==='descarte'){kind='noconf';rec={id:nextId(kind,'NC'),...base,fecha:val.fecha,fechaProd:val.fechaProd,equipo:val.equipo,producto:val.producto,cantidad:+val.cantidad,clase:DANO,motivo:val.clase,obs:'Motivo: '+val.clase+(g('obs')?' · '+g('obs'):''),foto:'Foto adjunta',fotoData:val.foto}}
   else if(t==='cons'){kind='consumos';rec={id:nextId(kind,'CN'),...base,fecha:val.fecha,turno:val.turno,equipo:val.equipo,producto:val.producto,foto:'Foto adjunta',fotoData:val.foto};matIds.forEach(k=>rec[k]=Math.round(+val[k]*100)/100)}
   else{kind='paros';rec={id:nextId(kind,'PA'),...base,fecha:val.fecha,turno:val.turno,equipo:val.equipo,inicio:val.inicio,fin:val.fin,minutos:minutos(val.inicio,val.fin),causa:val.causa,comentario:val.comentario,causaRev:'',subcausa:'',sugerida:form.sug||''}}
   const conFoto=['prod','corte','cons'].includes(t)&&ONLINE;
@@ -959,7 +968,7 @@ function mostrarVerif(v,firma){const P=v.problemas||[],D=v.dudosos||[];const fv=
   toast(P.length?'Hay valores que no coinciden con la foto.':'No pudimos leer la foto.')}
 function renderDone(){
   const r=form.rec,k=form.kind,m=$('#main');let extra='',rows=[];
-  const T={produccion:'Producción cargada',cortes:'Corte registrado',noconf:'Producto no conforme registrado',paros:'Paro registrado',consumos:'Consumo registrado'}[k];
+  const T={produccion:'Producción cargada',cortes:'Corte registrado',noconf:r.clase===DANO?'Descarte por daño registrado':'Producto no conforme registrado',paros:'Paro registrado',consumos:'Consumo registrado'}[k];
   if(k==='cortes'){const he=horasEfC(r),teo=Math.round(CFG.ciclosHora*he),i=teo?r.ciclos/teo:0,[c,l]=nivel(i);
     extra=`<div class="gauge"><div class="note">Índice de productividad del turno a las ${r.hora}</div><div class="big num" style="color:var(--${c})">${pct(i)}</div><span class="pill ${c}">${l}</span><div class="bar" style="margin-top:14px;height:12px"><i style="width:${Math.min(100,i*100)}%;background:var(--${c})"></i></div><p class="note">${fmt(r.ciclos)} ciclos producidos de ${fmt(teo)} teóricos en ${he} h efectivas</p></div>`}
   if(r.ciclos!=null)rows=[['Fecha',dmy(r.fecha)],['Turno',TURNOS[r.turno].lbl],['Grupo',EQ[r.equipo].nombre],['Producto',PR[r.producto].nombre],['Ciclos',fmt(r.ciclos)],['Unidades',fmt(r.unidades)]];
@@ -1018,7 +1027,7 @@ function renderDash(){
   initF();const m=$('#main'),c=calc();const mesN=MESES[+c.ym.slice(5)-1];
   const pM=c.tot/c.meta,pE=c.tot/c.equi,esp=c.metaDia*c.habTrans,ratio=esp?c.tot/esp:0,pH=Math.min(1,esp/c.meta);
   const est=ratio>=1?['ok','Al día']:ratio>=.85?['warn','Ligeramente atrasado']:['bad','Atrasado'];
-  const NC=DB.noconf.filter(r=>inF(r,'fechaProd')),seg=NC.filter(r=>r.clase==='Segunda').reduce((s,r)=>s+r.cantidad,0),des=NC.filter(r=>r.clase==='Desecho').reduce((s,r)=>s+r.cantidad,0);
+  const NC=DB.noconf.filter(r=>inF(r,'fechaProd')),seg=NC.filter(r=>r.clase==='Segunda').reduce((s,r)=>s+r.cantidad,0),des=NC.filter(r=>esDes(r)).reduce((s,r)=>s+r.cantidad,0);
   const PA=DB.paros.filter(r=>inF(r)),minP=PA.reduce((s,r)=>s+r.minutos,0);
   const tmef=PA.length?(c.turnos*CFG.horasTurno*60-minP)/PA.length/60:null,tmr=PA.length?minP/PA.length:null;
   const pDes=c.realSel?des/c.realSel:0,dMax=CFG.desperdicioMax,dB=dMax==null?null:(pDes<=dMax?['ok','Dentro de meta']:pDes<=dMax*1.25?['warn','Vigilar']:['bad','Fuera de meta']);
@@ -1037,7 +1046,7 @@ function renderDash(){
      <div class="mk top" style="left:${pH*100}%"><span>Hoy deberíamos ir: ${fmt(esp)}</span></div><div class="mk eq" style="left:${c.equi/c.meta*100}%"><span>Equilibrio ${fmt(c.equi)}</span></div><div class="mk" style="left:calc(100% - 2px)"></div></div>
    </section>
    ${tile('Unidades producidas en el periodo',fmt(c.realSel),`${fmt(c.cicSel)} ciclos · ${c.turnos} turnos reportados`,'line')}
-   ${tile('Índice de productividad',pct(c.idx,1),`Ciclos producidos ÷ teóricos (1,260 por turno) · <b>${(m=>m?(c.cicSel/m).toFixed(2):'–')(minTrab(c.P))} ciclos por minuto trabajado</b> (sin paros)`,ic,[ic,il])}
+   ${tile('Índice de productividad',pct(c.idx,1),`Ciclos producidos ÷ teóricos (1,260 por turno) · Ciclos por minuto: <b>${c.turnos?(c.cicSel/(c.turnos*480)).toFixed(2):'–'}</b> con paros · <b>${(m=>m?(c.cicSel/m).toFixed(2):'–')(minTrab(c.P))}</b> sin paros`,ic,[ic,il])}
    ${tile('Tiempo de paro',(minP/60).toFixed(1)+' h',`${PA.length} paros · TMEF ${tmef==null?'–':tmef.toFixed(1)+' h'} · TMR ${tmr==null?'–':Math.round(tmr)+' min'}`,'line')}
    ${tile('Desperdicio (desecho)',pct(pDes,2),`${fmt(des)} u de desecho · ${fmt(seg)} u de segunda aparte (se venden)${dMax==null?' · meta por definir':' · meta ≤ '+pct(dMax,1)}`,dB?dB[0]:'line',dB)}
    <section class="card s7"><h3>Producción acumulada contra la meta</h3><p class="cap">Equivalente Bloque 6". La meta y el equilibrio avanzan solo en días hábiles (sin domingos ni feriados).</p>
@@ -1062,7 +1071,7 @@ function renderDash(){
 function groupBars(c){
   const habR=c.hab.filter(d=>d>=F.desde&&d<=F.hasta&&d<=c.corte).length,espG=metaMes(c.ym)/3/c.hab.length*habR;
   const rows=SEED.equipos.filter(e=>!F.eq||F.eq===e.id).map(e=>{const P=c.P.filter(r=>r.equipo===e.id),v=P.reduce((s,r)=>s+eqv(r),0),cy=P.reduce((s,r)=>s+r.ciclos,0);
-   const N=ncIn(e.id,F.desde,F.hasta),sg=N.filter(r=>r.clase==='Segunda').reduce((s,r)=>s+r.cantidad,0),ds=N.filter(r=>r.clase==='Desecho').reduce((s,r)=>s+r.cantidad,0);
+   const N=ncIn(e.id,F.desde,F.hasta),sg=N.filter(r=>r.clase==='Segunda').reduce((s,r)=>s+r.cantidad,0),ds=N.filter(r=>esDes(r)).reduce((s,r)=>s+r.cantidad,0);
    const pa=DB.paros.filter(r=>r.equipo===e.id&&r.fecha>=F.desde&&r.fecha<=F.hasta&&(!F.tu||r.turno===F.tu)).reduce((s,r)=>s+r.minutos,0);
    return {e,v,sg,ds,pa,idx:P.length?cy/(P.length*1260):0,prim:Math.max(0,v-sg-ds)}});
   const mx=Math.max(espG,...rows.map(r=>r.v))*1.08||1;
@@ -1079,8 +1088,8 @@ function teamCards(c){return SEED.equipos.map(e=>{const okD=r=>r.fecha>=F.desde&
    <div class="bar"><i style="width:${Math.min(100,idx*100)}%;background:var(${TEAMCOL[e.id]})"></i></div><span class="note">Mejor turno: ${best?fmt(eqv(best))+' u el '+dmy(best.fecha):'–'}</span></section>`}).join('')}
 /* Minutos trabajados de los turnos con producción: 480 por turno menos sus paros */
 function minTrab(P){const g={};P.forEach(r=>g[r.fecha+'|'+r.turno]=1);let m=Object.keys(g).length*480;DB.paros.forEach(p=>{if(g[p.fecha+'|'+p.turno])m-=Math.min(480,+p.minutos||0)});return Math.max(0,m)}
-function turnoTable(c){const rows=['A','B','C'].map(t=>{const P=c.P.filter(r=>r.turno===t);const cy=P.reduce((s,r)=>s+r.ciclos,0);return [TURNOS[t].lbl,P.length,P.reduce((s,r)=>s+eqv(r),0),P.length?P.reduce((s,r)=>s+eqv(r),0)/P.length:0,P.length?cy/(P.length*1260):0,(m=>m?cy/m:0)(minTrab(P))]});
-  return `<table><thead><tr><th>Turno</th><th class="r">Turnos</th><th class="r">Unid. eq. B6"</th><th class="r">Promedio/turno</th><th class="r">Ciclos/min trabajado</th><th>Índice</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td class="r num">${r[1]}</td><td class="r num">${fmt(r[2])}</td><td class="r num">${fmt(r[3])}</td><td class="r num">${r[1]?r[5].toFixed(2):'–'}</td><td>${idxBar(r[4])}</td></tr>`).join('')}</tbody></table>`}
+function turnoTable(c){const rows=['A','B','C'].map(t=>{const P=c.P.filter(r=>r.turno===t);const cy=P.reduce((s,r)=>s+r.ciclos,0);return [TURNOS[t].lbl,P.length,P.reduce((s,r)=>s+eqv(r),0),P.length?P.reduce((s,r)=>s+eqv(r),0)/P.length:0,P.length?cy/(P.length*1260):0,P.length?cy/(P.length*480):0,(m=>m?cy/m:0)(minTrab(P))]});
+  return `<table><thead><tr><th>Turno</th><th class="r">Turnos</th><th class="r">Unid. eq. B6"</th><th class="r">Promedio/turno</th><th class="r" title="Ciclos ÷ minutos del turno (incluye paros)">Ciclos/min con paros</th><th class="r" title="Ciclos ÷ minutos trabajados (sin paros)">Ciclos/min sin paros</th><th>Índice</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td class="r num">${r[1]}</td><td class="r num">${fmt(r[2])}</td><td class="r num">${fmt(r[3])}</td><td class="r num">${r[1]?r[5].toFixed(2):'–'}</td><td class="r num">${r[1]?r[6].toFixed(2):'–'}</td><td>${idxBar(r[4])}</td></tr>`).join('')}</tbody></table>`}
 function idxBar(i){const [c]=nivel(i);return `<div class="idxbar"><div class="bar"><i style="width:${Math.min(100,i*100)}%;background:var(--${c})"></i></div><b class="num" style="color:var(--${c});min-width:46px;text-align:right">${pct(i,1)}</b></div>`}
 function productTable(c){const g={};c.P.forEach(r=>{const k=r.producto;g[k]=g[k]||{u:0,c:0};g[k].u+=r.unidades;g[k].c+=r.ciclos});const rows=Object.entries(g);
   return rows.length?`<table><thead><tr><th>Línea</th><th>Producto</th><th class="r">Unidades producidas</th><th class="r">Ciclos</th><th class="r">Eq. Bloque 6"</th></tr></thead><tbody>${rows.map(([k,v])=>`<tr><td>${PR[k].linea}</td><td>${PR[k].nombre}</td><td class="r num">${fmt(v.u)}</td><td class="r num">${fmt(v.c)}</td><td class="r num">${fmt(v.c*12)}</td></tr>`).join('')}</tbody></table>`:'<p class="note">Sin producción en el periodo.</p>'}
@@ -1108,7 +1117,7 @@ function drawDash(c,PA,NC){
     {type:'line',label:'Tendencia',data:(()=>{const tot=dsel.map(d=>c.P.filter(r=>r.fecha===d).reduce((s,r)=>s+eqv(r),0));const hist=[];return tot.map(v=>{if(!v)return null;hist.push(v);const w=hist.slice(-3);return w.reduce((a,b)=>a+b,0)/w.length})})(),borderColor:mu,borderWidth:2,pointRadius:0,pointHoverRadius:4,tension:.4,cubicInterpolationMode:'monotone',spanGaps:true,order:0,stack:'tend'}]},
     options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>'Día '+i[0].label,label:i=>i.dataset.label+': '+fmt(i.raw)}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid,ticks:{...tick,callback:v=>v>=1000?(v/1000)+'k':v},border:{display:false}}}}});
   const teams=[...SEED.equipos.map(e=>e.id),'ND'];
-  charts.nc=new Chart($('#chNC'),{type:'bar',data:{labels:teams.map(t=>EQ[t]?.nombre||'No identificado'),datasets:[{label:'Segunda',data:teams.map(t=>NC.filter(r=>r.equipo===t&&r.clase==='Segunda').reduce((s,r)=>s+r.cantidad,0)),backgroundColor:cssv('--gold'),stack:'n',borderRadius:2},{label:'Desecho',data:teams.map(t=>NC.filter(r=>r.equipo===t&&r.clase==='Desecho').reduce((s,r)=>s+r.cantidad,0)),backgroundColor:cssv('--bad'),stack:'n',borderRadius:2}]},
+  charts.nc=new Chart($('#chNC'),{type:'bar',data:{labels:teams.map(t=>EQ[t]?.nombre||'No identificado'),datasets:[{label:'Segunda',data:teams.map(t=>NC.filter(r=>r.equipo===t&&r.clase==='Segunda').reduce((s,r)=>s+r.cantidad,0)),backgroundColor:cssv('--gold'),stack:'n',borderRadius:2},{label:'Desecho',data:teams.map(t=>NC.filter(r=>r.equipo===t&&esDes(r)).reduce((s,r)=>s+r.cantidad,0)),backgroundColor:cssv('--bad'),stack:'n',borderRadius:2}]},
     options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:10,boxHeight:10}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid,border:{display:false}}}}});
 }
 
@@ -1128,9 +1137,8 @@ function renderRep(){
     VT[t]=R.length?{v:R.reduce((s,r)=>s+eqv(r),0),u:R.reduce((s,r)=>s+r.unidades,0),cy:R.reduce((s,r)=>s+r.ciclos,0),teo:R.length*1260,vivo:false,lc}
      :lc?{v:eqv(lc),u:lc.unidades,cy:lc.ciclos,teo:Math.round(CFG.ciclosHora*horasEfC(lc)),vivo:true,lc}:{v:0,u:0,cy:0,teo:0,vivo:false,lc:null}});
   const vivos=['A','B','C'].filter(t=>VT[t].vivo);
-  // Ciclos por minuto trabajado: ciclos ÷ (minutos del turno − minutos de paro). Turno cerrado = 480 min; en curso = hasta su último corte.
-  const paroHasta=(t,h)=>DB.paros.filter(p=>p.fecha===repDia&&p.turno===t).reduce((s,p)=>{const a=relT(t,p.inicio),b=a+(+p.minutos||0);return s+Math.max(0,Math.min(b,h)-a)},0);
-  ['A','B','C'].forEach(t=>{const X=VT[t],h=X.vivo&&X.lc?relT(t,X.lc.hora):480;X.min=X.cy?Math.max(1,h-paroHasta(t,h)):0});
+  // Ciclos por minuto: ciclos ÷ minutos del turno, incluidos los paros (480 si cerró; si va en curso, los minutos hasta su último corte)
+  ['A','B','C'].forEach(t=>{const X=VT[t];X.min=X.vivo&&X.lc?Math.max(1,relT(t,X.lc.hora)):(X.cy?480:0)});
   const cpmTxt=X=>X.min?(X.cy/X.min).toFixed(2):'–';
   const minD=['A','B','C'].reduce((s,t)=>s+VT[t].min,0);
   const tot=['A','B','C'].reduce((s,t)=>s+VT[t].v,0),real=['A','B','C'].reduce((s,t)=>s+VT[t].u,0),cy=['A','B','C'].reduce((s,t)=>s+VT[t].cy,0),teoD=['A','B','C'].reduce((s,t)=>s+VT[t].teo,0);
@@ -1155,8 +1163,8 @@ function renderRep(){
      ${R.length||X.vivo?`<div class="big num">${fmt(v)} <span class="note" style="font-size:13px;font-weight:500">de ${fmt(metaT)}</span></div>
      <div class="bar" style="height:10px"><i style="width:${Math.min(100,pc*100)}%;background:var(--${scaleCol(pc)})"></i></div>
      <div class="kv num"><div><b style="color:var(--${c3})">${pct(ix,1)}</b>Índice · ${(s=>s[0].toUpperCase()+s.slice(1))(l3.replace('Rendimiento ',''))}</div><div><b>${fmt(u)}</b>Unidades producidas${X.vivo?' (al corte)':''}</div>
-     <div><b>${fmt(X.cy)} <span style="font-weight:400">· ${cpmTxt(X)}/min</span></b>Ciclos${X.vivo?' (al corte)':''} · por min trabajado</div><div><b>${pa} min</b>Paros</div></div>`:
-     `${pq?pilParo(pq):`<span class="pill ${estadoT(t)[0]}" style="align-self:flex-start">${estadoT(t)[1]}</span>`}<div class="kv num"><div><b>–</b>Ciclos · por min trabajado</div><div><b>${pa} min</b>Paros</div></div>`}</section>`};
+     <div><b>${fmt(X.cy)} <span style="font-weight:400">· ${cpmTxt(X)}/min</span></b>Ciclos${X.vivo?' (al corte)':''} · prom. por minuto</div><div><b>${pa} min</b>Paros</div></div>`:
+     `${pq?pilParo(pq):`<span class="pill ${estadoT(t)[0]}" style="align-self:flex-start">${estadoT(t)[1]}</span>`}<div class="kv num"><div><b>–</b>Ciclos · prom. por minuto</div><div><b>${pa} min</b>Paros</div></div>`}</section>`};
   m.innerHTML=`<div class="rep">
    <div class="dnav"><button id="dprev" ${prev?'':'disabled'} aria-label="Día anterior">‹</button><select id="dsel" aria-label="Fecha del reporte">${dias.slice().reverse().map(d=>`<option value="${d}" ${d===repDia?'selected':''}>${['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][new Date(d+'T12:00').getDay()]} ${dmy(d)}</option>`).join('')}</select><button id="dnext" ${next?'':'disabled'} aria-label="Día siguiente">›</button>
     <span style="margin-left:auto;display:flex;gap:8px">${can('bd')?'<button class="btn small ghost" id="xlsd">Descargar Excel del día</button>':''}</span></div>
@@ -1167,7 +1175,7 @@ function renderRep(){
       <div class="tile-k"><span class="v num" style="font-size:22px">${fmt(real)}</span><span class="l">Unidades producidas</span></div>
       <div class="tile-k"><span class="v num" style="font-size:22px;color:var(--${ic})">${pct(idx,1)}</span><span class="l">Índice del día</span></div>
       <div class="tile-k"><span class="v num" style="font-size:22px">${fmt(cy)}</span><span class="l">Ciclos del día</span></div>
-      <div class="tile-k"><span class="v num" style="font-size:22px">${minD?(cy/minD).toFixed(2):'–'}</span><span class="l">Ciclos por minuto trabajado</span></div>
+      <div class="tile-k"><span class="v num" style="font-size:22px">${minD?(cy/minD).toFixed(2):'–'}</span><span class="l">Ciclos por minuto (promedio)</span></div>
       <div class="tile-k"><span class="v num delta" style="font-size:22px;color:var(--${dl==null?'fg':dl>=0?'ok':'bad'})">${dl==null?'–':(dl>=0?'+':'')+pct(dl,1)}</span><span class="l">vs ${prev?dmy(prev):'día anterior'}</span></div>
       <div class="tile-k"><span class="v num" style="font-size:22px">${fmt(acum)}</span><span class="l">Acumulado del mes · ${pct(acum/metaMes(ym),1)} de la meta</span></div></div>
      <div class="bar" style="height:12px;margin-top:14px"><i style="width:${Math.min(100,pd*100)}%;background:var(--${col})"></i></div>
@@ -1363,7 +1371,7 @@ function panelPush(){const md=$('#modal'),on=pushActivo(),den=pushSoportado()&&N
 let rankMes=null;
 function rankDatos(ym){const metaG=metaMes(ym)/3,hab=diasMes(ym).filter(habil),metaTurno=metaTurnoU();
   return SEED.equipos.map(e=>{const P=DB.produccion.filter(r=>r.equipo===e.id&&r.fecha.slice(0,7)===ym),v=P.reduce((s,r)=>s+eqv(r),0),u=P.reduce((s,r)=>s+r.unidades,0),cy=P.reduce((s,r)=>s+r.ciclos,0);
-    const N=DB.noconf.filter(r=>r.equipo===e.id&&r.fechaProd.slice(0,7)===ym),des=N.filter(r=>r.clase==='Desecho').reduce((s,r)=>s+r.cantidad,0);
+    const N=DB.noconf.filter(r=>r.equipo===e.id&&r.fechaProd.slice(0,7)===ym),des=N.filter(r=>esDes(r)).reduce((s,r)=>s+r.cantidad,0);
     const pa=paroNeto(DB.paros.filter(r=>r.equipo===e.id&&r.fecha.slice(0,7)===ym));
     const best=P.reduce((b,r)=>!b||eqv(r)>eqv(b)?r:b,null),enMeta=P.filter(r=>eqv(r)>=metaTurno).length;
     return {e,v,u,p:v/metaG,idx:P.length?cy/(P.length*1260):0,n:P.length,des,pdes:u?des/u:null,pa,best,enMeta}}).sort((a,b)=>b.v-a.v||b.idx-a.idx)}
@@ -1413,8 +1421,9 @@ addEventListener('scroll',()=>document.querySelectorAll('.vt.open').forEach(x=>x
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.vt');if(b)ubicarTip(b);document.querySelectorAll('.vt.open').forEach(x=>{if(x!==b)x.classList.remove('open')});if(b)b.classList.toggle('open')});
 const cell=(r,c)=>typeof c[1]==='function'?c[1](r):r[c[1]];
 const inBD=(k,r)=>inF(r,BDDEF[k].date)&&(k!=='paros'||inCat(r));
-function renderBD(){initF();const soloCons=!can('bd');if(soloCons)bdTab='consumos';const m=$('#main'),d=BDDEF[bdTab];const rows=DB[bdTab].filter(r=>inBD(bdTab,r)).sort((a,b)=>b.registro.localeCompare(a.registro));
-  m.innerHTML=filtersHTML('',bdTab==='paros'?catHTML():'')+`<div class="subtabs">${Object.entries(BDDEF).filter(([k])=>!soloCons||k==='consumos').map(([k,v])=>`<button data-bt="${k}" aria-pressed="${k===bdTab}">${v.n} (${DB[k].filter(r=>inBD(k,r)).length})</button>`).join('')}</div>
+function bdPermit(){return can('bd')?Object.keys(BDDEF):['produccion','consumos'].filter(k=>can(k))}
+function renderBD(){initF();const BP=bdPermit(),soloCons=!can('bd');if(!BP.includes(bdTab))bdTab=BP[0];const m=$('#main'),d=BDDEF[bdTab];const rows=DB[bdTab].filter(r=>inBD(bdTab,r)).sort((a,b)=>b.registro.localeCompare(a.registro));
+  m.innerHTML=filtersHTML('',bdTab==='paros'?catHTML():'')+`<div class="subtabs">${Object.entries(BDDEF).filter(([k])=>BP.includes(k)).map(([k,v])=>`<button data-bt="${k}" aria-pressed="${k===bdTab}">${v.n} (${DB[k].filter(r=>inBD(k,r)).length})</button>`).join('')}</div>
   <section class="card"><div class="tbl"><table class="${d.fit?'fit':''}">${d.fit?`<colgroup>${d.fit.map(w=>`<col style="width:${w}%">`).join('')}</colgroup>`:''}<thead><tr>${d.cols.map(c=>`<th class="${c[2]?'r':''}">${c[1]==='verif'?'<span title="Verificación de la foto">Verif.</span>':c[1]==='cierre'?'<span title="Cierre de mantenimiento">Cierre</span>':d.fit?esc(c[0]).replace(/ \((kg|L)\)$/,'<small>($1)</small>'):c[0]}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${d.cols.map(c=>{if(c[1]==='verif')return `<td>${vIcon(r.verif)}</td>`;if(c[1]==='cierre')return `<td style="text-align:center">${cIcon(r)}</td>`;if(c[1]==='comentario'&&bdTab==='paros'){const t=String(r.comentario||'');return `<td>${t?`<span class="vt cm" role="button" tabindex="0" aria-label="${esc(t)}"><span class="cmt">${esc(t)}</span><span class="tip">${esc(t)}</span></span>`:''}</td>`}if(c[1]==='foto')return `<td>${r.fotoData?`<img class="thumb" src="${r.fotoData}" alt="Foto ${r.id}" data-ph="${r.id}">`:/^https?:/.test(r.foto||'')?`<a href="${esc(r.foto)}" target="_blank" rel="noopener">Ver foto</a>`:`<span class="note">${esc(r.foto)}</span>`}</td>`;const v=cell(r,c);return `<td class="${c[2]?'r num':''}">${esc(c[2]&&typeof v==='number'?(Number.isInteger(v)?fmt(v):fmtQ(v)):v)}</td>`}).join('')}</tr>`).join('')||`<tr><td colspan="${d.cols.length}" class="note">Sin registros en el periodo.</td></tr>`}</tbody></table></div>
   ${bdTab==='paros'&&can('usr')?'<p class="note" style="margin-top:10px">La reclasificación de causas se hará en la hoja de Google (columnas «Categoría revisada» y «Subcategoría»).</p>':''}</section>`;
   bindFilters(renderBD);document.querySelectorAll('[data-bt]').forEach(b=>b.onclick=()=>{bdTab=b.dataset.bt;renderBD()});
@@ -1628,7 +1637,7 @@ async function exportXLSX(modo='filtrado'){
   const todo=modo==='todo';
   const wb=XLSX.utils.book_new(),c=todo?(()=>{const k=F;F={...F,desde:F.mes+'-01',hasta:diasMes(F.mes).slice(-1)[0],eq:'',tu:'',cat:null};const r=calc();F=k;return r})():calc();
   const res=[['DURACRETO · Control de Producción de Bloques'],['Periodo',dmy(F.desde)+' a '+dmy(F.hasta)],['Grupo',F.eq?EQ[F.eq].nombre:'Todos'],['Turno',F.tu||'Todos'],[],
-   ['Indicador','Valor'],['Meta del mes (eq. B6")',Math.round(c.meta)],['Punto de equilibrio (eq. B6")',Math.round(c.equi)],['Producción acumulada del mes (eq. B6")',c.tot],['Cumplimiento de meta',+(c.tot/c.meta).toFixed(4)],['Proyección al cierre',Math.round(c.proy)],['Requerido por día hábil',Math.round(c.reqDia)],['Unidades producidas en el periodo',c.realSel],['Ciclos en el periodo',c.cicSel],['Ciclos por minuto trabajado (sin paros)',(m=>m?+(c.cicSel/m).toFixed(2):0)(minTrab(c.P))],['Índice de productividad',+c.idx.toFixed(4)]];
+   ['Indicador','Valor'],['Meta del mes (eq. B6")',Math.round(c.meta)],['Punto de equilibrio (eq. B6")',Math.round(c.equi)],['Producción acumulada del mes (eq. B6")',c.tot],['Cumplimiento de meta',+(c.tot/c.meta).toFixed(4)],['Proyección al cierre',Math.round(c.proy)],['Requerido por día hábil',Math.round(c.reqDia)],['Unidades producidas en el periodo',c.realSel],['Ciclos en el periodo',c.cicSel],['Ciclos por minuto con paros',c.turnos?+(c.cicSel/(c.turnos*480)).toFixed(2):0],['Ciclos por minuto sin paros',(m=>m?+(c.cicSel/m).toFixed(2):0)(minTrab(c.P))],['Índice de productividad',+c.idx.toFixed(4)]];
   if(todo){res.splice(1,3,['Contenido','Toda la base de datos (sin filtros)'],['Generado',dmy(todayISO())+' '+nowHM()],['Resumen de indicadores',`Mes de ${MESES[+F.mes.slice(5)-1].toLowerCase()} ${F.mes.slice(0,4)}, planta completa`])}
   else if(F.cat)res.splice(4,0,['Categorías de paro',catLabel()]);
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(res),'Resumen');
