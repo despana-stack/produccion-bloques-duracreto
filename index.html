@@ -965,6 +965,8 @@ async function submit(){
   const matIds=MATS.map(x=>x[0]);if(t==='cons')matIds.forEach(k=>{if(val[k]==='x'&&!bad.includes(k))bad.push(k)});
   if(!bad.length&&t==='cons'&&!matIds.some(k=>+val[k]>0)){toast('Escriba al menos una cantidad mayor que cero.');return}
   if(bad.length){bad.forEach(k=>{const f=document.querySelector(`[data-k="${k}"]`);if(f){f.classList.add('err');f.insertAdjacentHTML('beforeend',`<span class="errmsg">${k==='foto'?'Falta la foto.':matIds.includes(k)?(val[k]==='x'?'Revise el número: use punto para decimales.':'Escriba la cantidad (0 si no se usó).'):'Este dato es obligatorio.'}</span>`)}});document.querySelector('.field.err')?.scrollIntoView({behavior:'smooth',block:'center'});toast('Faltan datos. Revise los campos marcados en rojo.');return}
+  if(t==='paro'&&form.horaOk!==val.inicio+'|'+val.fin){const r=await revisarHorasParo(val.turno,val.inicio,val.fin);if(!r)return;
+    if(r.ini){val.inicio=r.ini;val.fin=r.fin;form.v.inicio=r.ini;form.v.fin=r.fin;$('#inicio').value=r.ini;$('#fin').value=r.fin;$('#inicio').dispatchEvent(new Event('input'))}}
   if(t==='paro'){form.sug=sugerirCausa(val.comentario);if(val.causa==='OTR'&&form.sug&&form.sug!=='OTR'&&!form.otraOk){const r=await confirmarOtra();if(!r)return;if(r==='OTR')form.otraOk=true;else{val.causa=r;form.v.causa=r;form.causaManual=true;pintarSugerencia()}}}
   if((t==='prod')&&$('#chk').innerHTML&&!form.forzar){form.forzar=true;toast('Los números no cuadran. Toque «Cargar» otra vez para confirmar.');return}
   if(t==='prod'&&!prodPermitida(val.fecha,val.turno)){modalSolicitud(val.fecha,val.turno);return}
@@ -1534,6 +1536,23 @@ function pintarSugerencia(){const g=$('#causa');if(!g)return;const s=form.sug||'
   g.querySelectorAll('.choice').forEach(b=>{const on=b.dataset.v===s;b.classList.toggle('sugerida',on);let e=b.querySelector('.sugtag');if(on&&!e)b.insertAdjacentHTML('afterbegin','<span class="sugtag">Sugerida</span>');if(!on&&e)e.remove()});
   if(s&&!form.causaManual){form.v.causa=s;g.querySelectorAll('.choice').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===s))}
   const h=$('#sughint');if(h)h.textContent=s?(form.causaManual&&form.v.causa!==s?`La app sugiere «${CA[s]?.nombre}». Usted eligió otra causa.`:`La app sugiere «${CA[s]?.nombre}» según su comentario. Puede cambiarla si no corresponde.`):'Escriba primero qué pasó: la app le sugerirá la causa.'}
+/* Horas del paro incoherentes con el turno (p. ej. 10:00 en vez de 22:00 en el Turno C): pide confirmar o corregir */
+function problemasHoras(turno,ini,fin){const ri=relT(turno,ini),dur=minutos(ini,fin),p=[];
+  if(ri>480&&ri<1410)p.push(`la hora de inicio (${ini}) está fuera del ${TURNOS[turno].lbl.replace(' · ',', de ')}`);
+  if(dur>480)p.push(`el paro duraría ${dur} min (${(dur/60).toFixed(1)} h), más que un turno completo`);
+  else if(ri<=480&&ri+dur>510)p.push(`la hora en que arrancó (${fin}) queda después del fin del turno`);
+  return p}
+const mas12=h=>{const [a,b]=h.split(':');return ('0'+((+a+12)%24)).slice(-2)+':'+b};
+function revisarHorasParo(turno,ini,fin){const p=problemasHoras(turno,ini,fin);if(!p.length)return Promise.resolve({});
+  const cands=[[mas12(ini),fin],[ini,mas12(fin)],[mas12(ini),mas12(fin)]].filter(([a,b])=>!problemasHoras(turno,a,b).length&&minutos(a,b)>0);const sug=cands[0];
+  return new Promise(ok=>{const md=$('#modal');
+    md.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="hrT"><div class="ic">${ICON.reloj}</div><h2 id="hrT">Revise las horas del paro</h2>
+     <p>Parece que hay un error: ${p.join(' y ')}.</p>${sug?`<p>¿Quiso decir de <b>${sug[0]}</b> a <b>${sug[1]}</b> (${minutos(sug[0],sug[1])} min)? Recuerde: después del mediodía las horas van de 12:00 a 23:59.</p>`:''}
+     ${sug?`<button class="btn primary" id="hrFix">Sí, corregir a ${sug[0]} – ${sug[1]}</button>`:''}<button class="btn ghost" id="hrRev">Revisar las horas</button><button class="btn ghost" id="hrOk" style="margin-top:8px">Las horas están bien, cargar así</button></div>`;
+    md.hidden=false;md.onclick=e=>{if(e.target===md){md.hidden=true;ok(null)}};
+    if($('#hrFix'))$('#hrFix').onclick=()=>{md.hidden=true;ok({ini:sug[0],fin:sug[1]})};
+    $('#hrRev').onclick=()=>{md.hidden=true;$('#inicio').focus();ok(null)};
+    $('#hrOk').onclick=()=>{md.hidden=true;form.horaOk=ini+'|'+fin;ok({})}})}
 function confirmarOtra(){return new Promise(ok=>{const md=$('#modal'),s=form.sug;
   md.innerHTML=`<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="otT"><div class="ic">${ICON.paro}</div><h2 id="otT">¿Seguro que es «Otra causa»?</h2>
    <p>Por lo que escribió, parece <b>${esc(CA[s]?.nombre||'')}</b>. Elegir la causa correcta ayuda a saber dónde se pierde más tiempo. Si deja «Otra causa», la jefa de planta tendrá que clasificarla.</p>
