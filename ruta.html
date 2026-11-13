@@ -152,6 +152,7 @@ a{color:var(--info)}body.dark a{color:#8db8ea}
 .cell{min-height:54px;padding:3px;font-size:9.5px;border-radius:7px}.cell .q{font-size:10px}.cell .muted{display:none}.calg{gap:3px}
 .kpi .v{font-size:19px}.hbar{grid-template-columns:100px 1fr 38px}.strip{top:58px}.mini{grid-template-columns:repeat(7,1fr)}
 table{display:block;overflow-x:auto}.info{grid-template-columns:1fr}}
+.ib.spin{animation:girar .8s linear infinite}@keyframes girar{to{transform:rotate(360deg)}}
 .who{color:#cfcfc9;font-size:11.5px;text-align:right;line-height:1.25;white-space:nowrap}.who b{color:#fff;display:block;font-size:12px}
 .ib.on::after{content:"";position:absolute;right:6px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--ok)}
 .ib.off::after{content:"";position:absolute;right:6px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--bad)}
@@ -411,7 +412,10 @@ function theme(x){if(x===undefined){x=!document.body.classList.contains('dark');
 {const t=store.get(THM);theme(t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches)}
 $('#bTheme').onclick=()=>theme();
 async function reload(silencio){if(!silencio)$('#main').style.opacity=.3;try{await cargarTodo();if(!$('#mod').classList.contains('on'))render();if(!silencio)toast('Datos actualizados · '+nowHM())}catch(e){if(!silencio)toast('✖ '+esc(e.message))}finally{$('#main').style.opacity=1}}
-$('#bReload').onclick=reload;
+/* Botón ⟳: recarga la app completa (datos y versión nueva), como en Duracreto 360. Antes recibía el evento como «silencio» y no se notaba. */
+let refAviso=0;
+$('#bReload').onclick=()=>{if($('#mod').classList.contains('on')&&Date.now()-refAviso>4000){refAviso=Date.now();toast('Toque otra vez para actualizar. Se perderá lo que lleva escrito en la ventana abierta.');return}
+ $('#bReload').classList.add('spin');$('#main').style.opacity=.3;setTimeout(()=>location.reload(),150)};
 function render(){if(!allowed().find(s=>s.k===S.sec))S.sec=allowed()[0].k;renderShell();const f={res:vRes,tab:vTab,prog:vProg,sal:vSal,cal:vCal,eje:vEje,inv:vInv,rep:vRep,bd:vBd}[S.sec];$('#main').innerHTML='';f();window.scrollTo(0,0)}
 
 /* ---------- modal ---------- */
