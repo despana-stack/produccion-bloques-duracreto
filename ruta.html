@@ -266,24 +266,28 @@ function toast(t){const e=$('#toast');e.innerHTML=t;e.style.display='block';clea
 const ROLN={ADMIN:'Administrador',PROGRAMADOR:'Programador de despachos',DESPACHO:'Despachador',CALIDAD:'Control de Calidad',CONSULTA:'Consulta'};
 const BIZ={B:{n:'Bloques',c:'#F9D600',u:'unid.',cap:28000,capL:'28,000 unid./día'},P:{n:'Prefabricados',c:'#F2F2EE',u:'piezas',cap:6,capL:'6 viajes/día'}};
 /* ========== RESUMEN: comprometido, entregado y pendiente por cliente o por producto ========== */
-function rangoRes(k){const h=pd(TODAY);if(k==='sem'){const d=new Date(h);d.setDate(h.getDate()-((h.getDay()+6)%7));const f=new Date(d);f.setDate(d.getDate()+6);return [d,f]}
- if(k==='30')return [pd(addD(TODAY,-29)),pd(addD(TODAY,14))];if(k==='mesant'){const a=new Date(h.getFullYear(),h.getMonth()-1,1),b=new Date(h.getFullYear(),h.getMonth(),0);return [a,b]}
- if(k==='abierto')return [new Date(2000,0,1),new Date(2100,0,1)];
+function rangoRes(k){const h=pd(TODAY);
+ if(k==='hoy')return [h,h];
+ if(k==='sem'){const d=new Date(h);d.setDate(h.getDate()-((h.getDay()+6)%7));const f=new Date(d);f.setDate(d.getDate()+6);return [d,f]}
+ if(k==='mesant')return [new Date(h.getFullYear(),h.getMonth()-1,1),new Date(h.getFullYear(),h.getMonth(),0)];
+ if(k==='pers'){const a=S.resD1?pd(fromIso(S.resD1)):new Date(h.getFullYear(),h.getMonth(),1),b=S.resD2?pd(fromIso(S.resD2)):h;return a<=b?[a,b]:[b,a]}
  return [new Date(h.getFullYear(),h.getMonth(),1),new Date(h.getFullYear(),h.getMonth()+1,0)]}
-const RESP={abierto:'Todo lo pendiente',sem:'Esta semana',mes:'Este mes',30:'Últimos 30 días',mesant:'Mes anterior'};
+const RESP={hoy:'Hoy',sem:'Esta semana',mes:'Este mes',mesant:'Mes anterior',pers:'Elegir fechas…'};
 const ESTO=['Atrasado','Esta semana','Programado','Completo','Cerrado'];
 function estadoDesp(x){if(x.st==='ent'&&!x.cerr)return 'Completo';if(x.st==='no'||x.cerr)return 'Cerrado';const d=pd(x.f),h=pd(TODAY);
  if(d<h)return 'Atrasado';if(d<=pd(addD(TODAY,6)))return 'Esta semana';return 'Programado'}
 const abierto=x=>x.st==='prog'||x.st==='par';
 const pillEst=e=>`<span class="rpill r-${{'Atrasado':'a','Esta semana':'s','Programado':'p','Completo':'c','Cerrado':'x'}[e]}">${e}</span>`;
-function resDatos(){const k=S.resP||'abierto',[d1,d2]=rangoRes(k),b=S.resB||S.biz,q=nz(S.resQ||'');
- return (b==='B'?D.B:D.P).filter(x=>{const t=pd(x.f);return t>=d1&&t<=d2&&x.req!=='pend'&&x.req!=='rech'&&(k!=='abierto'||abierto(x))&&(!q||nz(x.cli).includes(q)||nz(x.prod).includes(q)||nz(x.ase).includes(q))})}
+function resDatos(){const k=S.resP||'mes',[d1,d2]=rangoRes(k),b=S.resB||S.biz,q=nz(S.resQ||'');
+ return (b==='B'?D.B:D.P).filter(x=>{const t=pd(x.f);return t>=d1&&t<=d2&&x.req!=='pend'&&x.req!=='rech'&&(!q||nz(x.cli).includes(q)||nz(x.prod).includes(q)||nz(x.ase).includes(q))})}
+/* Pendientes que quedaron de antes del período (para avisar que existen) */
+function pendAntes(){const [d1]=rangoRes(S.resP||'mes'),b=S.resB||S.biz;return (b==='B'?D.B:D.P).filter(x=>pd(x.f)<d1&&abierto(x)&&saldo(x)>0&&x.req!=='pend'&&x.req!=='rech')}
 function agrupar(r,clave){const g={};r.forEach(x=>{const k=clave(x);const o=g[k]=g[k]||{k,x,comp:0,ent:0,pend:0,atr:0,sem:0,n:0,abiertos:0,dias:0,prox:null,est:'Cerrado',clientes:new Set(),hijos:[]};
   const e=estadoDesp(x),s=abierto(x)?saldo(x):0;o.comp+=x.cant;o.ent+=x.ent;o.pend+=s;o.n++;o.clientes.add(x.cli);o.hijos.push(x);
   if(abierto(x)){o.abiertos++;if(e==='Atrasado'){o.atr+=s;o.dias=Math.max(o.dias,Math.round((pd(TODAY)-pd(x.f))/864e5))}if(e==='Esta semana')o.sem+=s;if(e!=='Atrasado'&&(!o.prox||pd(x.f)<pd(o.prox)))o.prox=x.f}
   if(ESTO.indexOf(e)<ESTO.indexOf(o.est))o.est=e});
  return Object.values(g)}
-function resTablaCliente(r){const cl=agrupar(r,x=>x.cli).sort((a,b)=>ESTO.indexOf(a.est)-ESTO.indexOf(b.est)||b.pend-a.pend);
+function resTablaCliente(r){const cl=agrupar(r,x=>x.cli).filter(c=>S.resL==='todos'||c.pend>0).sort((a,b)=>ESTO.indexOf(a.est)-ESTO.indexOf(b.est)||b.pend-a.pend);
  const AB=S.resOpen||(S.resOpen=new Set());
  return {n:cl.length,html:cl.map((c,ci)=>{const pr=agrupar(c.hijos,x=>x.prod).sort((a,b)=>b.pend-a.pend),multi=pr.length>1,ab=multi&&AB.has(c.k);
   return `<tbody class="rgrp"><tr class="rcli ${multi?'rexp':''} ${ab?'abierto':''}" ${multi?`data-c="${ci}" data-k="${esc(c.k)}" title="Ver el detalle por producto"`:''}><td><b>${esc(c.k)}</b><small>${esc(c.x.ase)} · ${c.n} despacho${c.n>1?'s':''}</small></td><td>${!multi?esc(pr[0].k):`<span class="rver"><span class="rcar">▸</span>${pr.length} productos</span>`}</td>
@@ -291,7 +295,7 @@ function resTablaCliente(r){const cl=agrupar(r,x=>x.cli).sort((a,b)=>ESTO.indexO
    ${multi?pr.map(p=>`<tr class="rsub" data-p="${ci}" ${ab?'':'hidden'}><td></td><td>${esc(p.k)}</td><td class="num">${fmt(p.comp)}</td><td class="num">${fmt(p.ent)}</td><td class="num">${fmt(p.pend)}</td><td>${barraAv(p.ent,p.comp)}</td><td>${p.dias?`<span class="dn">${p.dias} d</span>`:p.prox?esc(p.prox):'—'}</td><td>${pillEst(p.est)}</td></tr>`).join(''):''}</tbody>`}).join(''),
   filas:cl.flatMap(c=>agrupar(c.hijos,x=>x.prod).map(p=>({Cliente:c.k,Asesor:c.x.ase,Producto:p.k,Comprometido:p.comp,Entregado:p.ent,Pendiente:p.pend,'% entregado':p.comp?Math.round(p.ent/p.comp*1000)/10:0,'Días de atraso':p.dias,'Próxima entrega':p.prox||'',Estado:p.est})))}}
 function resTablaProducto(r){const b=S.resB||S.biz,inv=(b==='B'?D.invB:D.invP)||[],cont=!!D.conteo[b];
- const pr=agrupar(r,x=>x.prod).sort((a,b)=>b.pend-a.pend);
+ const pr=agrupar(r,x=>x.prod).filter(c=>S.resL==='todos'||c.pend>0).sort((a,b)=>b.pend-a.pend);
  const fila=p=>{const i=inv.find(z=>z.p===p.k),disp=cont&&i?i.disp:null;return {p,disp,falta:disp==null?null:Math.max(0,p.pend-disp)}};
  const L=pr.map(fila);
  return {n:pr.length,html:`<tbody>${L.map(({p,disp,falta})=>`<tr class="rcli"><td><b>${esc(p.k)}</b><small>${p.clientes.size} cliente${p.clientes.size>1?'s':''} · ${p.abiertos} despacho${p.abiertos!==1?'s':''} abierto${p.abiertos!==1?'s':''}</small></td>
@@ -299,30 +303,35 @@ function resTablaProducto(r){const b=S.resB||S.biz,inv=(b==='B'?D.invB:D.invP)||
   <td class="num">${disp==null?'<span class="muted">sin conteo</span>':fmt(disp)}</td><td class="num">${falta==null?'—':falta?`<b class="dn">${fmt(falta)}</b>`:'<span class="up">cubierto</span>'}</td></tr>`).join('')}</tbody>`,
   filas:L.map(({p,disp,falta})=>({Producto:p.k,Clientes:p.clientes.size,'Despachos abiertos':p.abiertos,Comprometido:p.comp,Entregado:p.ent,Pendiente:p.pend,'Pendiente atrasado':p.atr,'Vence esta semana':p.sem,'Inventario disponible':disp==null?'':disp,'Por producir':falta==null?'':falta}))}}
 const barraAv=(e,p)=>`<div class="rav"><div class="gtrack sm"><i style="width:${Math.min(100,p?e/p*100:0)}%"></i></div><span>${p?Math.round(e/p*100):0} %</span></div>`;
-function vRes(){const k=S.resP||'abierto',vista=S.resV||'cli',b=S.resB||S.biz,r=resDatos(),u=BIZ[b].u;
+function vRes(){const k=S.resP||'mes',[d1,d2]=rangoRes(k),ant=pendAntes(),vista=S.resV||'cli',b=S.resB||S.biz,r=resDatos(),u=BIZ[b].u;
  const t=sumas(r),pend=r.filter(abierto).reduce((s,x)=>s+saldo(x),0),atr=r.filter(x=>abierto(x)&&estadoDesp(x)==='Atrasado'),sem=r.filter(x=>abierto(x)&&estadoDesp(x)==='Esta semana');
  const T=vista==='cli'?resTablaCliente(r):resTablaProducto(r);
  const kp=(l,v,s,c)=>`<div class="rk ${c||''}"><span>${l}</span><b>${v}</b><small>${s}</small></div>`;
- $('#main').innerHTML=`<div class="rhead"><div><h2 style="margin:0">Resumen</h2><div class="muted" style="font-size:12px">${BIZ[b].n} · ${RESP[k]}${k==='abierto'?'':' · '+fd(rangoRes(k)[0])+' al '+fd(rangoRes(k)[1])} · ${u}</div></div><span class="sp"></span>
+ $('#main').innerHTML=`<div class="rhead"><div><h2 style="margin:0">Resumen</h2><div class="rper">${BIZ[b].n} · Despachos programados ${+d1===+d2?'el <b>'+largo(fd(d1))+'</b>':'del <b>'+fd(d1)+'</b> al <b>'+fd(d2)+'</b>'} · cifras en ${u}</div></div><span class="sp"></span>
   <div class="tools" style="margin:0">${S.user.biz.length>1?`<select id="zB">${S.user.biz.map(z=>`<option value="${z}" ${z===b?'selected':''}>${BIZ[z].n}</option>`).join('')}</select>`:''}
-  <select id="zP">${Object.entries(RESP).map(([kk,v])=>`<option value="${kk}" ${kk===k?'selected':''}>${v}</option>`).join('')}</select>
+  <div class="seg rperb">${Object.entries(RESP).map(([kk,v])=>`<button class="${kk===k?'on':''}" data-p="${kk}">${v}</button>`).join('')}</div>
+  ${k==='pers'?`<input type="date" id="zD1" value="${iso(fd(d1))}"><input type="date" id="zD2" value="${iso(fd(d2))}">`:''}
   <button class="btn sec sm" id="zX">Excel</button><button class="btn dk sm" id="zF">PDF</button></div></div>
- <div class="rks">${kp('Comprometido',fmt(t.p),t.n+' despachos')}${kp('Entregado',fmt(t.e),pctTxt(t.e,t.p)+' de lo comprometido','ok')}${kp('Pendiente',fmt(pend),r.filter(abierto).length+' despachos abiertos','pe')}
+ <div class="rks">${kp('Comprometido',fmt(t.p),t.n+' despachos programados')}${kp('Entregado',fmt(t.e),pctTxt(t.e,t.p)+' de lo comprometido','ok')}${kp('Pendiente',fmt(pend),r.filter(abierto).length+' despachos abiertos','pe')}
   ${kp('Atrasado',fmt(atr.reduce((s,x)=>s+saldo(x),0)),atr.length+' despachos con fecha vencida',atr.length?'al':'')}${kp('Vence esta semana',fmt(sem.reduce((s,x)=>s+saldo(x),0)),sem.length+' despachos')}</div>
  <div class="card"><div class="tools"><div class="seg" style="min-width:250px"><button class="${vista==='cli'?'on':''}" data-v="cli">Por cliente</button><button class="${vista==='prod'?'on':''}" data-v="prod">Por producto</button></div>
-  <input id="zQ" placeholder="Buscar cliente, producto o asesor…" value="${esc(S.resQ||'')}" style="min-width:240px"><span class="sp"></span><span class="muted" style="font-size:12px">${T.n} ${vista==='cli'?'clientes':'productos'}</span></div>
+  <input id="zQ" placeholder="Buscar cliente, producto o asesor…" value="${esc(S.resQ||'')}" style="min-width:240px"><div class="seg"><button class="${S.resL!=='todos'?'on':''}" data-l="pend">Con pendiente</button><button class="${S.resL==='todos'?'on':''}" data-l="todos">Todos</button></div><span class="sp"></span><span class="muted" style="font-size:12px">${T.n} ${vista==='cli'?'clientes':'productos'}</span></div>
   <div style="overflow-x:auto"><table class="rtab">${vista==='cli'?'<thead><tr><th>Cliente</th><th>Producto</th><th class="num">Comprometido</th><th class="num">Entregado</th><th class="num">Pendiente</th><th>Avance</th><th>Atraso / próxima</th><th>Estado</th></tr></thead>':'<thead><tr><th>Producto</th><th class="num">Comprometido</th><th class="num">Entregado</th><th class="num">Pendiente</th><th class="num">Atrasado</th><th class="num">Vence esta semana</th><th class="num">Inventario disponible</th><th class="num">Por producir</th></tr></thead>'}
-  ${T.n?T.html:`<tbody><tr><td colspan="8" class="empty">Sin despachos ${k==='abierto'?'pendientes':'en el período'}.</td></tr></tbody>`}</table></div></div>
+  ${T.n?T.html:`<tbody><tr><td colspan="8" class="empty">${S.resL==='todos'?'Sin despachos programados en el período.':'Nada pendiente en el período. Toque «Todos» para ver lo completo.'}</td></tr></tbody>`}</table></div></div>
+ ${ant.length?`<div class="rant">⚠ Además hay <b>${fmt(ant.reduce((s,x)=>s+saldo(x),0))} ${u}</b> pendientes de <b>${ant.length} despacho${ant.length>1?'s':''}</b> programados antes del ${fd(d1)} que no se han entregado. <a href="#" id="zAnt">Verlos</a></div>`:''}
  <p class="muted" style="font-size:11px">Comprometido = lo programado en el período. Pendiente = saldo de los despachos abiertos (no incluye saldos cerrados ni no realizados). Atrasado = pendiente con fecha programada vencida.</p>`;
  if($('#zB'))$('#zB').onchange=e=>{S.resB=e.target.value;render()};
- $('#zP').onchange=e=>{S.resP=e.target.value;render()};
+ document.querySelectorAll('.rperb [data-p]').forEach(x=>x.onclick=()=>{S.resP=x.dataset.p;if(x.dataset.p==='pers'&&!S.resD1){S.resD1=iso(fd(d1));S.resD2=iso(fd(d2))}render()});
+ ['#zD1','#zD2'].forEach((id,n)=>{if($(id))$(id).onchange=e=>{S[n?'resD2':'resD1']=e.target.value;render()}});
+ document.querySelectorAll('[data-l]').forEach(x=>x.onclick=()=>{S.resL=x.dataset.l;render()});
+ if($('#zAnt'))$('#zAnt').onclick=e=>{e.preventDefault();const f=ant.map(x=>pd(x.f)).sort((a,b)=>a-b)[0];S.resP='pers';S.resD1=iso(fd(f));const y=new Date(d1);y.setDate(y.getDate()-1);S.resD2=iso(fd(y));S.resL='pend';render()};
  document.querySelectorAll('.seg [data-v]').forEach(x=>x.onclick=()=>{S.resV=x.dataset.v;render()});
  document.querySelectorAll('tr.rexp').forEach(tr=>tr.onclick=()=>{const ab=!tr.classList.contains('abierto'),AB=S.resOpen||(S.resOpen=new Set());tr.classList.toggle('abierto',ab);ab?AB.add(tr.dataset.k):AB.delete(tr.dataset.k);
   document.querySelectorAll(`tr.rsub[data-p="${tr.dataset.c}"]`).forEach(x=>x.hidden=!ab)});
  let tq;$('#zQ').oninput=e=>{clearTimeout(tq);tq=setTimeout(()=>{S.resQ=e.target.value;const p=e.target.selectionStart;render();const i=$('#zQ');i.focus();i.setSelectionRange(p,p)},350)};
  const titulo=()=>'Resumen de despachos '+(vista==='cli'?'por cliente':'por producto')+' · '+BIZ[b].n;
  $('#zX').onclick=()=>{if(!window.XLSX){toast('No se pudo cargar el generador de Excel');return}const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(T.filas),vista==='cli'?'Por cliente':'Por producto');XLSX.writeFile(wb,'Ruta360_Resumen_'+(vista==='cli'?'clientes':'productos')+'_'+iso(TODAY)+'.xlsx')};
- $('#zF').onclick=()=>printDoc(titulo(),RESP[k]+' · corte '+fechaLarga(),`<style>${GCSS}${RCSS}.dn{color:#D64534}.up{color:#2E9B57}.muted{color:#6b6c68}</style>${$('.rks').outerHTML}<table class="rtab">${$('.rtab').innerHTML}</table>`,1)}
+ $('#zF').onclick=()=>printDoc(titulo(),'Despachos programados del '+fd(d1)+' al '+fd(d2)+' · corte '+fechaLarga(),`<style>${GCSS}${RCSS}.dn{color:#D64534}.up{color:#2E9B57}.muted{color:#6b6c68}</style>${$('.rks').outerHTML}<table class="rtab">${$('.rtab').innerHTML}</table>`,1)}
 const RCSS=`.rks{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:0 0 12px}.rk{background:var(--card,#fff);border:1px solid var(--bd,#ddd);border-radius:12px;padding:10px 12px;border-left:5px solid var(--gris,#A0A19F)}
 .rk span{font-size:11.5px;color:var(--mut,#6b6c68);display:block}.rk b{font-size:21px;display:block;margin:2px 0}.rk small{font-size:11px;color:var(--mut,#6b6c68)}.rk.ok{border-left-color:#2E9B57}.rk.pe{border-left-color:#2F6FB5}.rk.al{border-left-color:#D64534}
 .rtab{width:100%;border-collapse:collapse;font-size:12px}.card .rtab th{position:sticky;top:0;background:var(--card,#fff)}.rtab .num{text-align:right}.rtab tr.rcli td{border-top:1px solid var(--bd,#ddd);padding-top:9px;padding-bottom:9px}.rtab tr.rcli td small{display:block;color:var(--mut,#6b6c68);font-size:10.5px}
@@ -331,6 +340,8 @@ const RCSS=`.rks{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margi
 .rpill{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap}.r-a{background:#FBDCD8;color:#a3271a}.r-s{background:#FFE9C7;color:#8a5600}.r-p{background:#E3ECF7;color:#2f5d8f}.r-c{background:#DDF2E4;color:#237a44}.r-x{background:#E9E9E4;color:#555}
 .rtab tr.rexp{cursor:pointer}.rtab tr.rexp:hover td{background:var(--hov,#fafaf6)}.rver{color:var(--info,#3A6EA5);font-weight:600;white-space:nowrap}.rcar{display:inline-block;width:14px;transition:transform .15s}tr.abierto .rcar{transform:rotate(90deg)}
 .rtab tr.rsub td{background:var(--soft,#F4F4F1)}.rtab tr.rsub[hidden]{display:none}
+.rper{font-size:12.5px;color:var(--mut,#6b6c68);margin-top:2px}.rper b{color:var(--tx,#1d1e1a)}.rperb button{padding:7px 10px;font-size:12px;white-space:nowrap}
+.rant{background:#FFF4E2;border:1px solid #F4D7A6;color:#7a4b00;border-radius:10px;padding:9px 12px;font-size:12.5px;margin:12px 0}.rant a{font-weight:600}
 .rhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 @media(max-width:900px){.rks{grid-template-columns:1fr 1fr}}`;
 
@@ -482,7 +493,8 @@ function causas(f){const g={};recs().filter(x=>x.f===f&&x.causa).forEach(x=>g[x.
  const a=Object.entries(g).sort((a,b)=>b[1]-a[1]);if(!a.length)return '<div class="empty">Sin incumplimientos.</div>';const m=a[0][1];
  return a.map(([c,n])=>`<div class="hbar" style="grid-template-columns:150px 1fr 26px"><span>${c}</span><div class="bar"><i style="width:${n/m*100}%;background:var(--tx)"></i></div><span class="num">${n}</span></div>`).join('')}
 function detalle(id){const x=recs().find(x=>x.id===id);
- modal(`${x.id} · ${esc(x.cli)}`,`${S.user.rol==='CALIDAD'&&x.cal?`<p><button class="btn sec sm" onclick="reciboCal('${x.id}')">Comprobante de calidad</button></p>`:''}<div class="info"><span>Fecha: <b>${x.f} ${x.h}</b></span><span>Estatus: ${st(x)}</span><span>Asesor: <b>${esc(x.ase)}</b></span><span>Producto: <b>${x.prod}</b></span><span>Programado: <b>${fmt(x.cant)}</b></span><span>Entregado: <b>${fmt(x.ent)}</b> · saldo <b>${fmt(saldo(x))}</b></span><span>Transporte: ${trTxt(x)}</span>${x.causa?`<span>Causa: <b>${x.causa}</b></span>`:''}</div>
+ modal(`${x.id} · ${esc(x.cli)}`,`${S.user.rol==='CALIDAD'&&x.cal?`<p><button class="btn sec sm" onclick="reciboCal('${x.id}')">Comprobante de calidad</button></p>`:''}<div class="info"><span>Fecha: <b>${x.f} ${x.h}</b></span><span>Estatus: ${st(x)}</span><span>Asesor: <b>${esc(x.ase)}</b></span><span>Producto: <b>${x.prod}</b></span><span>Programado: <b>${fmt(x.cant)}</b></span><span>Entregado: <b>${fmt(x.ent)}</b> · saldo <b>${fmt(saldo(x))}</b></span><span>Transporte: ${trTxt(x)}</span>${x.causa?`<span>Causa: <b>${esc(x.causa)}</b>${respCausa(x.causa)?` <span class="muted">(${esc(respCausa(x.causa))})</span>`:''}</span>`:''}</div>
+ ${['ADMIN','PROGRAMADOR'].includes(S.user.rol)&&x.ent<x.cant&&pd(x.f)<=pd(TODAY)?`<div class="fld" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap"><div style="flex:1;min-width:220px"><label>Causa del incumplimiento</label><select id="dCau"><option value="">— Sin causa —</option>${(D.cau||[]).map(c=>`<option value="${esc(c.c)}" ${c.c===x.causa?'selected':''}>${esc(c.c)} · ${esc(c.r)}</option>`).join('')}${x.causa&&!(D.cau||[]).some(c=>c.c===x.causa)?`<option selected value="${esc(x.causa)}">${esc(x.causa)}</option>`:''}</select></div><button class="btn dk sm" onclick="guardarCausa('${x.id}')">Guardar causa</button></div>`:''}
  ${x.cal?`<p style="font-size:12px"><b>Calidad:</b> ${x.cal.ok?'✔ Conforme':'✕ No conforme'} · ${x.cal.u} · ${x.cal.h} · ${esc(x.cal.nota)}</p>`:''}
  ${x.entregas.length?'<table><tr><th>Hora</th><th class="num">Cant.</th><th>Equipo</th><th>Motorista</th><th>Boleta SAP</th><th>Registró</th><th></th></tr>'+x.entregas.map((e,i)=>`<tr><td>${e.h}</td><td class="num">${fmt(e.c)}</td><td>${e.eq||e.placa||'—'}</td><td>${esc(e.mot)}</td><td>${e.bol||'—'}</td><td>${esc(e.u)}</td><td style="white-space:nowrap"><button class="btn sec sm" onclick="recibo('${x.id}',${i})">Comprobante</button>${e.foto&&/^http/.test(e.foto)?` <a class="btn sec sm" target="_blank" href="${esc(e.foto)}">Foto</a>`:''}</td></tr>`).join('')+'</table>':'<p class="muted">Aún sin entregas registradas.</p>'}`)}
 
@@ -750,8 +762,48 @@ const GCSS=`.gwrap{display:grid;gap:12px;margin-bottom:14px}.gcard{background:va
 @media(max-width:700px){.gms{grid-template-columns:1fr}.gh-r{grid-template-columns:1fr 70px}.gh-b{grid-column:1/-1;order:3}}`;
 
 document.head.insertAdjacentHTML('beforeend','<style>'+GCSS+RCSS+'</style>');
-const REPS={cumF:'Cumplimiento por fecha',dia:'Cumplimiento del día (detalle por despacho)',desp:'Despachos programados y entregados',ase:'Cumplimiento por asesor',sal:'Saldos pendientes',cau:'Causas de incumplimiento',cal:'Validaciones de calidad (Prefabricados)',ent:'Detalle de entregas (motorista, equipo, boleta)'};
-function repData(){const t=S.repT;let r=repFilas();
+/* ========== INCUMPLIMIENTO DE TRANSPORTES PLATINO ========== */
+const RX_PLAT=/platino|transporte|equipo|rastra|cami[oó]n|motorista|flete|cabezal/i;
+function respCausa(c){const z=(D.cau||[]).find(k=>k.c===c);return z&&z.r?z.r:(RX_PLAT.test(c||'')?'Transportes Platino':'')}
+const esCausaPlat=c=>!!c&&/platino/i.test(respCausa(c));
+const noEnt=x=>Math.max(0,x.cant-x.ent);
+/* Despachos Platino con fecha ya cumplida (hasta hoy) */
+const platFilas=()=>repFilas().filter(x=>x.tr==='P'&&pd(x.f)<=pd(TODAY));
+const incumplido=x=>noEnt(x)>0;
+function semanaDe(f){const d=pd(f),l=new Date(d);l.setDate(d.getDate()-((d.getDay()+6)%7));return l}
+function graficosPlat(){const r=platFilas();if(!r.length)return '<div class="gcard"><div class="empty">No hay despachos de Transportes Platino en el período.</div></div>';
+ const t=sumas(r),inc=r.filter(incumplido),pl=inc.filter(x=>esCausaPlat(x.causa)),sinC=inc.filter(x=>!x.causa);
+ const uInc=inc.reduce((s,x)=>s+noEnt(x),0),uPl=pl.reduce((s,x)=>s+noEnt(x),0);
+ const kp=(l,v,s,c)=>`<div class="rk ${c||''}"><span>${l}</span><b>${v}</b><small>${s}</small></div>`;
+ let h=`<div class="rks">${kp('Despachos con Platino',fmt(t.n),fmt(t.p)+' programado')}${kp('Cumplimiento',pctTxt(t.e,t.p),fmt(t.e)+' entregado','ok')}${kp('Despachos completos',pctTxt(t.c,t.n),t.c+' de '+t.n,'pe')}
+  ${kp('Incumplidos por causa de Platino',fmt(pl.length),fmt(uPl)+' no entregado','al')}${kp('Peso de Platino en el incumplimiento',pctTxt(uPl,uInc),'del total no entregado ('+fmt(uInc)+')')}</div>`;
+ // por causa
+ const g={};inc.forEach(x=>{const c=x.causa||'Sin causa registrada';g[c]=g[c]||{c,n:0,u:0};g[c].n++;g[c].u+=noEnt(x)});
+ const cs=Object.values(g).sort((a,b)=>b.u-a.u),mx=Math.max(1,...cs.map(c=>c.u));
+ h+=`<div class="gcard"><h4>¿Por qué no se entregó? · despachos con Platino incumplidos</h4><div class="pc">${cs.map(c=>{const pt=esCausaPlat(c.c);return `<div class="pc-r ${pt?'pt':''}"><div class="pc-l"><b>${esc(c.c)}</b><small>${esc(c.c==='Sin causa registrada'?'Falta registrar la causa':respCausa(c.c)||'—')}</small></div>
+  <div class="pc-b"><i style="width:${Math.max(2,c.u/mx*100)}%"></i></div><div class="pc-v"><b>${fmt(c.u)}</b><small>${c.n} desp. · ${pctTxt(c.u,uInc)}</small></div></div>`}).join('')}</div>
+  <div class="gnote">Barra oscura = causa atribuible a Transportes Platino · cifras = unidades no entregadas${sinC.length?` · <b>${sinC.length}</b> incumplidos sin causa registrada`:''}</div></div>`;
+ // por semana
+ const w={};r.forEach(x=>{const s=semanaDe(x.f),k=+s;w[k]=w[k]||{s,n:0,p:0,e:0,pi:0,pu:0};const o=w[k];o.n++;o.p+=x.cant;o.e+=x.ent;if(incumplido(x)&&esCausaPlat(x.causa)){o.pi++;o.pu+=noEnt(x)}});
+ const ws=Object.values(w).sort((a,b)=>a.s-b.s);
+ h+=`<div class="gcard"><h4>Evolución por semana</h4><table class="rtab"><thead><tr><th>Semana</th><th class="num">Despachos</th><th class="num">Programado</th><th class="num">Entregado</th><th>Cumplimiento</th><th class="num">Incumplidos por Platino</th><th class="num">No entregado por Platino</th></tr></thead><tbody>
+  ${ws.map(o=>{const f=new Date(o.s);f.setDate(f.getDate()+6);return `<tr class="rcli"><td><b>${fd(o.s).slice(0,-5)} al ${fd(f).slice(0,-5)}</b></td><td class="num">${o.n}</td><td class="num">${fmt(o.p)}</td><td class="num">${fmt(o.e)}</td><td>${barraAv(o.e,o.p)}</td><td class="num ${o.pi?'dn':''}">${o.pi||'—'}</td><td class="num ${o.pu?'dn':''}">${o.pu?fmt(o.pu):'—'}</td></tr>`}).join('')}</tbody></table></div>`;
+ // por tipo de equipo
+ const q={};r.forEach(x=>{const k=x.eqT||'Sin tipo de equipo';q[k]=q[k]||{k,n:0,p:0,e:0,pi:0};q[k].n++;q[k].p+=x.cant;q[k].e+=x.ent;if(incumplido(x)&&esCausaPlat(x.causa))q[k].pi++});
+ h+=`<div class="gcard"><h4>Por tipo de equipo</h4><table class="rtab"><thead><tr><th>Tipo de equipo</th><th class="num">Despachos</th><th>Cumplimiento</th><th class="num">Incumplidos por Platino</th><th class="num">% de sus despachos</th></tr></thead><tbody>
+  ${Object.values(q).sort((a,b)=>b.n-a.n).map(o=>`<tr class="rcli"><td><b>${esc(o.k)}</b></td><td class="num">${o.n}</td><td>${barraAv(o.e,o.p)}</td><td class="num ${o.pi?'dn':''}">${o.pi||'—'}</td><td class="num">${pctTxt(o.pi,o.n)}</td></tr>`).join('')}</tbody></table></div>`;
+ return h}
+function datosPlat(){return platFilas().filter(incumplido).sort((a,b)=>esCausaPlat(b.causa)-esCausaPlat(a.causa)||pd(a.f)-pd(b.f)).map(x=>({Fecha:x.f,Hora:x.h,Cliente:x.cli,Asesor:x.ase,Producto:x.prod,'Tipo de equipo':x.eqT||'',Equipo:x.eqC||x.entregas.map(e=>e.eq).filter(Boolean).join(', '),Programado:x.cant,Entregado:x.ent,'No entregado':noEnt(x),Causa:x.causa||'Sin causa registrada','Responsable':x.causa?respCausa(x.causa)||'':'','Atribuible a Platino':esCausaPlat(x.causa)?'Sí':'No'}))}
+const PCSS=`.pc-r{display:grid;grid-template-columns:minmax(150px,30%) 1fr 120px;gap:12px;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd,#eee)}.pc-r:last-child{border-bottom:0}
+.pc-l b{display:block;font-size:12.5px}.pc-l small,.pc-v small{display:block;font-size:10.5px;color:var(--mut,#6b6c68)}.pc-v{text-align:right;font-size:12.5px}
+.pc-b{background:var(--soft,#F4F4F1);border-radius:6px;height:14px;overflow:hidden}.pc-b i{display:block;height:100%;border-radius:6px;background:#B9BAB5}.pc-r.pt .pc-b i{background:#12130F}body.dark .pc-r.pt .pc-b i{background:#F9D600}.pc-r.pt .pc-l b::after{content:" · Platino";font-weight:600;font-size:10.5px;color:#a3271a}
+@media(max-width:700px){.pc-r{grid-template-columns:1fr 90px}.pc-b{grid-column:1/-1;order:3}}`;
+/* Causa de incumplimiento (Fernando) */
+async function guardarCausa(id){const c=$('#dCau').value;if(await guardar('ruta_causa',{id,causa:c},'Causa guardada')){closeModal();render()}}
+
+document.head.insertAdjacentHTML('beforeend','<style>'+PCSS+'</style>');
+const REPS={cumF:'Cumplimiento por fecha',dia:'Cumplimiento del día (detalle por despacho)',plat:'Incumplimiento de Transportes Platino (por causa)',desp:'Despachos programados y entregados',ase:'Cumplimiento por asesor',sal:'Saldos pendientes',cau:'Causas de incumplimiento',cal:'Validaciones de calidad (Prefabricados)',ent:'Detalle de entregas (motorista, equipo, boleta)'};
+function repData(){const t=S.repT;if(t==='plat')return datosPlat();let r=repFilas();
  if(t==='dia')return r.slice().sort((a,b)=>(b.tr==='P')-(a.tr==='P')||a.h.localeCompare(b.h)).map(x=>({Negocio:x.neg,Hora:x.h,Cliente:x.cli,Asesor:x.ase,Producto:x.prod,Transporte:x.tr==='P'?'Transportes Platino':'Cliente recoge',Programado:x.cant,Despachado:x.ent,'Cumplimiento %':x.cant?Math.round(x.ent/x.cant*1000)/10:0,Estatus:stInfo(x)[0],Causa:x.ent<x.cant?(x.causa||''):'','Boleta SAP':x.entregas.map(e=>e.bol).filter(Boolean).join(', ')}));
  if(t==='cumF'){const g={};r.forEach(x=>{const k=x.neg+'|'+x.f;g[k]=g[k]||{_d:pd(x.f),Negocio:x.neg,Fecha:x.f,Despachos:0,Programado:0,Entregado:0,Completos:0,Parciales:0,'No realizados':0,'Prog. Platino':0,'Desp. Platino':0,'Prog. Cliente':0,'Desp. Cliente':0};const o=g[k];o.Despachos++;o.Programado+=x.cant;o.Entregado+=x.ent;if(x.tr==='P'){o['Prog. Platino']+=x.cant;o['Desp. Platino']+=x.ent}else{o['Prog. Cliente']+=x.cant;o['Desp. Cliente']+=x.ent}if(x.st==='ent')o.Completos++;else if(x.st==='par')o.Parciales++;else if(x.st==='no')o['No realizados']++});
   const a=Object.values(g).sort((a,b)=>a._d-b._d).map(o=>{delete o._d;o['Cumplimiento %']=o.Programado?Math.round(o.Entregado/o.Programado*1000)/10:0;o['OTIF %']=o.Despachos?Math.round(o.Completos/o.Despachos*1000)/10:0;o['% Platino']=o['Prog. Platino']?Math.round(o['Desp. Platino']/o['Prog. Platino']*1000)/10:0;o['% Cliente']=o['Prog. Cliente']?Math.round(o['Desp. Cliente']/o['Prog. Cliente']*1000)/10:0;return o});
@@ -774,11 +826,11 @@ function vRep(){
  const draw=()=>{S.repT=$('#rT').value;const dia=S.repT==='dia';
   if(dia&&antT!=='dia')$('#rD1').value=iso(TODAY);if(!dia&&antT==='dia')$('#rD1').value=iso(addD(TODAY,-30));antT=S.repT;
   $('#rF2').style.display=dia?'none':'';$('#rL1').textContent=dia?'Día':'Desde';
-  $('#rG').innerHTML=(S.repT==='cumF'||dia)?graficosCumpl():'';const d=repData();$('#rH').innerHTML=REPS[S.repT]+` <small>${d.length} filas</small>`;
+  $('#rG').innerHTML=S.repT==='plat'?graficosPlat():(S.repT==='cumF'||dia)?graficosCumpl():'';const d=repData();$('#rH').innerHTML=REPS[S.repT]+` <small>${d.length} filas</small>`;
   $('#rV').innerHTML=d.length?'<table><tr>'+Object.keys(d[0]).map(k=>`<th>${k}</th>`).join('')+'</tr>'+d.slice(0,200).map(o=>'<tr>'+Object.values(o).map(v=>`<td class="${typeof v==='number'?'num':''}">${typeof v==='number'?fmt(v):esc(v)}</td>`).join('')+'</tr>').join('')+'</table>':'<div class="empty">Sin datos para ese filtro.</div>'};
  ['#rT','#rD1','#rD2','#rBiz','#rAse'].forEach(s=>$(s).onchange=draw);draw();
  $('#rX').onclick=()=>{const d=repData();if(!window.XLSX){toast('No se pudo cargar el generador de Excel');return}const ws=XLSX.utils.json_to_sheet(d),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Reporte');XLSX.writeFile(wb,'Duracreto_'+S.repT+'_'+$('#rD1').value+'_'+$('#rD2').value+'.xlsx')};
- $('#rP').onclick=()=>{const d=repData();if(true){printDoc(REPS[S.repT],$('#rD1').value.split('-').reverse().join('/')+(S.repT==='dia'?'':' al '+$('#rD2').value.split('-').reverse().join('/'))+' · '+$('#rBiz').selectedOptions[0].text+($('#rAse').value?' · '+$('#rAse').value:''),((S.repT==='cumF'||S.repT==='dia')?'<style>'+GCSS+'</style><div class="gwrap">'+graficosCumpl()+'</div><h2>Detalle</h2>':'')+'<table><tr>'+(d.length?Object.keys(d[0]).map(k=>`<th>${k}</th>`).join(''):'')+'</tr>'+d.map(o=>'<tr'+(o.Negocio==='TOTAL'?' class="t"':'')+'>'+Object.values(o).map(v=>`<td class="${typeof v==='number'?'n':''}">${typeof v==='number'?fmt(v):esc(v)}</td>`).join('')+'</tr>').join('')+'</table>',1);return}const w=window.open('','_blank');w.document.write(`<html><head><title>${REPS[S.repT]}</title><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"><style>body{font-family:Poppins,sans-serif;font-size:10px;margin:24px}h1{font-size:16px;margin:0}.h{border-bottom:4px solid #F9D600;padding-bottom:8px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:end}table{width:100%;border-collapse:collapse}th{background:#12130F;color:#fff;text-align:left;padding:5px}td{padding:4px 5px;border-bottom:1px solid #ddd}@page{size:landscape;margin:12mm}</style></head><body><div class="h"><div><b style="font-size:18px">DURACRETO <span style="color:#c9a800">360</span></b><h1>${REPS[S.repT]}</h1></div><div>${$('#rD1').value} a ${$('#rD2').value} · generado ${new Date().toLocaleString('es-HN')} por ${S.user.n}</div></div><table><tr>${d.length?Object.keys(d[0]).map(k=>`<th>${k}</th>`).join(''):''}</tr>${d.map(o=>'<tr>'+Object.values(o).map(v=>`<td>${typeof v==='number'?fmt(v):esc(v)}</td>`).join('')+'</tr>').join('')}</table><script>setTimeout(()=>print(),600)<\/script></body></html>`);w.document.close()}}
+ $('#rP').onclick=()=>{const d=repData();if(true){printDoc(REPS[S.repT],$('#rD1').value.split('-').reverse().join('/')+(S.repT==='dia'?'':' al '+$('#rD2').value.split('-').reverse().join('/'))+' · '+$('#rBiz').selectedOptions[0].text+($('#rAse').value?' · '+$('#rAse').value:''),((S.repT==='cumF'||S.repT==='dia'||S.repT==='plat')?'<style>'+GCSS+RCSS+PCSS+'.dn{color:#D64534}.muted{color:#6b6c68}.rks{grid-template-columns:repeat(5,1fr)}</style><div class="gwrap">'+(S.repT==='plat'?graficosPlat():graficosCumpl())+'</div><h2>'+(S.repT==='plat'?'Despachos incumplidos':'Detalle')+'</h2>':'')+'<table><tr>'+(d.length?Object.keys(d[0]).map(k=>`<th>${k}</th>`).join(''):'')+'</tr>'+d.map(o=>'<tr'+(o.Negocio==='TOTAL'?' class="t"':'')+'>'+Object.values(o).map(v=>`<td class="${typeof v==='number'?'n':''}">${typeof v==='number'?fmt(v):esc(v)}</td>`).join('')+'</tr>').join('')+'</table>',1);return}const w=window.open('','_blank');w.document.write(`<html><head><title>${REPS[S.repT]}</title><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"><style>body{font-family:Poppins,sans-serif;font-size:10px;margin:24px}h1{font-size:16px;margin:0}.h{border-bottom:4px solid #F9D600;padding-bottom:8px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:end}table{width:100%;border-collapse:collapse}th{background:#12130F;color:#fff;text-align:left;padding:5px}td{padding:4px 5px;border-bottom:1px solid #ddd}@page{size:landscape;margin:12mm}</style></head><body><div class="h"><div><b style="font-size:18px">DURACRETO <span style="color:#c9a800">360</span></b><h1>${REPS[S.repT]}</h1></div><div>${$('#rD1').value} a ${$('#rD2').value} · generado ${new Date().toLocaleString('es-HN')} por ${S.user.n}</div></div><table><tr>${d.length?Object.keys(d[0]).map(k=>`<th>${k}</th>`).join(''):''}</tr>${d.map(o=>'<tr>'+Object.values(o).map(v=>`<td>${typeof v==='number'?fmt(v):esc(v)}</td>`).join('')+'</tr>').join('')}</table><script>setTimeout(()=>print(),600)<\/script></body></html>`);w.document.close()}}
 
 /* ========== BASES DE DATOS ========== */
 function vBd(){const T={cli:'Clientes',ase:'Asesores',eq:'Equipos Transportes Platino',cap:'Capacidades por equipo',prod:'Productos',cau:'Causas',bit:'Bitácora'};if(!T[S.bdTab])S.bdTab='cli';
