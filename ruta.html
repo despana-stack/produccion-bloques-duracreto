@@ -139,7 +139,7 @@ select,input,textarea{font-family:inherit;padding:8px 9px;border:1px solid var(-
 .empty{padding:30px;text-align:center;color:var(--mut)}
 a{color:var(--info)}body.dark a{color:#8db8ea}
 .grid>*{min-width:0}
-:root{--cProg:#2F6FB5;--cEnt:#D97A0F}body.dark{--cProg:#4A86D4;--cEnt:#D67A16}
+:root{--cProg:#2F6FB5;--cEnt:#D97A0F;--cProgT:#D5E1EF;--cEnt2:#2F6FB5}body.dark{--cProg:#4A86D4;--cEnt:#D67A16;--cProgT:#2C3A4D;--cEnt2:#5B95DE}
 .gwrap{display:grid;gap:14px;margin-bottom:14px}.gks{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .gk{background:var(--card);border:1px solid var(--bd);border-top:4px solid var(--biz);border-radius:12px;padding:10px 12px}.gk .l{font-size:11.5px;color:var(--mut)}.gk .v{font-size:21px;font-weight:700;margin:2px 0}.gk .s{font-size:11.5px;color:var(--mut)}.gk .s b{color:var(--tx)}
 .gcard{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;overflow-x:auto}.gcard h4{margin:0 0 4px;font-size:13.5px}
@@ -264,32 +264,72 @@ function toast(t){const e=$('#toast');e.innerHTML=t;e.style.display='block';clea
 /* ---------- usuarios y permisos (demo) ---------- */
 const ROLN={ADMIN:'Administrador',PROGRAMADOR:'Programador de despachos',DESPACHO:'Despachador',CALIDAD:'Control de Calidad',CONSULTA:'Consulta'};
 const BIZ={B:{n:'Bloques',c:'#F9D600',u:'unid.',cap:28000,capL:'28,000 unid./día'},P:{n:'Prefabricados',c:'#F2F2EE',u:'piezas',cap:6,capL:'6 viajes/día'}};
-/* ========== RESUMEN EJECUTIVO (gerencia) ========== */
-function rangoRes(k){const h=pd(TODAY);if(k==='sem'){const d=new Date(h);d.setDate(h.getDate()-((h.getDay()+6)%7));return [d,h]}
- if(k==='30')return [pd(addD(TODAY,-29)),h];if(k==='mesant'){const a=new Date(h.getFullYear(),h.getMonth()-1,1),b=new Date(h.getFullYear(),h.getMonth(),0);return [a,b]}
- return [new Date(h.getFullYear(),h.getMonth(),1),h]}
-const RESP={sem:'Esta semana',mes:'Este mes',30:'Últimos 30 días',mesant:'Mes anterior'};
-function vRes(){const k=S.resP||'mes',[d1,d2]=rangoRes(k),c=GC.app;
- const filas=b=>(b==='B'?D.B:D.P).filter(x=>{const t=pd(x.f);return t>=d1&&t<=d2&&x.req!=='pend'&&x.req!=='rech'});
- const hoyF=b=>(b==='B'?D.B:D.P).filter(x=>x.f===TODAY&&x.req!=='pend'&&x.req!=='rech');
- const tarjeta=b=>{const r=filas(b),t=sumas(r),pl=sumas(r.filter(x=>x.tr==='P')),cl=sumas(r.filter(x=>x.tr!=='P')),h=sumas(hoyF(b)),u=BIZ[b].u;
-  const cau={};r.filter(x=>x.ent<x.cant&&x.causa).forEach(x=>cau[x.causa]=(cau[x.causa]||0)+1);const top=Object.entries(cau).sort((a,b)=>b[1]-a[1]).slice(0,4);
-  const g={};r.forEach(x=>{g[x.f]=g[x.f]||{lbl:x.f,_d:pd(x.f),p:0,e:0};g[x.f].p+=x.cant;g[x.f].e+=x.ent});const dias=Object.values(g).sort((a,b)=>a._d-b._d);
-  const inv=(b==='B'?D.invB:D.invP)||[];
-  const k4=(l,v,s)=>`<div class="gk"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
-  return `<section class="rsec"><h3 class="rtit"><span class="bchip ${b}">${BIZ[b].n}</span><small>${RESP[k]} · ${fd(d1)} al ${fd(d2)}</small></h3>
-  <div class="gks">${k4('Cumplimiento',pctTxt(t.e,t.p),fmt(t.e)+' de '+fmt(t.p)+' '+u)}${k4('Despachos completos',pctTxt(t.c,t.n),t.c+' de '+t.n+' despachos')}${k4('Transportes Platino',pctTxt(pl.e,pl.p),pl.n+' despachos')}${k4('Cliente recoge',pctTxt(cl.e,cl.p),cl.n+' despachos')}</div>
-  <div class="grid g2" style="margin-top:14px"><div class="gcard"><h4>Programado contra despachado por día</h4>${leyenda(c)}${dias.length?svgVBar(dias,c):'<div class="empty">Sin despachos en el período.</div>'}</div>
-  <div style="display:grid;gap:14px;align-content:start">
-   <div class="gcard"><h4>Hoy · ${largo(TODAY)}</h4><div class="rhoy"><div><b>${fmt(h.p)}</b><span>programado</span></div><div><b>${fmt(h.e)}</b><span>despachado</span></div><div><b>${pctTxt(h.e,h.p)}</b><span>avance</span></div></div></div>
-   <div class="gcard"><h4>Principales causas de incumplimiento</h4>${top.length?top.map(([n,v])=>`<div class="hbar" style="grid-template-columns:1fr 34px"><span>${esc(n)}</span><span class="num"><b>${v}</b></span></div>`).join(''):'<div class="muted" style="font-size:12px">Sin incumplimientos registrados.</div>'}</div>
-   <div class="gcard"><h4>Inventario disponible</h4>${!D.conteo[b]?'<div class="muted" style="font-size:12px">Pendiente del conteo físico inicial.</div>':inv.filter(i=>i.disp||i.cur).map(i=>`<div class="hbar" style="grid-template-columns:1fr 90px"><span>${esc(i.p)}</span><span class="num"><b>${fmt(i.disp)}</b></span></div>`).join('')||'<div class="muted" style="font-size:12px">Sin existencias.</div>'}</div>
-  </div></div></section>`};
- $('#main').innerHTML=`<div class="tools"><h2 style="margin:0">Resumen ejecutivo · Despachos</h2><span class="sp"></span><div class="subtabs" style="margin:0">${Object.entries(RESP).map(([kk,v])=>`<button class="${kk===k?'on':''}" onclick="S.resP='${kk}';render()">${v}</button>`).join('')}</div></div>
- ${S.user.biz.map(tarjeta).join('')}<p class="muted" style="font-size:11.5px">Para el detalle por día o por despacho, use <a href="#" onclick="S.sec='rep';S.repT='dia';render();return false">Reportes</a> (PDF y Excel).</p>`}
+/* ========== RESUMEN: comprometido, entregado y pendiente por cliente o por producto ========== */
+function rangoRes(k){const h=pd(TODAY);if(k==='sem'){const d=new Date(h);d.setDate(h.getDate()-((h.getDay()+6)%7));const f=new Date(d);f.setDate(d.getDate()+6);return [d,f]}
+ if(k==='30')return [pd(addD(TODAY,-29)),pd(addD(TODAY,14))];if(k==='mesant'){const a=new Date(h.getFullYear(),h.getMonth()-1,1),b=new Date(h.getFullYear(),h.getMonth(),0);return [a,b]}
+ if(k==='abierto')return [new Date(2000,0,1),new Date(2100,0,1)];
+ return [new Date(h.getFullYear(),h.getMonth(),1),new Date(h.getFullYear(),h.getMonth()+1,0)]}
+const RESP={abierto:'Todo lo pendiente',sem:'Esta semana',mes:'Este mes',30:'Últimos 30 días',mesant:'Mes anterior'};
+const ESTO=['Atrasado','Esta semana','Programado','Completo','Cerrado'];
+function estadoDesp(x){if(x.st==='ent'&&!x.cerr)return 'Completo';if(x.st==='no'||x.cerr)return 'Cerrado';const d=pd(x.f),h=pd(TODAY);
+ if(d<h)return 'Atrasado';if(d<=pd(addD(TODAY,6)))return 'Esta semana';return 'Programado'}
+const abierto=x=>x.st==='prog'||x.st==='par';
+const pillEst=e=>`<span class="rpill r-${{'Atrasado':'a','Esta semana':'s','Programado':'p','Completo':'c','Cerrado':'x'}[e]}">${e}</span>`;
+function resDatos(){const k=S.resP||'abierto',[d1,d2]=rangoRes(k),b=S.resB||S.biz,q=nz(S.resQ||'');
+ return (b==='B'?D.B:D.P).filter(x=>{const t=pd(x.f);return t>=d1&&t<=d2&&x.req!=='pend'&&x.req!=='rech'&&(k!=='abierto'||abierto(x))&&(!q||nz(x.cli).includes(q)||nz(x.prod).includes(q)||nz(x.ase).includes(q))})}
+function agrupar(r,clave){const g={};r.forEach(x=>{const k=clave(x);const o=g[k]=g[k]||{k,x,comp:0,ent:0,pend:0,atr:0,sem:0,n:0,abiertos:0,dias:0,prox:null,est:'Cerrado',clientes:new Set(),hijos:[]};
+  const e=estadoDesp(x),s=abierto(x)?saldo(x):0;o.comp+=x.cant;o.ent+=x.ent;o.pend+=s;o.n++;o.clientes.add(x.cli);o.hijos.push(x);
+  if(abierto(x)){o.abiertos++;if(e==='Atrasado'){o.atr+=s;o.dias=Math.max(o.dias,Math.round((pd(TODAY)-pd(x.f))/864e5))}if(e==='Esta semana')o.sem+=s;if(e!=='Atrasado'&&(!o.prox||pd(x.f)<pd(o.prox)))o.prox=x.f}
+  if(ESTO.indexOf(e)<ESTO.indexOf(o.est))o.est=e});
+ return Object.values(g)}
+function resTablaCliente(r){const cl=agrupar(r,x=>x.cli).sort((a,b)=>ESTO.indexOf(a.est)-ESTO.indexOf(b.est)||b.pend-a.pend);
+ return {n:cl.length,html:cl.map(c=>{const pr=agrupar(c.hijos,x=>x.prod).sort((a,b)=>b.pend-a.pend);
+  return `<tbody class="rgrp"><tr class="rcli"><td><b>${esc(c.k)}</b><small>${esc(c.x.ase)} · ${c.n} despacho${c.n>1?'s':''}</small></td><td>${pr.length===1?esc(pr[0].k):`<span class="muted">${pr.length} productos</span>`}</td>
+   <td class="num">${fmt(c.comp)}</td><td class="num">${fmt(c.ent)}</td><td class="num"><b>${fmt(c.pend)}</b></td><td>${barraAv(c.ent,c.comp)}</td><td>${c.dias?`<b class="dn">${c.dias} d</b>`:c.prox?esc(c.prox):'—'}</td><td>${pillEst(c.est)}</td></tr>
+   ${pr.length>1?pr.map(p=>`<tr class="rsub"><td></td><td>${esc(p.k)}</td><td class="num">${fmt(p.comp)}</td><td class="num">${fmt(p.ent)}</td><td class="num">${fmt(p.pend)}</td><td>${barraAv(p.ent,p.comp)}</td><td>${p.dias?`<span class="dn">${p.dias} d</span>`:p.prox?esc(p.prox):'—'}</td><td>${pillEst(p.est)}</td></tr>`).join(''):''}</tbody>`}).join(''),
+  filas:cl.flatMap(c=>agrupar(c.hijos,x=>x.prod).map(p=>({Cliente:c.k,Asesor:c.x.ase,Producto:p.k,Comprometido:p.comp,Entregado:p.ent,Pendiente:p.pend,'% entregado':p.comp?Math.round(p.ent/p.comp*1000)/10:0,'Días de atraso':p.dias,'Próxima entrega':p.prox||'',Estado:p.est})))}}
+function resTablaProducto(r){const b=S.resB||S.biz,inv=(b==='B'?D.invB:D.invP)||[],cont=!!D.conteo[b];
+ const pr=agrupar(r,x=>x.prod).sort((a,b)=>b.pend-a.pend);
+ const fila=p=>{const i=inv.find(z=>z.p===p.k),disp=cont&&i?i.disp:null;return {p,disp,falta:disp==null?null:Math.max(0,p.pend-disp)}};
+ const L=pr.map(fila);
+ return {n:pr.length,html:`<tbody>${L.map(({p,disp,falta})=>`<tr class="rcli"><td><b>${esc(p.k)}</b><small>${p.clientes.size} cliente${p.clientes.size>1?'s':''} · ${p.abiertos} despacho${p.abiertos!==1?'s':''} abierto${p.abiertos!==1?'s':''}</small></td>
+  <td class="num">${fmt(p.comp)}</td><td class="num">${fmt(p.ent)}</td><td class="num"><b>${fmt(p.pend)}</b></td><td class="num ${p.atr?'dn':''}">${p.atr?fmt(p.atr):'—'}</td><td class="num">${p.sem?fmt(p.sem):'—'}</td>
+  <td class="num">${disp==null?'<span class="muted">sin conteo</span>':fmt(disp)}</td><td class="num">${falta==null?'—':falta?`<b class="dn">${fmt(falta)}</b>`:'<span class="up">cubierto</span>'}</td></tr>`).join('')}</tbody>`,
+  filas:L.map(({p,disp,falta})=>({Producto:p.k,Clientes:p.clientes.size,'Despachos abiertos':p.abiertos,Comprometido:p.comp,Entregado:p.ent,Pendiente:p.pend,'Pendiente atrasado':p.atr,'Vence esta semana':p.sem,'Inventario disponible':disp==null?'':disp,'Por producir':falta==null?'':falta}))}}
+const barraAv=(e,p)=>`<div class="rav"><div class="gtrack sm"><i style="width:${Math.min(100,p?e/p*100:0)}%"></i></div><span>${p?Math.round(e/p*100):0} %</span></div>`;
+function vRes(){const k=S.resP||'abierto',vista=S.resV||'cli',b=S.resB||S.biz,r=resDatos(),u=BIZ[b].u;
+ const t=sumas(r),pend=r.filter(abierto).reduce((s,x)=>s+saldo(x),0),atr=r.filter(x=>abierto(x)&&estadoDesp(x)==='Atrasado'),sem=r.filter(x=>abierto(x)&&estadoDesp(x)==='Esta semana');
+ const T=vista==='cli'?resTablaCliente(r):resTablaProducto(r);
+ const kp=(l,v,s,c)=>`<div class="rk ${c||''}"><span>${l}</span><b>${v}</b><small>${s}</small></div>`;
+ $('#main').innerHTML=`<div class="rhead"><div><h2 style="margin:0">Resumen</h2><div class="muted" style="font-size:12px">${BIZ[b].n} · ${RESP[k]}${k==='abierto'?'':' · '+fd(rangoRes(k)[0])+' al '+fd(rangoRes(k)[1])} · ${u}</div></div><span class="sp"></span>
+  <div class="tools" style="margin:0">${S.user.biz.length>1?`<select id="zB">${S.user.biz.map(z=>`<option value="${z}" ${z===b?'selected':''}>${BIZ[z].n}</option>`).join('')}</select>`:''}
+  <select id="zP">${Object.entries(RESP).map(([kk,v])=>`<option value="${kk}" ${kk===k?'selected':''}>${v}</option>`).join('')}</select>
+  <button class="btn sec sm" id="zX">Excel</button><button class="btn dk sm" id="zF">PDF</button></div></div>
+ <div class="rks">${kp('Comprometido',fmt(t.p),t.n+' despachos')}${kp('Entregado',fmt(t.e),pctTxt(t.e,t.p)+' de lo comprometido','ok')}${kp('Pendiente',fmt(pend),r.filter(abierto).length+' despachos abiertos','pe')}
+  ${kp('Atrasado',fmt(atr.reduce((s,x)=>s+saldo(x),0)),atr.length+' despachos con fecha vencida',atr.length?'al':'')}${kp('Vence esta semana',fmt(sem.reduce((s,x)=>s+saldo(x),0)),sem.length+' despachos')}</div>
+ <div class="card"><div class="tools"><div class="seg" style="min-width:250px"><button class="${vista==='cli'?'on':''}" data-v="cli">Por cliente</button><button class="${vista==='prod'?'on':''}" data-v="prod">Por producto</button></div>
+  <input id="zQ" placeholder="Buscar cliente, producto o asesor…" value="${esc(S.resQ||'')}" style="min-width:240px"><span class="sp"></span><span class="muted" style="font-size:12px">${T.n} ${vista==='cli'?'clientes':'productos'}</span></div>
+  <div style="overflow-x:auto"><table class="rtab">${vista==='cli'?'<thead><tr><th>Cliente</th><th>Producto</th><th class="num">Comprometido</th><th class="num">Entregado</th><th class="num">Pendiente</th><th>Avance</th><th>Atraso / próxima</th><th>Estado</th></tr></thead>':'<thead><tr><th>Producto</th><th class="num">Comprometido</th><th class="num">Entregado</th><th class="num">Pendiente</th><th class="num">Atrasado</th><th class="num">Vence esta semana</th><th class="num">Inventario disponible</th><th class="num">Por producir</th></tr></thead>'}
+  ${T.n?T.html:`<tbody><tr><td colspan="8" class="empty">Sin despachos ${k==='abierto'?'pendientes':'en el período'}.</td></tr></tbody>`}</table></div></div>
+ <p class="muted" style="font-size:11px">Comprometido = lo programado en el período. Pendiente = saldo de los despachos abiertos (no incluye saldos cerrados ni no realizados). Atrasado = pendiente con fecha programada vencida.</p>`;
+ if($('#zB'))$('#zB').onchange=e=>{S.resB=e.target.value;render()};
+ $('#zP').onchange=e=>{S.resP=e.target.value;render()};
+ document.querySelectorAll('.seg [data-v]').forEach(x=>x.onclick=()=>{S.resV=x.dataset.v;render()});
+ let tq;$('#zQ').oninput=e=>{clearTimeout(tq);tq=setTimeout(()=>{S.resQ=e.target.value;const p=e.target.selectionStart;render();const i=$('#zQ');i.focus();i.setSelectionRange(p,p)},350)};
+ const titulo=()=>'Resumen de despachos '+(vista==='cli'?'por cliente':'por producto')+' · '+BIZ[b].n;
+ $('#zX').onclick=()=>{if(!window.XLSX){toast('No se pudo cargar el generador de Excel');return}const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(T.filas),vista==='cli'?'Por cliente':'Por producto');XLSX.writeFile(wb,'Ruta360_Resumen_'+(vista==='cli'?'clientes':'productos')+'_'+iso(TODAY)+'.xlsx')};
+ $('#zF').onclick=()=>printDoc(titulo(),RESP[k]+' · corte '+fechaLarga(),`<style>${GCSS}${RCSS}.dn{color:#D64534}.up{color:#2E9B57}.muted{color:#6b6c68}</style>${$('.rks').outerHTML}<table class="rtab">${$('.rtab').innerHTML}</table>`,1)}
+const RCSS=`.rks{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:0 0 12px}.rk{background:var(--card,#fff);border:1px solid var(--bd,#ddd);border-radius:12px;padding:10px 12px;border-left:5px solid var(--gris,#A0A19F)}
+.rk span{font-size:11.5px;color:var(--mut,#6b6c68);display:block}.rk b{font-size:21px;display:block;margin:2px 0}.rk small{font-size:11px;color:var(--mut,#6b6c68)}.rk.ok{border-left-color:#2E9B57}.rk.pe{border-left-color:#2F6FB5}.rk.al{border-left-color:#D64534}
+.rtab{width:100%;border-collapse:collapse;font-size:12px}.card .rtab th{position:sticky;top:0;background:var(--card,#fff)}.rtab .num{text-align:right}.rtab tr.rcli td{border-top:1px solid var(--bd,#ddd);padding-top:9px;padding-bottom:9px}.rtab tr.rcli td small{display:block;color:var(--mut,#6b6c68);font-size:10.5px}
+.rtab tr.rsub td{border-bottom:0;padding-top:3px;padding-bottom:3px;font-size:11.5px;color:var(--mut,#6b6c68)}.rtab tbody.rgrp{break-inside:avoid;page-break-inside:avoid}
+.rav{display:flex;align-items:center;gap:6px;min-width:110px}.rav .gtrack{flex:1}.rav span{font-size:11px;min-width:34px;text-align:right}
+.rpill{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap}.r-a{background:#FBDCD8;color:#a3271a}.r-s{background:#FFE9C7;color:#8a5600}.r-p{background:#E3ECF7;color:#2f5d8f}.r-c{background:#DDF2E4;color:#237a44}.r-x{background:#E9E9E4;color:#555}
+.rhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+@media(max-width:900px){.rks{grid-template-columns:1fr 1fr}}`;
 
 const SECS=[
- {k:'res',n:'Resumen',i:'◎',r:['ADMIN','CONSULTA']},
+ {k:'res',n:'Resumen',i:'◎',r:['ADMIN','PROGRAMADOR','CONSULTA']},
  {k:'tab',n:'Tablero',i:'▦',r:['ADMIN','PROGRAMADOR','CONSULTA','DESPACHO','CALIDAD']},
  {k:'prog',n:'Programación',i:'🗓',r:['ADMIN','PROGRAMADOR']},
  {k:'sal',n:'Saldos y solicitudes',i:'↺',r:['ADMIN','PROGRAMADOR'],badge:()=>pendSol().length+pendReq().length+AUT[S.biz].length},
@@ -501,7 +541,7 @@ function eliminar(id){const x=recs().find(x=>x.id===id);
  modal('Eliminar programación',`<p style="margin-top:0">¿Eliminar la programación <b>${x.id}</b> de <b>${esc(x.cli)}</b> (${fmt(x.cant)} ${x.prod}, ${x.f} ${x.h})?</p><p class="muted" style="font-size:12px">Libera el inventario comprometido y desaparece de la lista de los despachadores. Queda registrado en la bitácora quién la eliminó.</p>
  <div style="display:flex;gap:8px"><button class="btn no" id="dOk" style="flex:1">Sí, eliminar</button><button class="btn sec" onclick="closeModal()" style="flex:1">Cancelar</button></div>`);
  $('#dOk').onclick=async()=>{if(await guardar('ruta_eliminar',{id},'Programación eliminada')){closeModal();render()}}}
-const PDFCSS=`body{font-family:Poppins,sans-serif;font-size:11px;margin:24px;color:#1d1e1a}h1{font-size:17px;margin:2px 0 0}h2{font-size:13px;margin:18px 0 6px;padding:5px 8px;background:#F4F4F1;border-left:5px solid #F9D600}.h{border-bottom:4px solid #F9D600;padding-bottom:8px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:end;gap:12px}table{width:100%;border-collapse:collapse}th{background:#12130F;color:#fff;text-align:left;padding:5px 6px}td{padding:5px 6px;border-bottom:1px solid #ddd}td.n,th.n{text-align:right}tr.t td{font-weight:700;background:#fafaf6}.k{display:flex;gap:10px;margin:8px 0}.k div{flex:1;border:1px solid #ddd;border-top:4px solid #F9D600;border-radius:8px;padding:6px 10px}.k b{display:block;font-size:16px}@page{margin:12mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}.gwrap{display:block}.gks{display:flex;gap:8px;margin:8px 0}.gk{flex:1;border:1px solid #ddd;border-top:4px solid #F9D600;border-radius:8px;padding:6px 10px}.gk .l{color:#6b6c68}.gk .v{font-size:16px;font-weight:700}.gk .s{color:#6b6c68}.gcard{border:1px solid #ddd;border-radius:8px;padding:8px 12px;margin:8px 0;page-break-inside:avoid}.gcard h4{margin:0 0 4px;font-size:12px}.glg{display:flex;gap:12px;color:#6b6c68;margin-bottom:6px}.glg i{display:inline-block;width:12px;height:10px;border-radius:3px;margin-right:4px}`;
+const PDFCSS=`body{font-family:Poppins,sans-serif;font-size:11px;margin:24px;color:#1d1e1a}table{font-size:10px}th{font-size:9.5px}h1{font-size:17px;margin:2px 0 0}h2{font-size:13px;margin:18px 0 6px;padding:5px 8px;background:#F4F4F1;border-left:5px solid #F9D600}.h{border-bottom:4px solid #F9D600;padding-bottom:8px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:end;gap:12px}table{width:100%;border-collapse:collapse}th{background:#12130F;color:#fff;text-align:left;padding:5px 6px}td{padding:5px 6px;border-bottom:1px solid #ddd}td.n,th.n{text-align:right}tr.t td{font-weight:700;background:#fafaf6}.k{display:flex;gap:10px;margin:8px 0}.k div{flex:1;border:1px solid #ddd;border-top:4px solid #F9D600;border-radius:8px;padding:6px 10px}.k b{display:block;font-size:16px}@page{margin:12mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}.gwrap{display:block}.gks{display:flex;gap:8px;margin:8px 0}.gk{flex:1;border:1px solid #ddd;border-top:4px solid #F9D600;border-radius:8px;padding:6px 10px}.gk .l{color:#6b6c68}.gk .v{font-size:16px;font-weight:700}.gk .s{color:#6b6c68}.gcard{border:1px solid #ddd;border-radius:8px;padding:8px 12px;margin:8px 0;page-break-inside:avoid}.gcard h4{margin:0 0 4px;font-size:12px}.glg{display:flex;gap:12px;color:#6b6c68;margin-bottom:6px}.glg i{display:inline-block;width:12px;height:10px;border-radius:3px;margin-right:4px}`;
 function printDoc(title,sub,body,land){const w=window.open('','_blank');w.document.write(`<html><head><meta charset="utf-8"><title>${title}</title><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"><style>${PDFCSS}${land?'@page{size:landscape}':''}</style></head><body><div class="h"><div><b style="font-size:18px">RUTA <span style="color:#c9a800">360</span></b> <span style="color:#6b6c68">· Duracreto</span><h1>${title}</h1><div style="color:#6b6c68">${sub}</div></div><div style="text-align:right;color:#6b6c68">Generado ${new Date().toLocaleString('es-HN')}<br>por ${S.user.n}</div></div>${body}<script>setTimeout(()=>print(),700)<\/script></body></html>`);w.document.close()}
 function tablaTr(rows,titulo){if(!rows.length)return `<h2>${titulo}</h2><p style="color:#6b6c68">Sin despachos.</p>`;
  return `<h2>${titulo} · ${rows.length} despacho${rows.length>1?'s':''}</h2><table><tr><th>Hora</th><th>Cliente</th><th>Asesor</th><th>Producto</th><th class="n">Cantidad programada</th></tr>${rows.map(x=>`<tr><td>${x.h}</td><td>${esc(x.cli)}</td><td>${esc(x.ase)}</td><td>${x.prod}</td><td class="n">${fmt(x.cant)}</td></tr>`).join('')}<tr class="t"><td colspan="4">Total</td><td class="n">${fmt(rows.reduce((s,x)=>s+x.cant,0))}</td></tr></table>`}
@@ -654,47 +694,53 @@ function vInv(){const inv=S.biz==='B'?D.invB:D.invP;
  <table><tr><th>Producto</th>${dias.map(d=>`<th class="num">${d.slice(0,-5)}</th>`).join('')}<th class="num">Total</th></tr>${prods.map(p=>{const v=dias.map(d=>D.prodD.filter(x=>x.f===d&&x.p===p).reduce((s,x)=>s+x.u,0));return `<tr><td><b>${p}</b></td>${v.map(n=>`<td class="num">${n?fmt(n):'—'}</td>`).join('')}<td class="num"><b>${fmt(v.reduce((a,b)=>a+b,0))}</b></td></tr>`}).join('')}</table></div>`}
 
 /* ========== REPORTES ========== */
-/* ========== GRÁFICOS DE CUMPLIMIENTO (Reportes) ========== */
-/* Paleta validada (scripts/validate_palette.js): claro #2F6FB5 / #D97A0F · oscuro #4A86D4 / #D67A16 */
-const GC={app:{p:'var(--cProg)',e:'var(--cEnt)',tx:'var(--tx)',mu:'var(--mut)',gr:'var(--bd)',sf:'var(--card)'},pdf:{p:'#2F6FB5',e:'#D97A0F',tx:'#1d1e1a',mu:'#6b6c68',gr:'#dddddb',sf:'#ffffff'}};
+/* ========== GRÁFICOS DE CUMPLIMIENTO (Reportes) ==========
+   Barras en HTML (se adaptan al ancho y se imprimen igual en PDF). Programado = pista clara; despachado = relleno sólido. */
+const GC={app:{},pdf:{}};
 const pctTxt=(e,p)=>p?Math.round(e/p*1000)/10+' %':'—';
+const pctN=(e,p)=>p?Math.min(1.1,e/p):0;
 function repFilas(){const d1=pd(fromIso($('#rD1').value)),d2=S.repT==='dia'?d1:pd(fromIso($('#rD2').value)),bz=$('#rBiz').value,ase=$('#rAse').value;
  let r=[];['B','P'].filter(b=>bz==='T'||b===bz).forEach(b=>(b==='B'?D.B:D.P).forEach(x=>{const t2=pd(x.f);if(t2>=d1&&t2<=d2&&(!ase||x.ase===ase))r.push(Object.assign({neg:BIZ[b].n},x))}));
  return r.filter(x=>x.req!=='pend'&&x.req!=='rech')}
-function sumas(r){const o={p:0,e:0,n:r.length,c:0};r.forEach(x=>{o.p+=x.cant;o.e+=Math.min(x.ent,x.cant*1.1);if(x.st==='ent'&&!x.cerr)o.c++});return o}
-const leyenda=c=>`<div class="glg"><span><i style="background:${c.p}"></i>Programado</span><span><i style="background:${c.e}"></i>Despachado</span></div>`;
-/* Barras horizontales agrupadas: filas [{lbl,sub,p,e}] */
-function svgHBar(filas,c,ancho=640){const L=170,R=86,bh=11,gap=2,rowH=bh*2+gap+16,W=ancho,H=filas.length*rowH+8,max=Math.max(1,...filas.map(f=>Math.max(f.p,f.e))),sx=v=>(W-L-R)*v/max;
- let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Programado contra despachado" style="max-width:${W}px;display:block;font-family:Poppins,sans-serif">`;
- filas.forEach((f,i)=>{const y=i*rowH+6,cp=f.p?f.e/f.p:0;
-  s+=`<g class="gbar"><title>${esc(f.lbl)}${f.sub?' · '+esc(f.sub):''}\nProgramado: ${fmt(f.p)}\nDespachado: ${fmt(f.e)}\nCumplimiento: ${pctTxt(f.e,f.p)}</title><rect x="0" y="${y-4}" width="${W}" height="${rowH-2}" fill="transparent"/>
-  <text x="${L-8}" y="${y+bh}" text-anchor="end" font-size="11.5" font-weight="600" fill="${c.tx}">${esc(String(f.lbl).slice(0,24))}</text>${f.sub?`<text x="${L-8}" y="${y+bh*2+gap+1}" text-anchor="end" font-size="10" fill="${c.mu}">${esc(String(f.sub).slice(0,28))}</text>`:''}
-  <rect x="${L}" y="${y}" width="${Math.max(2,sx(f.p))}" height="${bh}" rx="3" fill="${c.p}"/><rect x="${L}" y="${y+bh+gap}" width="${Math.max(f.e?2:0,sx(f.e))}" height="${bh}" rx="3" fill="${c.e}"/>
-  <text x="${L+Math.max(sx(f.p),sx(f.e))+6}" y="${y+bh+5}" font-size="11.5" font-weight="700" fill="${c.tx}">${pctTxt(f.e,f.p)}</text></g>`});
- return s+'</svg>'}
-/* Barras verticales agrupadas por día: filas [{lbl,p,e}] */
-function svgVBar(filas,c){const n=filas.length,L=52,B=34,T=14,H=230,slot=Math.max(22,Math.min(56,620/n)),W=L+slot*n+10,max=Math.max(1,...filas.map(f=>Math.max(f.p,f.e))),
- nice=(()=>{const m=Math.pow(10,Math.floor(Math.log10(max)));return Math.ceil(max/m)*m})(),sy=v=>(H-B-T)*v/nice,bw=Math.max(5,(slot-8)/2);
- let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Programado contra despachado por día" style="max-width:${Math.max(W,320)}px;display:block;font-family:Poppins,sans-serif">`;
- for(let k=0;k<=4;k++){const v=nice*k/4,y=H-B-sy(v);s+=`<line x1="${L}" x2="${W}" y1="${y}" y2="${y}" stroke="${c.gr}" stroke-width="1"/><text x="${L-6}" y="${y+4}" text-anchor="end" font-size="10" fill="${c.mu}">${v>=1000?Math.round(v/100)/10+'k':Math.round(v)}</text>`}
- filas.forEach((f,i)=>{const x=L+i*slot+4;
-  s+=`<g class="gbar"><title>${esc(f.lbl)}\nProgramado: ${fmt(f.p)}\nDespachado: ${fmt(f.e)}\nCumplimiento: ${pctTxt(f.e,f.p)}</title><rect x="${L+i*slot}" y="${T}" width="${slot}" height="${H-B-T}" fill="transparent"/>
-  <rect x="${x}" y="${H-B-sy(f.p)}" width="${bw}" height="${Math.max(1,sy(f.p))}" rx="3" fill="${c.p}"/><rect x="${x+bw+2}" y="${H-B-sy(f.e)}" width="${bw}" height="${Math.max(f.e?1:0,sy(f.e))}" rx="3" fill="${c.e}"/>
-  ${n<=16||i%Math.ceil(n/16)===0?`<text x="${L+i*slot+slot/2}" y="${H-B+14}" text-anchor="middle" font-size="10" fill="${c.mu}">${esc(f.lbl.split('/').slice(0,2).join('/'))}</text>`:''}</g>`});
- return s+`<line x1="${L}" x2="${W}" y1="${H-B}" y2="${H-B}" stroke="${c.mu}" stroke-width="1"/></svg>`}
-function kpisCumpl(r,c){const t=sumas(r),pl=sumas(r.filter(x=>x.tr==='P')),cl=sumas(r.filter(x=>x.tr!=='P'));
- const k=(l,v,s)=>`<div class="gk"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
- return `<div class="gks">${k('Programado',fmt(t.p),t.n+' despachos')}${k('Despachado',fmt(t.e),'Cumplimiento <b>'+pctTxt(t.e,t.p)+'</b>')}${k('Transportes Platino',pctTxt(pl.e,pl.p),fmt(pl.e)+' de '+fmt(pl.p)+' · '+pl.n+' desp.')}${k('Cliente recoge',pctTxt(cl.e,cl.p),fmt(cl.e)+' de '+fmt(cl.p)+' · '+cl.n+' desp.')}</div>`}
-function graficosCumpl(modo){const c=GC[modo],r=repFilas();if(!r.length)return '';
- const pl=sumas(r.filter(x=>x.tr==='P')),cl=sumas(r.filter(x=>x.tr!=='P'));
- let h=kpisCumpl(r,c)+`<div class="gcard"><h4>Cumplimiento por transporte</h4>${leyenda(c)}${svgHBar([{lbl:'Transportes Platino',sub:pl.n+' despachos',p:pl.p,e:pl.e},{lbl:'Cliente recoge',sub:cl.n+' despachos',p:cl.p,e:cl.e}],c)}</div>`;
- if(S.repT==='cumF'){const g={};r.forEach(x=>{g[x.f]=g[x.f]||{lbl:x.f,_d:pd(x.f),p:0,e:0};g[x.f].p+=x.cant;g[x.f].e+=Math.min(x.ent,x.cant*1.1)});
-  h+=`<div class="gcard"><h4>Programado contra despachado por día</h4>${leyenda(c)}${svgVBar(Object.values(g).sort((a,b)=>a._d-b._d),c)}</div>`}
- else{const orden=r.slice().sort((a,b)=>(a.tr==='P')-(b.tr==='P')||a.h.localeCompare(b.h));
+function sumas(r){const o={p:0,e:0,n:r.length,c:0};r.forEach(x=>{o.p+=x.cant;o.e+=x.ent;if(x.st==='ent'&&!x.cerr)o.c++});return o}
+const leyenda=()=>`<div class="glg"><span><i class="kp"></i>Programado</span><span><i class="ke"></i>Despachado</span></div>`;
+/* Medidor: % grande + barra + cifras */
+function medidor(t,s,sub){const p=pctN(s.e,s.p);return `<div class="gm"><div class="gm-h"><span>${t}</span><b>${pctTxt(s.e,s.p)}</b></div><div class="gtrack"><i style="width:${Math.min(100,p*100)}%"></i></div><div class="gm-s">${fmt(s.e)} de ${fmt(s.p)} · ${sub}</div></div>`}
+/* Filas horizontales: [{lbl,sub,p,e}] — pista = programado, relleno = despachado */
+function filasBarras(filas){const max=Math.max(1,...filas.map(f=>Math.max(f.p,f.e)));
+ return `<div class="gh">${filas.map(f=>`<div class="gh-r" title="${esc(f.lbl)} · programado ${fmt(f.p)} · despachado ${fmt(f.e)} · ${pctTxt(f.e,f.p)}"><div class="gh-l"><b>${esc(f.lbl)}</b>${f.sub?`<small>${esc(f.sub)}</small>`:''}</div>
+  <div class="gh-b"><div class="gtrack sm" style="width:${Math.max(2,f.p/max*100)}%"><i style="width:${Math.min(100,pctN(f.e,f.p)*100)}%"></i></div></div><div class="gh-v"><b>${pctTxt(f.e,f.p)}</b><small>${fmt(f.e)} / ${fmt(f.p)}</small></div></div>`).join('')}</div>`}
+/* Columnas por día: programado (pista) con despachado dentro; % debajo */
+function columnasDia(filas){const max=Math.max(1,...filas.map(f=>Math.max(f.p,f.e))),paso=Math.ceil(filas.length/20);
+ const tope=(()=>{const m=Math.pow(10,Math.floor(Math.log10(max)));return Math.ceil(max/m)*m})();
+ return `<div class="gc"><div class="gc-y">${[1,.5,0].map(k=>`<span>${tope*k>=1000?Math.round(tope*k/100)/10+'k':Math.round(tope*k)}</span>`).join('')}</div><div class="gc-a">
+  ${filas.map((f,i)=>`<div class="gc-c" title="${esc(f.lbl)} · programado ${fmt(f.p)} · despachado ${fmt(f.e)} · ${pctTxt(f.e,f.p)}"><div class="gc-t"><div class="gc-p" style="height:${f.p/tope*100}%"></div><div class="gc-e" style="height:${f.e/tope*100}%"></div></div>
+  <div class="gc-x">${i%paso===0?esc(f.lbl.split('/').slice(0,2).join('/')):''}</div><div class="gc-pc ${f.p&&f.e/f.p<.7?'bajo':''}">${f.p?Math.round(f.e/f.p*100):'–'}</div></div>`).join('')}</div></div>
+  <div class="gnote">Barra clara = programado · barra sólida = despachado · número = % de cumplimiento del día</div>`}
+function graficosCumpl(){const r=repFilas();if(!r.length)return '';
+ const t=sumas(r),pl=sumas(r.filter(x=>x.tr==='P')),cl=sumas(r.filter(x=>x.tr!=='P'));
+ let h=`<div class="gcard"><div class="gms">${medidor('Cumplimiento total',t,t.n+' despachos')}${medidor('Transportes Platino',pl,pl.n+' despachos')}${medidor('Cliente recoge',cl,cl.n+' despachos')}</div></div>`;
+ if(S.repT==='cumF'){const g={};r.forEach(x=>{g[x.f]=g[x.f]||{lbl:x.f,_d:pd(x.f),p:0,e:0};g[x.f].p+=x.cant;g[x.f].e+=x.ent});
+  h+=`<div class="gcard"><h4>Programado contra despachado por día</h4>${columnasDia(Object.values(g).sort((a,b)=>a._d-b._d))}</div>`}
+ else{const orden=r.slice().sort((a,b)=>a.h.localeCompare(b.h));
   [['P','Transportes Platino'],['C','Cliente recoge']].forEach(([tp,n])=>{const f=orden.filter(x=>(x.tr==='P')===(tp==='P'));if(!f.length)return;
-   h+=`<div class="gcard"><h4>${n} · ${f.length} despacho${f.length>1?'s':''}</h4>${leyenda(c)}${svgHBar(f.map(x=>({lbl:x.cli,sub:x.h+' · '+x.prod+(x.causa&&x.ent<x.cant?' · '+x.causa:''),p:x.cant,e:Math.min(x.ent,x.cant*1.1)})),c)}</div>`})}
+   h+=`<div class="gcard"><h4>${n} · ${f.length} despacho${f.length>1?'s':''}</h4>${leyenda()}${filasBarras(f.map(x=>({lbl:x.cli,sub:x.h+' · '+x.prod,p:x.cant,e:x.ent})))}</div>`})}
  return h}
+const GCSS=`.gwrap{display:grid;gap:12px;margin-bottom:14px}.gcard{background:var(--card,#fff);border:1px solid var(--bd,#ddd);border-radius:14px;padding:14px 16px;break-inside:avoid;page-break-inside:avoid}.gcard h4{margin:0 0 10px;font-size:13.5px}
+.gms{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}.gm-h{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--mut,#6b6c68)}.gm-h b{font-size:22px;color:var(--tx,#1d1e1a)}.gm-s{font-size:11px;color:var(--mut,#6b6c68);margin-top:5px}
+.gtrack{background:var(--cProgT,#D5E1EF);border-radius:6px;height:12px;overflow:hidden;margin-top:6px}.gtrack i{display:block;height:100%;background:var(--cEnt2,#2F6FB5);border-radius:6px}.gtrack.sm{height:10px;margin:0}
+.glg{display:flex;gap:14px;font-size:11.5px;color:var(--mut,#6b6c68);margin:-4px 0 10px}.glg i{display:inline-block;width:12px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}.glg .kp{background:var(--cProgT,#D5E1EF)}.glg .ke{background:var(--cEnt2,#2F6FB5)}
+.gh-r{display:grid;grid-template-columns:minmax(120px,28%) 1fr 92px;gap:12px;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd,#eee)}.gh-r:last-child{border-bottom:0}
+.gh-l b{display:block;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gh-l small,.gh-v small{display:block;font-size:10.5px;color:var(--mut,#6b6c68)}.gh-v{text-align:right;font-size:12px}
+.gc{display:flex;gap:6px}.gc-y{display:flex;flex-direction:column;justify-content:space-between;height:170px;font-size:10px;color:var(--mut,#6b6c68);text-align:right;min-width:30px;padding-bottom:0}
+.gc-a{flex:1;display:flex;gap:3px;align-items:flex-end;border-bottom:1px solid var(--bd,#ccc);background:linear-gradient(var(--bd,#e5e5e2) 1px,transparent 1px) 0 0/100% 85px}
+.gc-c{flex:1;min-width:0;display:flex;flex-direction:column;align-items:stretch}.gc-t{position:relative;height:170px}
+.gc-p{position:absolute;bottom:0;left:8%;right:8%;background:var(--cProgT,#D5E1EF);border-radius:4px 4px 0 0}.gc-e{position:absolute;bottom:0;left:24%;right:24%;background:var(--cEnt2,#2F6FB5);border-radius:3px 3px 0 0}
+.gc-c:hover .gc-p{outline:2px solid var(--cEnt2,#2F6FB5)}.gc-x{font-size:9.5px;color:var(--mut,#6b6c68);text-align:center;height:14px;margin-top:3px;white-space:nowrap}.gc-pc{font-size:9.5px;text-align:center;font-weight:600;color:var(--tx,#1d1e1a)}.gc-pc.bajo{color:var(--bad,#D64534)}
+.gnote{font-size:10.5px;color:var(--mut,#6b6c68);margin-top:8px}
+@media(max-width:700px){.gms{grid-template-columns:1fr}.gh-r{grid-template-columns:1fr 70px}.gh-b{grid-column:1/-1;order:3}}`;
 
+document.head.insertAdjacentHTML('beforeend','<style>'+GCSS+RCSS+'</style>');
 const REPS={cumF:'Cumplimiento por fecha',dia:'Cumplimiento del día (detalle por despacho)',desp:'Despachos programados y entregados',ase:'Cumplimiento por asesor',sal:'Saldos pendientes',cau:'Causas de incumplimiento',cal:'Validaciones de calidad (Prefabricados)',ent:'Detalle de entregas (motorista, equipo, boleta)'};
 function repData(){const t=S.repT;let r=repFilas();
  if(t==='dia')return r.slice().sort((a,b)=>(b.tr==='P')-(a.tr==='P')||a.h.localeCompare(b.h)).map(x=>({Negocio:x.neg,Hora:x.h,Cliente:x.cli,Asesor:x.ase,Producto:x.prod,Transporte:x.tr==='P'?'Transportes Platino':'Cliente recoge',Programado:x.cant,Despachado:x.ent,'Cumplimiento %':x.cant?Math.round(x.ent/x.cant*1000)/10:0,Estatus:stInfo(x)[0],Causa:x.ent<x.cant?(x.causa||''):'','Boleta SAP':x.entregas.map(e=>e.bol).filter(Boolean).join(', ')}));
@@ -719,11 +765,11 @@ function vRep(){
  const draw=()=>{S.repT=$('#rT').value;const dia=S.repT==='dia';
   if(dia&&antT!=='dia')$('#rD1').value=iso(TODAY);if(!dia&&antT==='dia')$('#rD1').value=iso(addD(TODAY,-30));antT=S.repT;
   $('#rF2').style.display=dia?'none':'';$('#rL1').textContent=dia?'Día':'Desde';
-  $('#rG').innerHTML=(S.repT==='cumF'||dia)?graficosCumpl('app'):'';const d=repData();$('#rH').innerHTML=REPS[S.repT]+` <small>${d.length} filas</small>`;
+  $('#rG').innerHTML=(S.repT==='cumF'||dia)?graficosCumpl():'';const d=repData();$('#rH').innerHTML=REPS[S.repT]+` <small>${d.length} filas</small>`;
   $('#rV').innerHTML=d.length?'<table><tr>'+Object.keys(d[0]).map(k=>`<th>${k}</th>`).join('')+'</tr>'+d.slice(0,200).map(o=>'<tr>'+Object.values(o).map(v=>`<td class="${typeof v==='number'?'num':''}">${typeof v==='number'?fmt(v):esc(v)}</td>`).join('')+'</tr>').join('')+'</table>':'<div class="empty">Sin datos para ese filtro.</div>'};
  ['#rT','#rD1','#rD2','#rBiz','#rAse'].forEach(s=>$(s).onchange=draw);draw();
  $('#rX').onclick=()=>{const d=repData();if(!window.XLSX){toast('No se pudo cargar el generador de Excel');return}const ws=XLSX.utils.json_to_sheet(d),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Reporte');XLSX.writeFile(wb,'Duracreto_'+S.repT+'_'+$('#rD1').value+'_'+$('#rD2').value+'.xlsx')};
- $('#rP').onclick=()=>{const d=repData();if(true){printDoc(REPS[S.repT],$('#rD1').value.split('-').reverse().join('/')+(S.repT==='dia'?'':' al '+$('#rD2').value.split('-').reverse().join('/'))+' · '+$('#rBiz').selectedOptions[0].text+($('#rAse').value?' · '+$('#rAse').value:''),((S.repT==='cumF'||S.repT==='dia')?'<div class="gwrap">'+graficosCumpl('pdf')+'</div><h2>Detalle</h2>':'')+'<table><tr>'+(d.length?Object.keys(d[0]).map(k=>`<th>${k}</th>`).join(''):'')+'</tr>'+d.map(o=>'<tr'+(o.Negocio==='TOTAL'?' class="t"':'')+'>'+Object.values(o).map(v=>`<td class="${typeof v==='number'?'n':''}">${typeof v==='number'?fmt(v):esc(v)}</td>`).join('')+'</tr>').join('')+'</table>',1);return}const w=window.open('','_blank');w.document.write(`<html><head><title>${REPS[S.repT]}</title><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"><style>body{font-family:Poppins,sans-serif;font-size:10px;margin:24px}h1{font-size:16px;margin:0}.h{border-bottom:4px solid #F9D600;padding-bottom:8px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:end}table{width:100%;border-collapse:collapse}th{background:#12130F;color:#fff;text-align:left;padding:5px}td{padding:4px 5px;border-bottom:1px solid #ddd}@page{size:landscape;margin:12mm}</style></head><body><div class="h"><div><b style="font-size:18px">DURACRETO <span style="color:#c9a800">360</span></b><h1>${REPS[S.repT]}</h1></div><div>${$('#rD1').value} a ${$('#rD2').value} · generado ${new Date().toLocaleString('es-HN')} por ${S.user.n}</div></div><table><tr>${d.length?Object.keys(d[0]).map(k=>`<th>${k}</th>`).join(''):''}</tr>${d.map(o=>'<tr>'+Object.values(o).map(v=>`<td>${typeof v==='number'?fmt(v):esc(v)}</td>`).join('')+'</tr>').join('')}</table><script>setTimeout(()=>print(),600)<\/script></body></html>`);w.document.close()}}
+ $('#rP').onclick=()=>{const d=repData();if(true){printDoc(REPS[S.repT],$('#rD1').value.split('-').reverse().join('/')+(S.repT==='dia'?'':' al '+$('#rD2').value.split('-').reverse().join('/'))+' · '+$('#rBiz').selectedOptions[0].text+($('#rAse').value?' · '+$('#rAse').value:''),((S.repT==='cumF'||S.repT==='dia')?'<style>'+GCSS+'</style><div class="gwrap">'+graficosCumpl()+'</div><h2>Detalle</h2>':'')+'<table><tr>'+(d.length?Object.keys(d[0]).map(k=>`<th>${k}</th>`).join(''):'')+'</tr>'+d.map(o=>'<tr'+(o.Negocio==='TOTAL'?' class="t"':'')+'>'+Object.values(o).map(v=>`<td class="${typeof v==='number'?'n':''}">${typeof v==='number'?fmt(v):esc(v)}</td>`).join('')+'</tr>').join('')+'</table>',1);return}const w=window.open('','_blank');w.document.write(`<html><head><title>${REPS[S.repT]}</title><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"><style>body{font-family:Poppins,sans-serif;font-size:10px;margin:24px}h1{font-size:16px;margin:0}.h{border-bottom:4px solid #F9D600;padding-bottom:8px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:end}table{width:100%;border-collapse:collapse}th{background:#12130F;color:#fff;text-align:left;padding:5px}td{padding:4px 5px;border-bottom:1px solid #ddd}@page{size:landscape;margin:12mm}</style></head><body><div class="h"><div><b style="font-size:18px">DURACRETO <span style="color:#c9a800">360</span></b><h1>${REPS[S.repT]}</h1></div><div>${$('#rD1').value} a ${$('#rD2').value} · generado ${new Date().toLocaleString('es-HN')} por ${S.user.n}</div></div><table><tr>${d.length?Object.keys(d[0]).map(k=>`<th>${k}</th>`).join(''):''}</tr>${d.map(o=>'<tr>'+Object.values(o).map(v=>`<td>${typeof v==='number'?fmt(v):esc(v)}</td>`).join('')+'</tr>').join('')}</table><script>setTimeout(()=>print(),600)<\/script></body></html>`);w.document.close()}}
 
 /* ========== BASES DE DATOS ========== */
 function vBd(){const T={cli:'Clientes',ase:'Asesores',eq:'Equipos Transportes Platino',cap:'Capacidades por equipo',prod:'Productos',cau:'Causas',bit:'Bitácora'};if(!T[S.bdTab])S.bdTab='cli';
