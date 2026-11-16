@@ -430,7 +430,16 @@ function closeMenu(){}
 function theme(x){if(x===undefined){x=!document.body.classList.contains('dark');store.set(THM,x?'dark':'light')}document.body.classList.toggle('dark',x);document.documentElement.dataset.theme=x?'dark':'light';$('#bTheme').textContent=x?'☀':'☾'}
 {const t=store.get(THM);theme(t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches)}
 $('#bTheme').onclick=()=>theme();
-async function reload(silencio){if(!silencio)$('#main').style.opacity=.3;try{await cargarTodo();if(!$('#mod').classList.contains('on'))render();if(!silencio)toast('Datos actualizados · '+nowHM())}catch(e){if(!silencio)toast('✖ '+esc(e.message))}finally{$('#main').style.opacity=1}}
+/* Actualización automática (cada 2 min): trae datos nuevos sin perder filtros, fechas ni búsquedas de la pantalla.
+   Si la persona está escribiendo o eligiendo algo, espera a la siguiente vuelta. */
+async function reload(silencio){
+ const ae=document.activeElement;if(silencio&&ae&&$('#main').contains(ae)&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))return;
+ const snap=[...document.querySelectorAll('#main input[id],#main select[id]')].map(e=>[e.id,e.value]),y=window.scrollY,sec=S.sec;
+ if(!silencio)$('#main').style.opacity=.3;
+ try{await cargarTodo();if(!$('#mod').classList.contains('on')){render();
+   if(S.sec===sec){snap.forEach(([id,v])=>{const e=document.getElementById(id);if(e&&e.value!==v&&e.type!=='file'){e.value=v;e.dispatchEvent(new Event('change'));e.dispatchEvent(new Event('input'))}});window.scrollTo(0,y)}}
+  if(!silencio)toast('Datos actualizados · '+nowHM())}
+ catch(e){if(!silencio)toast('✖ '+esc(e.message))}finally{$('#main').style.opacity=1}}
 /* Botón ⟳: recarga la app completa (datos y versión nueva), como en Duracreto 360. Antes recibía el evento como «silencio» y no se notaba. */
 let refAviso=0;
 $('#bReload').onclick=()=>{if($('#mod').classList.contains('on')&&Date.now()-refAviso>4000){refAviso=Date.now();toast('Toque otra vez para actualizar. Se perderá lo que lleva escrito en la ventana abierta.');return}
