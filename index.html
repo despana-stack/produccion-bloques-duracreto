@@ -528,7 +528,7 @@ function aplicarRotacion(){Object.values(EQ).forEach(e=>{const t=turnoRot(e.id);
 const TURNOS={A:{ini:'06:00',fin:'14:00',lbl:'Turno A · 6:00 am a 2:00 pm'},B:{ini:'14:00',fin:'22:00',lbl:'Turno B · 2:00 pm a 10:00 pm'},C:{ini:'22:00',fin:'06:00',lbl:'Turno C · 10:00 pm a 6:00 am'}};
 const DEMO=!!window.DEMO;
 const DANO='Daño / avería',DANO_MOT=[['Dañado en la máquina','Se quebró o deformó en la prensa, el paletizador o el volteador'],['Caído en el traslado','Se cayó con el montacargas, la multiforca o en el patio'],['Otra avería','Cualquier otro daño durante la producción']];
-const esDes=r=>esDes(r)||r.clase===DANO,esNC=t=>t==='nc'||t==='descarte';
+const esDes=r=>r.clase==='Desecho'||r.clase===DANO,esNC=t=>t==='nc'||t==='descarte';
 const ROLES={DEMO:{nom:'Demostración',perm:['prod','corte','paro','alerta','cons','nc','rep','dash','aviso']},LIDER:{nom:'Líder de grupo',perm:['prod','corte','paro','alerta','cons']},CALIDAD:{nom:'Control de calidad',perm:['nc','descarte']},MANTENIMIENTO:{nom:'Mantenimiento',perm:['paro','alerta','cierre']},SUPERVISOR:{nom:'Supervisión',perm:['rep','dash','bd','aviso']},GERENCIA:{nom:'Gerencia',perm:['rep','dash','aviso']},VISOR:{nom:'Consulta',perm:['rep','dash']},ADMIN:{nom:'Administrador',perm:['prod','corte','paro','alerta','cons','nc','rep','dash','bd','usr','aviso','costos','param','cierre']}};
 const LS=DEMO?'dc_bloques_demo_registros':'dc_bloques_registros_v2', SS=DEMO?'dc_bloques_demo_sesion':'dc_bloques_sesion_v2', TAB='dc_bloques_tab';
 const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
