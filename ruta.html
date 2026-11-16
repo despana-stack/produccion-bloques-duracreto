@@ -214,7 +214,7 @@ function conv(x){const o=Object.assign({},x);o.f=isoDMY(x.f);o.cerr=x.st==='Sald
 const letras=t=>(/bloq/i.test(t)?'B':'')+(/prefa/i.test(t)?'P':'')||'B';
 async function cargarNeg(b){const j=await api('ruta_data',{neg:b});if(!j.ok)throw new Error(j.error||'No se pudo leer '+BIZ[b].n);
  D[b]=j.despachos.map(conv);AUT[b]=j.autorizaciones||[];CFG=Object.assign(CFG,j.cfg||{});
- const c=j.cat;D['cap'+b]=c.capacidades;D['prod'+b]=c.productos.map(p=>p.p);D['inv'+b]=j.inventario.items;D.conteo[b]=j.inventario.conteo||'';
+ const c=j.cat;D['cap'+b]=c.capacidades;D['prod'+b]=c.productos.map(p=>p.p);D['inv'+b]=j.inventario.items;D['mov'+b]=j.movimientos||[];D.conteo[b]=j.inventario.conteo||'';
  if(b==='B')D.prodD=(j.inventario.produccion||[]).map(p=>({f:isoDMY(p.f),p:p.p,u:p.u}));
  D.cli=c.clientes.map(k=>Object.assign({},k,{b:letras(k.b),k:0}));D.eqs=c.equipos;D.cau=c.causas;D.bit=c.bitacora||[];
  ASES=c.asesores.map(a=>({n:a.n,act:a.act}));
@@ -604,7 +604,7 @@ function vEje(){
   prox:['Próximos días',all.filter(x=>pd(x.f)>pd(TODAY)&&pd(x.f)<=pd(addD(TODAY,7)))],
   reg:['Registrados hoy',all.filter(x=>x.entregas.some(e=>e.fe===TODAY))]};
  if(!T[S.ejeTab])S.ejeTab='hoy';const r=T[S.ejeTab][1].sort((a,b)=>pd(a.f)-pd(b.f)||a.h.localeCompare(b.h));
- $('#main').innerHTML=`<div class="tools"><div><b style="font-size:16px;text-transform:capitalize">${largo(TODAY)}</b><div class="muted" style="font-size:11.5px">${BIZ[S.biz].n} · toca un despacho para ejecutarlo</div></div><span class="sp"></span><button class="btn" onclick="solicitar()">＋ Cliente sin programar</button><button class="btn sec" onclick="reporteDia()">⬇ Reporte del día</button><span class="clock" id="clk">${nowHM()}</span></div>
+ $('#main').innerHTML=`<div class="tools"><div><b style="font-size:16px;text-transform:capitalize">${largo(TODAY)}</b><div class="muted" style="font-size:11.5px">${BIZ[S.biz].n} · toca un despacho para ejecutarlo</div></div><span class="sp"></span>${puedeSalida()&&S.biz==='B'?'<button class="btn sec" onclick="formSalida()">− Salida de inventario</button>':''}<button class="btn" onclick="solicitar()">＋ Cliente sin programar</button><button class="btn sec" onclick="reporteDia()">⬇ Reporte del día</button><span class="clock" id="clk">${nowHM()}</span></div>
  <div class="tabs">${Object.entries(T).map(([k,v])=>`<button class="${S.ejeTab===k?'on':''}" onclick="S.ejeTab='${k}';render()">${v[0]}${k!=='reg'&&k!=='prox'&&v[1].length?`<b>${v[1].length}</b>`:` (${v[1].length})`}</button>`).join('')}</div>
  <div class="dl">${r.length?r.map(x=>{const i=stInfo(x);if(x.req==='pend')return `<div class="di" style="border-left-color:#3A6EA5;opacity:.85;cursor:default"><div class="top"><span>Hoy · ${x.h}</span><span>${x.id}</span></div><div class="c">${esc(x.cli)}</div><div class="p">${x.prod} · <b>${fmt(x.cant)}</b> ${BIZ[S.biz].u}</div><div class="ft"><span class="st s-lib">⏳ Esperando aprobación de Fernando</span> <span class="tag">sin programar</span></div></div>`;
   return `<div class="di ${i[2]}" onclick="${S.ejeTab==='reg'?`detalle('${x.id}')`:`ejecutar('${x.id}')`}"><div class="top"><span>${x.f===TODAY?'Hoy':x.f} · ${x.h}</span><span>${x.id}</span></div><div class="c">${esc(x.cli)}</div><div class="p">${x.prod} · <b>${fmt(saldo(x)||x.cant)}</b> ${BIZ[S.biz].u}${x.ent&&saldo(x)?` <span class="muted">(de ${fmt(x.cant)})</span>`:''}</div><div class="ft">${st(x)} ${trTxt(x)} <span class="tag">${esc(x.ase)}</span>${autDe(x.id)?' <span class="st s-par">⏳ Esperando autorización de Fernando</span>':''}</div></div>`}).join(''):'<div class="card empty">No hay despachos en esta lista.</div>'}</div>`;
@@ -714,17 +714,88 @@ async function compartirImg(id,mail){const b=await new Promise(r=>$('#rcv').toBl
  if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Validación de calidad '+id})}catch(e){}}else{bajar(id);toast('En la computadora se descarga la imagen para adjuntarla'+(mail?' al correo':' en WhatsApp Web'))}}
 
 /* ========== INVENTARIO ========== */
-function vInv(){const inv=S.biz==='B'?D.invB:D.invP;
- if(S.biz==='P'){$('#main').innerHTML=`<h2>Inventario · Prefabricados</h2><div class="demo">Prefabricados aún no tiene módulo de producción en Duracreto 360. Arranca con el <b>conteo físico</b> y se actualiza con lo despachado y los ajustes; cuando exista el módulo, la producción y los rechazos de Calidad entrarán solos. ${D.conteo.P?'Conteo inicial: <b>'+esc(D.conteo.P)+'</b>.':'<b>Falta cargar el conteo inicial.</b>'}</div>
- <div class="card"><table><tr><th>Producto</th><th class="num">Disponible en patio</th><th class="num">Comprometido (próx. 7 días)</th><th class="num">Libre para programar</th><th>Estado</th></tr>${inv.map(i=>{const comp=recs().filter(x=>x.prod===i.p&&pd(x.f)>=pd(TODAY)&&pd(x.f)<=pd(addD(TODAY,7))).reduce((s,x)=>s+saldo(x),0);const lib=i.disp-comp;return `<tr><td><b>${i.p}</b></td><td class="num">${fmt(i.disp)}</td><td class="num">${fmt(comp)}</td><td class="num"><b class="${lib<0?'dn':''}">${fmt(lib)}</b></td><td>${lib<0?'<span class="pill">Faltante</span>':i.disp===0?'<span class="pill o">Sin existencia</span>':'<span class="pill g">OK</span>'}</td></tr>`}).join('')}</table></div>`;return}
- const dias=[...new Set(D.prodD.map(p=>p.f))].slice(-7),prods=[...new Set(D.prodD.filter(p=>dias.includes(p.f)).map(p=>p.p))];
- $('#main').innerHTML=`<h2>Inventario · Bloques</h2>
- <div class="demo"><b>Se alimenta solo de Duracreto 360.</b> Cada vez que un líder reporta producción en la app de la planta, entra aquí como «en curado» y pasa a disponible a los 3 días. Se restan los No conformes que registra Calidad (desecho y segunda) y lo que registran los despachadores. ${D.conteo.B?'Conteo físico inicial: <b>'+esc(D.conteo.B)+'</b>.':'<b>Falta cargar el conteo físico inicial:</b> hasta entonces las cifras no son definitivas y la programación no se bloquea por inventario.'}</div>
- <div class="card" style="margin-bottom:14px"><table><tr><th>Producto</th><th class="num">Saldo inicial (conteo)</th><th class="num">+ Producción liberada (D360)</th><th class="num">− Desecho</th><th class="num">− Segunda</th><th class="num">− Despachado</th><th class="num">= Disponible en patio</th><th class="num">En curado</th><th class="num">Comprometido (próx. 7 días)</th><th class="num">Libre para programar</th><th>Estado</th></tr>${inv.map(i=>{const comp=recs().filter(x=>x.prod===i.p&&pd(x.f)>=pd(TODAY)&&pd(x.f)<=pd(addD(TODAY,7))).reduce((s,x)=>s+saldo(x),0);const lib=i.disp+i.cur-comp;
- return `<tr><td><b>${i.p}</b></td><td class="num muted">${fmt(i.ini)}</td><td class="num">${fmt(i.prod)}</td><td class="num">${fmt(i.des)}</td><td class="num">${fmt(i.seg)}</td><td class="num">${fmt(i.dsp)}</td><td class="num"><b>${fmt(i.disp)}</b></td><td class="num">${fmt(i.cur)}</td><td class="num">${fmt(comp)}</td><td class="num"><b class="${lib<0?'dn':''}">${fmt(lib)}</b></td><td>${lib<0?'<span class="pill">Faltante</span>':i.disp+i.cur===0?'<span class="pill o">Sin existencia</span>':'<span class="pill g">OK</span>'}</td></tr>`}).join('')}</table>
- <p class="muted" style="font-size:11px;margin:8px 0 0">Período: desde el conteo físico inicial.</p></div>
- <div class="card"><h3>Producción reportada en Duracreto 360 <small>últimos 7 días con producción · unidades · fuente: hoja Produccion de Bloques</small></h3>
- <table><tr><th>Producto</th>${dias.map(d=>`<th class="num">${d.slice(0,-5)}</th>`).join('')}<th class="num">Total</th></tr>${prods.map(p=>{const v=dias.map(d=>D.prodD.filter(x=>x.f===d&&x.p===p).reduce((s,x)=>s+x.u,0));return `<tr><td><b>${p}</b></td>${v.map(n=>`<td class="num">${n?fmt(n):'—'}</td>`).join('')}<td class="num"><b>${fmt(v.reduce((a,b)=>a+b,0))}</b></td></tr>`}).join('')}</table></div>`}
+/* ========== INVENTARIO (primera y segunda) ========== */
+const SEGS=' (segunda)',esSeg=p=>String(p||'').endsWith(SEGS),baseDe=p=>esSeg(p)?String(p).slice(0,-SEGS.length):String(p||'');
+const MOTIVOS=[['Reposición a cliente',1],['Reclamo de cliente',1],['Daño (pinza / manipulación)',0],['Pruebas de laboratorio (Calidad)',0],['Traslado a sucursal',1],['A ripio (desecho)',0],['Reclasificado de segunda a primera',0]];
+const puedeSalida=()=>['ADMIN','PROGRAMADOR'].includes(S.user.rol)||(S.user.rol==='DESPACHO'&&S.user.biz.includes('B'));
+const puedeConteo=()=>['ADMIN','PROGRAMADOR'].includes(S.user.rol);
+function compProx(p){return recs().filter(x=>x.prod===p&&pd(x.f)>=pd(TODAY)&&pd(x.f)<=pd(addD(TODAY,7))&&(x.st==='prog'||x.st==='par')&&x.req!=='pend'&&x.req!=='rech').reduce((s,x)=>s+saldo(x),0)}
+const estInv=lib=>lib<0?'<span class="pill">Faltante</span>':lib===0?'<span class="pill o">Sin existencia</span>':'<span class="pill g">OK</span>';
+function vInv(){const b=S.biz,inv=(b==='B'?D.invB:D.invP)||[],cont=D.conteo[b],movs=D['mov'+b]||[];
+ const conteoTxt=cont?`Conteo físico inicial: <b>${esc(cont)}</b>.`:'<b>Falta cargar el conteo físico inicial:</b> hasta entonces las cifras no son definitivas y la programación no se bloquea por inventario.';
+ const herr=`<div class="tools" style="margin:0">${puedeSalida()&&b==='B'?'<button class="btn" onclick="formSalida()">− Salida de inventario</button>':''}${puedeConteo()?'<button class="btn sec" onclick="formConteo()">Cargar conteo inicial</button>':''}</div>`;
+ let h;
+ if(b==='P'){h=`<div class="rhead"><h2 style="margin:0">Inventario · Prefabricados</h2><span class="sp"></span>${herr}</div><div class="demo">Prefabricados aún no tiene módulo de producción en Duracreto 360: arranca con el conteo físico y se actualiza con lo despachado, las salidas y los ajustes. ${conteoTxt}</div>
+  <div class="card"><table><tr><th>Producto</th><th class="num">Inicial</th><th class="num">− Despachado</th><th class="num">± Salidas y ajustes</th><th class="num">= Disponible</th><th class="num">Comprometido (7 días)</th><th class="num">Libre</th><th>Estado</th></tr>${inv.map(i=>{const c=compProx(i.p),lib=i.disp-c;return `<tr><td><b>${esc(i.p)}</b></td><td class="num muted">${fmt(i.ini)}</td><td class="num">${fmt(i.dsp)}</td><td class="num">${fmt(i.sal+i.aj)}</td><td class="num"><b>${fmt(i.disp)}</b></td><td class="num">${fmt(c)}</td><td class="num"><b class="${lib<0?'dn':''}">${fmt(lib)}</b></td><td>${estInv(lib)}</td></tr>`}).join('')}</table></div>`}
+ else{const pri=inv.filter(i=>!i.seg),seg=inv.filter(i=>i.seg),rip=seg.reduce((s,i)=>s+i.rip,0)+pri.reduce((s,i)=>s+i.rip,0);
+  const mes=iso(TODAY).slice(0,7),ripMes=movs.filter(m=>m.m==='A ripio (desecho)'&&m.f.slice(0,7)===mes).reduce((s,m)=>s-m.q,0);
+  const tP=pri.reduce((s,i)=>s+i.disp,0),tS=seg.reduce((s,i)=>s+i.disp,0);
+  const kp=(l,v,s,c)=>`<div class="rk ${c||''}"><span>${l}</span><b>${v}</b><small>${s}</small></div>`;
+  h=`<div class="rhead"><div><h2 style="margin:0">Inventario · Bloques</h2><div class="rper">Unidades · desde el conteo físico inicial</div></div><span class="sp"></span>${herr}</div>
+  <div class="demo">Primera se alimenta de la producción de Duracreto 360 (pasa a disponible a los 3 días). Lo que Calidad clasifica como <b>Segunda</b> pasa de primera a segunda (vendible a menor precio); <b>Desecho</b> y <b>Daño</b> se pierden. Lo que sale <b>a ripio</b> es desecho definitivo. ${conteoTxt}</div>
+  <div class="rks" style="grid-template-columns:repeat(4,1fr)">${kp('Disponible de primera',fmt(tP),pri.reduce((s,i)=>s+i.cur,0)?fmt(pri.reduce((s,i)=>s+i.cur,0))+' más en curado':'en patio','ok')}${kp('Disponible de segunda',fmt(tS),'vendible a menor precio','pe')}
+   ${kp('A ripio (desecho)',fmt(rip),'desde el conteo · '+fmt(ripMes)+' este mes','al')}${kp('Pasó a segunda (Calidad)',fmt(pri.reduce((s,i)=>s+i.aSeg,0)),'desde el conteo')}</div>
+  <div class="card" style="margin-bottom:14px"><h3>Primera</h3><div style="overflow-x:auto"><table><tr><th>Producto</th><th class="num">Inicial</th><th class="num">+ Producción (D360)</th><th class="num">− Desecho y daño</th><th class="num">− Pasa a segunda</th><th class="num">− Despachado</th><th class="num">± Salidas y ajustes</th><th class="num">= Disponible</th><th class="num">En curado</th><th class="num">Comprometido (7 días)</th><th class="num">Libre</th><th>Estado</th></tr>
+  ${pri.map(i=>{const c=compProx(i.p),lib=i.disp+i.cur-c;return `<tr><td><b>${esc(i.p)}</b></td><td class="num muted">${fmt(i.ini)}</td><td class="num">${fmt(i.prod)}</td><td class="num">${fmt(i.des)}</td><td class="num">${fmt(i.aSeg)}</td><td class="num">${fmt(i.dsp)}</td><td class="num">${fmt(i.sal+i.aj)}</td><td class="num"><b>${fmt(i.disp)}</b></td><td class="num">${fmt(i.cur)}</td><td class="num">${fmt(c)}</td><td class="num"><b class="${lib<0?'dn':''}">${fmt(lib)}</b></td><td>${estInv(lib)}</td></tr>`}).join('')}</table></div></div>
+  <div class="card" style="margin-bottom:14px"><h3>Segunda <small>vendible a menor precio · se programa y despacha como cualquier producto</small></h3><div style="overflow-x:auto"><table><tr><th>Producto</th><th class="num">Inicial</th><th class="num">+ Entra de Calidad</th><th class="num">− Despachado</th><th class="num">− A ripio</th><th class="num">± Otros movimientos</th><th class="num">= Disponible</th><th class="num">Comprometido (7 días)</th><th class="num">Libre</th><th>Estado</th></tr>
+  ${seg.map(i=>{const c=compProx(i.p),lib=i.disp-c;return `<tr><td><b>${esc(i.p)}</b></td><td class="num muted">${fmt(i.ini)}</td><td class="num">${fmt(i.segIn)}</td><td class="num">${fmt(i.dsp)}</td><td class="num ${i.rip?'dn':''}">${fmt(i.rip)}</td><td class="num">${fmt(i.sal+i.aj+i.rip)}</td><td class="num"><b>${fmt(i.disp)}</b></td><td class="num">${fmt(c)}</td><td class="num"><b class="${lib<0?'dn':''}">${fmt(lib)}</b></td><td>${estInv(lib)}</td></tr>`}).join('')}</table></div></div>`;
+  const dias=[...new Set(D.prodD.map(p=>p.f))].slice(-7),pr=[...new Set(D.prodD.filter(p=>dias.includes(p.f)).map(p=>p.p))];
+  h+=`<div class="card" style="margin-bottom:14px"><h3>Producción reportada en Duracreto 360 <small>últimos días con producción · unidades</small></h3><div style="overflow-x:auto"><table><tr><th>Producto</th>${dias.map(d=>`<th class="num">${d.slice(0,-5)}</th>`).join('')}<th class="num">Total</th></tr>${pr.map(p=>{const v=dias.map(d=>D.prodD.filter(x=>x.f===d&&x.p===p).reduce((s,x)=>s+x.u,0));return `<tr><td><b>${esc(p)}</b></td>${v.map(n=>`<td class="num">${n?fmt(n):'—'}</td>`).join('')}<td class="num"><b>${fmt(v.reduce((a,b)=>a+b,0))}</b></td></tr>`}).join('')}</table></div></div>`}
+ h+=`<div class="card" id="movCard"></div>`;
+ $('#main').innerHTML=h;listaMovs()}
+/* Lista «Salidas y traslados» con filtros, totales por motivo y Excel */
+function filtMovs(){const F=S.movF||(S.movF={d1:iso(fd(new Date(pd(TODAY).getFullYear(),pd(TODAY).getMonth(),1))),d2:iso(TODAY),p:'',c:'',m:''});
+ return {F,L:(D['mov'+S.biz]||[]).filter(m=>m.f>=F.d1&&m.f<=F.d2&&(!F.p||baseDe(m.p)===F.p)&&(!F.c||(F.c==='seg')===esSeg(m.p))&&(!F.m||(m.m||'Ajuste sin motivo')===F.m)).sort((a,b)=>b.f.localeCompare(a.f))}}
+function listaMovs(){const {F,L}=filtMovs(),todos=D['mov'+S.biz]||[],bases=[...new Set(todos.map(m=>baseDe(m.p)))].sort(),mots=[...new Set(todos.map(m=>m.m||'Ajuste sin motivo'))].sort();
+ const tot={};L.forEach(m=>{const k=m.m||'Ajuste sin motivo';tot[k]=tot[k]||{n:0,q:0,o:0};tot[k].n++;tot[k].q+=m.q;if(m.q<0)tot[k].o-=m.q});
+ $('#movCard').innerHTML=`<h3>Salidas y traslados <small>${L.length} movimientos</small></h3>
+ <div class="tools"><input type="date" id="mD1" value="${F.d1}"><input type="date" id="mD2" value="${F.d2}">
+  <select id="mP"><option value="">Todos los productos</option>${bases.map(p=>`<option ${p===F.p?'selected':''}>${esc(p)}</option>`).join('')}</select>
+  <select id="mC"><option value="">Primera y segunda</option><option value="pri" ${F.c==='pri'?'selected':''}>Primera</option><option value="seg" ${F.c==='seg'?'selected':''}>Segunda</option></select>
+  <select id="mM"><option value="">Todos los motivos</option>${mots.map(m=>`<option ${m===F.m?'selected':''}>${esc(m)}</option>`).join('')}</select><span class="sp"></span><button class="btn sec sm" id="mX">Excel</button></div>
+ <div class="mtot">${Object.entries(tot).sort((a,b)=>a[1].q-b[1].q).map(([k,v])=>`<div class="${k==='A ripio (desecho)'?'rip':''}"><span>${esc(k)}</span><b>${fmt(v.o||Math.abs(v.q))}</b><small>${v.n} mov.${v.q>0&&!v.o?' · entra':''}</small></div>`).join('')||'<span class="muted">Sin movimientos en el filtro.</span>'}</div>
+ ${L.length?`<div style="overflow-x:auto;max-height:460px"><table><tr><th>Fecha</th><th>Producto</th><th>Motivo</th><th class="num">Cantidad</th><th>Documento SAP</th><th>Cliente / sucursal · nota</th><th>Registró</th></tr>${L.slice(0,400).map(m=>`<tr><td>${isoDMY(m.f)}</td><td>${esc(m.p)}${esSeg(m.p)?'':''}</td><td>${esc(m.m||m.t)}</td><td class="num ${m.q<0?'':'up'}">${m.q>0?'+':''}${fmt(m.q)}</td><td>${esc(m.doc)||'—'}</td><td class="muted">${esc(m.nota)}</td><td class="muted">${esc(m.u)}</td></tr>`).join('')}</table></div>`:''}`;
+ const set=(id,k)=>$(id).onchange=e=>{F[k]=e.target.value;listaMovs()};set('#mD1','d1');set('#mD2','d2');set('#mP','p');set('#mC','c');set('#mM','m');
+ $('#mX').onclick=()=>{if(!window.XLSX){toast('No se pudo cargar el generador de Excel');return}const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(L.map(m=>({Fecha:isoDMY(m.f),Producto:m.p,Calidad:esSeg(m.p)?'Segunda':'Primera',Tipo:m.t,Motivo:m.m,Cantidad:m.q,'Documento SAP':m.doc,'Cliente / sucursal · nota':m.nota,'Registró':m.u}))),'Movimientos');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(Object.entries(tot).map(([k,v])=>({Motivo:k,Movimientos:v.n,Cantidad:v.q}))),'Totales por motivo');
+  XLSX.writeFile(wb,'Ruta360_Salidas_'+BIZ[S.biz].n+'_'+F.d1+'_'+F.d2+'.xlsx')}}
+/* Formulario «Salida de inventario» (Jordi, Fernando, ADMIN) */
+function formSalida(){const neg='B',ps=(D.prodB||[]);const lista=[...new Set(ps.map(baseDe))];
+ modal('Salida de inventario · Bloques',`
+ <div class="two"><div class="fld"><label>Producto</label><select id="sP">${lista.map(b=>`<option>${esc(b)}</option>${ps.includes(b+SEGS)?`<option>${esc(b+SEGS)}</option>`:''}`).join('')}</select><div class="h" id="sPh"></div></div>
+ <div class="fld"><label>Cantidad</label><input type="number" id="sQ" min="1" inputmode="numeric"></div></div>
+ <div class="fld"><label>Motivo</label><select id="sM"><option value="">— Seleccione —</option>${MOTIVOS.map(m=>`<option>${m[0]}</option>`).join('')}</select><div class="h" id="sMh"></div></div>
+ <div class="two"><div class="fld"><label>Documento SAP <span id="sDreq" class="muted" style="font-weight:400">(opcional)</span></label><input id="sD" placeholder="000-028-08-…"></div>
+ <div class="fld"><label>Fecha</label><input type="date" id="sF" value="${iso(TODAY)}"></div></div>
+ <div class="fld"><label>Cliente o sucursal destino <span class="muted" style="font-weight:400">(opcional)</span></label><input id="sC"></div>
+ <div class="fld"><label>Nota <span class="muted" style="font-weight:400">(opcional)</span></label><input id="sN"></div>
+ <div class="check wa" style="font-size:11.5px">El paso de primera a segunda lo registra Calidad en Duracreto 360; aquí no se registra.</div>
+ <button class="btn dk" style="width:100%" id="sOk">Registrar salida</button>`);
+ const disp=p=>{const i=(D.invB||[]).find(z=>z.p===p);return i?i.disp:null};
+ const upd=()=>{const m=MOTIVOS.find(x=>x[0]===$('#sM').value),p=$('#sP').value;$('#sDreq').textContent=m&&m[1]?'(obligatorio)':'(opcional)';$('#sDreq').style.color=m&&m[1]?'var(--bad)':'';
+  const d=disp(p);$('#sPh').textContent=D.conteo.B&&d!=null?'Disponible: '+fmt(d):'';
+  $('#sMh').innerHTML=m&&m[0]==='Reclasificado de segunda a primera'?`Resta de <b>${esc(baseDe(p)+SEGS)}</b> y suma a <b>${esc(baseDe(p))}</b>.`:m&&m[0]==='Traslado a sucursal'?'Se guarda como traslado.':m?'Se descuenta del producto elegido.':''};
+ ['#sP','#sM'].forEach(id=>$(id).onchange=upd);upd();
+ $('#sOk').onclick=async()=>{const m=MOTIVOS.find(x=>x[0]===$('#sM').value),q=+$('#sQ').value;
+  if(!(q>0)){toast('Escriba la cantidad');return}if(!m){toast('Elija el motivo');return}if(m[1]&&!$('#sD').value.trim()){toast('El documento SAP es obligatorio para este motivo');return}
+  if(m[0]==='Reclasificado de segunda a primera'&&!(D.prodB||[]).includes(baseDe($('#sP').value)+SEGS)){toast('Este producto no tiene equivalente de segunda');return}
+  const r=await guardar('ruta_inventario',{neg,rec:{producto:$('#sP').value,cantidad:q,motivo:m[0],doc:$('#sD').value.trim(),fecha:$('#sF').value,destino:$('#sC').value.trim(),nota:$('#sN').value.trim()}},'Salida registrada');
+  if(r){closeModal();render()}}}
+/* Conteo físico inicial: primera y segunda por separado */
+function formConteo(){const b=S.biz,ps=b==='B'?(D.prodB||[]):(D.prodP||[]),inv=(b==='B'?D.invB:D.invP)||[],bases=[...new Set(ps.map(baseDe))];
+ const ini=p=>{const i=inv.find(z=>z.p===p);return i&&i.ini?i.ini:''};
+ modal('Conteo físico inicial · '+BIZ[b].n,`<p class="muted" style="font-size:12px;margin-top:0">Escriba lo contado en patio. Desde esa fecha y hora el inventario se calcula solo. Si ya había un conteo, se reemplaza.</p>
+ <div class="two"><div class="fld"><label>Fecha del conteo</label><input type="date" id="cF" value="${iso(TODAY)}"></div><div class="fld"><label>Hora</label><input type="time" id="cH" value="06:00"></div></div>
+ <div style="max-height:52vh;overflow:auto"><table><tr><th>Producto</th><th class="num">Primera</th>${b==='B'?'<th class="num">Segunda</th>':''}</tr>${bases.map((p,k)=>`<tr><td>${esc(p)}</td><td><input type="number" min="0" data-p="${esc(p)}" value="${ini(p)}" style="width:110px;text-align:right"></td>${b==='B'?`<td>${ps.includes(p+SEGS)?`<input type="number" min="0" data-p="${esc(p+SEGS)}" value="${ini(p+SEGS)}" style="width:110px;text-align:right">`:'—'}</td>`:''}</tr>`).join('')}</table></div>
+ <div class="fld" style="margin-top:10px"><label>Nota</label><input id="cN" placeholder="Ej. conteo con Calidad y despacho"></div>
+ <button class="btn dk" style="width:100%" id="cOk">Guardar conteo</button>`,1);
+ $('#cOk').onclick=async()=>{const items=[...document.querySelectorAll('#mbox input[data-p]')].filter(i=>i.value!=='').map(i=>({p:i.dataset.p,q:+i.value}));
+  if(!items.length){toast('Escriba al menos una cantidad');return}
+  if(!confirm('¿Guardar el conteo del '+$('#cF').value.split('-').reverse().join('/')+' '+$('#cH').value+'? Reemplaza el conteo anterior.'))return;
+  if(await guardar('ruta_conteo',{neg:b,rec:{fecha:$('#cF').value,hora:$('#cH').value,nota:$('#cN').value.trim(),items}},'Conteo guardado')){closeModal();render()}}}
+const ICSS=`.mtot{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}.mtot div{background:var(--soft);border-radius:10px;padding:7px 11px;min-width:120px}.mtot span{display:block;font-size:11px;color:var(--mut)}.mtot b{font-size:16px}.mtot small{display:block;font-size:10.5px;color:var(--mut)}.mtot .rip{background:#FBDCD8}.mtot .rip b{color:#a3271a}`;
+document.head.insertAdjacentHTML('beforeend','<style>'+ICSS+'</style>');
 
 /* ========== REPORTES ========== */
 /* ========== GRÁFICOS DE CUMPLIMIENTO (Reportes) ==========
