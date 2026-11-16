@@ -352,7 +352,7 @@ const SECS=[
  {k:'sal',n:'Saldos y solicitudes',i:'↺',r:['ADMIN','PROGRAMADOR'],badge:()=>pendSol().length+pendReq().length+AUT[S.biz].length},
  {k:'cal',n:'Calidad',i:'✔',r:['ADMIN','CALIDAD'],only:'P',badge:()=>recs().filter(x=>x.f===TODAY&&needsCal(x)).length},
  {k:'eje',n:'Ejecutar despachos',i:'🚚',r:['ADMIN','PROGRAMADOR','DESPACHO'],badge:()=>recs().filter(x=>x.f===TODAY&&saldo(x)>0&&x.st!=='no'&&x.req!=='pend').length},
- {k:'inv',n:'Inventario',i:'▤',r:['ADMIN','PROGRAMADOR']},
+ {k:'inv',n:'Inventario',i:'▤',r:['ADMIN','PROGRAMADOR','CONSULTA'],cond:()=>S.user.rol!=='CONSULTA'||verInventario()},
  {k:'rep',n:'Reportes',i:'⬇',r:['ADMIN','PROGRAMADOR','CONSULTA']},
  {k:'bd',n:'Bases de datos',i:'🔒',r:['ADMIN','PROGRAMADOR']}];
 let S={user:{u:SES&&SES.u,n:SES&&SES.nombre,rol:SES&&SES.ruta&&SES.ruta.rol,biz:(SES&&SES.ruta&&SES.ruta.negocios)||['B']},biz:'B',sec:'tab',date:TODAY,ejeTab:'hoy',bdTab:'cli',repT:'cumF'};
@@ -407,7 +407,10 @@ async function setDni(c,v){if(await guardar('ruta_catalogo',{tabla:'equipo',rec:
 async function toggleTaller(c){const e=D.eqs.find(q=>q.c===c);const n=enTaller(e)?'Activa':'Activa/Taller';if(await guardar('ruta_catalogo',{tabla:'equipo',rec:{c,e:n}},`${c}: ${n==='Activa'?'habilitado':'marcado en taller'}`))render()}
 
 /* ---------- shell ---------- */
-function allowed(){return SECS.filter(s=>s.r.includes(S.user.rol)&&(!s.only||s.only===S.biz))}
+/* Inventario para usuarios de consulta: solo gerencia (William Hall y Samuel Hall). Para agregar a alguien, sumar su usuario aquí. */
+const INV_CONSULTA=['whall','shall'];
+const verInventario=()=>INV_CONSULTA.includes(String(SES&&SES.u||'').toLowerCase());
+function allowed(){return SECS.filter(s=>s.r.includes(S.user.rol)&&(!s.only||s.only===S.biz)&&(!s.cond||s.cond()))}
 function renderShell(){
  document.documentElement.style.setProperty('--biz',BIZ[S.biz].c==='#F2F2EE'?'#A0A19F':BIZ[S.biz].c);
  const multi=S.user.biz.length>1;
