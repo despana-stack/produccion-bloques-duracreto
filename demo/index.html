@@ -1124,7 +1124,6 @@ function renderDash(){
    ${tile('Índice de productividad',pct(c.idx,1),`Ciclos producidos ÷ teóricos (1,260 por turno) · Ciclos por minuto: <b>${c.turnos?(c.cicSel/(c.turnos*480)).toFixed(2):'–'}</b> con paros · <b>${(m=>m?(c.cicSel/m).toFixed(2):'–')(minTrab(c.P))}</b> sin paros`,ic,[ic,il])}
    ${tile('Tiempo de paro',(minP/60).toFixed(1)+' h',`${PA.length} paros · TMEF ${tmef==null?'–':tmef.toFixed(1)+' h'} · TMR ${tmr==null?'–':Math.round(tmr)+' min'}`,'line')}
    ${tile('Desperdicio',pct(pDes,2),`${fmt(W.des)} u: ripio, dañados y reposiciones · planta completa${dMax==null?' · meta por definir':' · meta ≤ '+pct(dMax,1)}`,dB?dB[0]:'line',dB)}
-   ${perdidasHTML(W)}
    <section class="card s7"><h3>Producción acumulada contra la meta</h3><p class="cap">Equivalente Bloque 6". La meta y el equilibrio avanzan solo en días hábiles (sin domingos ni feriados).</p>
     <div class="legend"><span><i style="background:var(--accent)"></i>Producción</span><span><i style="background:var(--fg)"></i>Meta ${fmt(c.meta)}</span><span><i style="background:var(--brandgray)"></i>Equilibrio ${fmt(c.equi)}</span></div><div class="chartbox"><canvas id="chCum"></canvas></div></section>
    <section class="card s5"><h3>Producción por grupo</h3><p class="cap">Equivalente Bloque 6" en el periodo · línea negra = lo esperado a la fecha</p>
@@ -1136,6 +1135,7 @@ function renderDash(){
      <div class="tile-k"><span class="v num" style="font-size:24px">${PA.length}</span><span class="l">Paros registrados</span></div>
      <div class="tile-k"><span class="v num" style="font-size:24px">${tmef==null?'–':tmef.toFixed(1)+' h'}</span><span class="l">TMEF · tiempo medio entre fallas</span></div>
      <div class="tile-k"><span class="v num" style="font-size:24px">${tmr==null?'–':Math.round(tmr)+' min'}</span><span class="l">TMR · tiempo medio de reparación</span></div></div></section>
+   ${perdidasHTML(W)}
    <section class="card s6"><h3>Desempeño por turno</h3><p class="cap">Los grupos rotan de turno; esta vista mide el horario, no al grupo.</p><div class="tbl">${turnoTable(c)}</div></section>
    <section class="card s6"><h3>Producción por producto</h3><p class="cap">Unidades producidas tal como las reporta la máquina</p><div class="tbl">${productTable(c)}</div></section>
    <section class="card s12"><div class="ih"><h3>Cortes de rendimiento</h3>${info('Muestreos durante el turno. Índice = ciclos acumulados ÷ (180 ciclos/h × horas efectivas). El turno tiene 7 h de producción y 1 h final de limpieza y engrase; no se descuenta tiempo de comida (horas efectivas = tiempo desde el inicio del turno, máximo 7 h). Verde: óptimo (80 % o más). Ámbar: por mejorar (65 a 80 %). Rojo: bajo.')}</div><div id="cortes"></div></section>
