@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Prefabricados · Duracreto 360</title>
+<meta name="theme-color" content="#12130F">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<!--
+  DURACRETO 360 · Módulo PREFABRICADOS (página propia, como ruta.html)
+  Estado 17-nov-2026: ESQUELETO DEL NÚCLEO. El chat «Prefabricados» construye aquí el módulo.
+  Reglas de plataforma (no cambiar sin el chat de Núcleo):
+   - Misma sesión que Duracreto 360 (localStorage «dc_bloques_sesion_v2»): sin sesión o sin rol en Prefabricados → vuelve a ./
+   - Rol del módulo = S.negocios.prefabricados (no S.rol, que es el de Bloques). Planta = S.plantas.prefabricados
+   - Backend: mismo API_URL; acciones con prefijo «pref_» (Prefabricados.gs). Base propia: BD_Control_Prefabricados
+   - Tema: «dc_bloques_tema». Marca: Poppins, #F9D600, #F49A29, #12130F
+   - Se activa en index.html › MODULOS › prefabricados › listo:true (ya tiene href:'prefabricados.html')
+-->
+<style>
+:root{--bg:#F4F4F0;--surface:#FFFFFF;--fg:#12130F;--muted:#6B6C66;--line:#E2E2DC;--accent:#F9D600;--accent2:#F49A29;--ink:#12130F;--ok:#2E7D32;--bad:#C62828}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E0F0C;--surface:#1A1B17;--fg:#F2F2EE;--muted:#A0A19B;--line:#2E2F29}}
+:root[data-theme="dark"]{--bg:#0E0F0C;--surface:#1A1B17;--fg:#F2F2EE;--muted:#A0A19B;--line:#2E2F29}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--fg);font:15px/1.45 Poppins,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;background:#12130F;color:#fff}
+.bz{display:inline-grid;place-items:center;width:38px;height:38px;border-radius:10px;background:#12130F;color:#F9D600;border:2px solid #F9D600;font-weight:800;font-size:17px;flex:none}
+.tt{line-height:1.2;min-width:0}.tt b{display:block;font-size:16px}.tt small{display:block;font-size:11.5px;color:#B9BAB2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp{flex:1}
+.ib{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;border:1px solid #3a3b34;background:transparent;color:#fff;font-size:17px;cursor:pointer;text-decoration:none;flex:none}
+main{max-width:960px;margin:0 auto;padding:20px 16px 40px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+.card h2{margin:0 0 6px;font-size:19px}.muted{color:var(--muted)}
+.chip{display:inline-block;background:var(--accent);color:var(--ink);font-weight:700;font-size:12px;border-radius:999px;padding:3px 10px;margin:2px 4px 2px 0}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:14px 0 0;font-size:14px}dt{color:var(--muted)}dd{margin:0;font-weight:600;word-break:break-word}
+.carga{display:grid;place-items:center;min-height:60vh;text-align:center;color:var(--muted)}
+.btn{font:inherit;font-weight:600;border-radius:12px;padding:10px 16px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+  <span class="bz" aria-hidden="true">P</span>
+  <div class="tt"><b>Prefabricados</b><small id="hSub">Duracreto 360</small></div>
+  <span class="sp"></span>
+  <button class="ib" id="bTheme" title="Modo claro / oscuro" aria-label="Cambiar tema">☾</button>
+  <a class="ib" href="./" title="Volver a Duracreto 360" aria-label="Volver a Duracreto 360">⌂</a>
+  <button class="ib" id="bOut" title="Cerrar sesión" aria-label="Cerrar sesión">⎋</button>
+</header>
+<main id="main"><div class="carga">Cargando Prefabricados…</div></main>
+<script>
+/* ===================== Conexión con Duracreto 360 (misma sesión, mismos usuarios) ===================== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const SS='dc_bloques_sesion_v2',THM='dc_bloques_tema',NEG='prefabricados';
+const API_URL=String(window.API_URL||'').trim();
+let S=store.get(SS);
+const ROL=()=>String((S&&S.negocios&&S.negocios[NEG])||'');
+const PLANTA=()=>String((S&&S.plantas&&S.plantas[NEG])||'');
+if(!S||!S.token||!ROL())location.replace('./');
+async function api(action,payload={}){let r;
+  try{r=await fetch(API_URL,{method:'POST',body:JSON.stringify(Object.assign({action,token:S&&S.token},payload))})}catch(e){throw new Error('Sin conexión. Revise el internet e intente de nuevo.')}
+  const j=await r.json();if(!j.ok&&j.error==='sesion'){store.del(SS);location.replace('./');throw new Error('sesion')}return j}
+const ROLNOM={LIDER:'Coordinación de producción',CALIDAD:'Control de calidad',MANTENIMIENTO:'Mantenimiento',SUPERVISOR:'Jefatura / supervisión',GERENCIA:'Gerencia',VISOR:'Consulta',ADMIN:'Administrador'};
+
+/* Tema (el mismo de Duracreto 360) */
+function aplicarTema(){const t=store.get(THM);if(t)document.documentElement.dataset.theme=t;else delete document.documentElement.dataset.theme}
+function temaActual(){return document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}
+aplicarTema();
+$('#bTheme').onclick=()=>{store.set(THM,temaActual()==='dark'?'light':'dark');aplicarTema()};
+$('#bOut').onclick=()=>{api('logout').catch(()=>{});store.del(SS);location.replace('./')};
+
+/* ===================== Módulo (lo construye el chat «Prefabricados») ===================== */
+async function boot(){
+  $('#hSub').textContent=[ROLNOM[ROL()]||ROL(),PLANTA()].filter(Boolean).join(' · ');
+  try{const j=await api('pref_estado');if(!j.ok)throw new Error(j.error||'No se pudo leer Prefabricados');
+    $('#main').innerHTML=`<div class="card"><h2>Hola, ${esc(String(S.nombre||'').split(/\s+/)[0])}</h2>
+      <p class="muted" style="margin:0">El módulo de Prefabricados está en construcción. La conexión con su base de datos ya funciona.</p>
+      <dl><dt>Rol</dt><dd>${esc(ROLNOM[j.rol]||j.rol)}</dd><dt>Planta</dt><dd>${esc(j.planta||'Todas')}</dd>
+      <dt>Permisos</dt><dd>${(j.permisos||[]).map(p=>`<span class="chip">${esc(p)}</span>`).join('')||'—'}</dd>
+      <dt>Base de datos</dt><dd>${esc(j.bd.nombre)} · ${esc(j.bd.hojas.join(', '))}</dd></dl></div>`}
+  catch(e){if(e.message!=='sesion')$('#main').innerHTML=`<div class="carga"><div>${esc(e.message)}<br><button class="btn" style="margin-top:12px" onclick="location.reload()">Reintentar</button></div></div>`}
+}
+if(S&&S.token&&ROL())boot();
+</script>
+</body>
+</html>
