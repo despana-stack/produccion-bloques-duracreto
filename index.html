@@ -1087,8 +1087,11 @@ function calc(){
   const P=DB.produccion.filter(r=>inF(r)),Pm=DB.produccion.filter(r=>r.fecha.slice(0,7)===ym&&(!F.eq||r.equipo===F.eq)&&(!F.tu||r.turno===F.tu));
   const tot=Pm.reduce((s,r)=>s+eqv(r),0),totSel=P.reduce((s,r)=>s+eqv(r),0),realSel=P.reduce((s,r)=>s+r.unidades,0),cicSel=P.reduce((s,r)=>s+r.ciclos,0);
   const t=todayISO(),lim=t.slice(0,7)===ym?t:(t>ym?dias.slice(-1)[0]:dias[0]);const conDato=Pm.map(r=>r.fecha).filter(d=>d<=lim).sort();const corte=conDato.length?conDato[conDato.length-1]:lim;
-  const habTrans=hab.filter(d=>d<=corte).length,habRest=hab.filter(d=>d>corte).length;
-  const ritmo=habTrans?tot/habTrans:0,proy=ritmo*hab.length;
+  /* El ritmo usa solo días cerrados: el día en curso cuenta cuando ya tiene sus tres turnos (A, B y C), para que la proyección no baje con el primer turno del día. */
+  const abierto=corte===t&&!['A','B','C'].every(x=>DB.produccion.some(r=>r.fecha===t&&r.turno===x));
+  const corteR=abierto?(conDato.filter(d=>d<t).slice(-1)[0]||''):corte,totR=abierto?Pm.filter(r=>r.fecha<=corteR).reduce((s,r)=>s+eqv(r),0):tot;
+  const habTrans=hab.filter(d=>d<=corteR).length,habRest=hab.filter(d=>d>corteR).length;
+  const ritmo=habTrans?totR/habTrans:0,proy=ritmo*hab.length;
   const reqDia=habRest?Math.max(0,meta-tot)/habRest:0;
   const turnos=P.length,idx=turnos?cicSel/(turnos*CFG.ciclosHora*CFG.horasTurno):0;
   return {ym,dias,hab,meta,equi,metaDia,P,Pm,tot,totSel,realSel,cicSel,habTrans,habRest,ritmo,proy,reqDia,idx,turnos,corte,share};
