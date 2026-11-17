@@ -816,7 +816,7 @@ function renderRegistro(){
 }
 
 /* ===================== Ingreso de materia prima (Almacén) ===================== */
-const MP_IN={'Cemento':{base:'kg',u:['kg','toneladas','bolsas de 42.5 kg'],d:'Granel o en bolsas'},'Aditivo':{base:'galones',u:['galones','litros'],d:'Adiblock u otro aditivo'},'Arena Santa Elena':{base:'m³',u:['m³'],d:'Agregado'},'Arena San Jorge':{base:'m³',u:['m³'],d:'Agregado'},'Grava 3/8"':{base:'m³',u:['m³'],d:'Agregado'}};
+const MP_IN={'Cemento':{base:'kg',u:['kg'],d:'A granel, en kg'},'Aditivo':{base:'galones',u:['galones','litros'],d:'Adiblock u otro aditivo'},'Arena Santa Elena':{base:'m³',u:['m³'],d:'Agregado'},'Arena San Jorge':{base:'m³',u:['m³'],d:'Agregado'},'Grava 3/8"':{base:'m³',u:['m³'],d:'Agregado'}};
 const MP_F={'kg':1,'toneladas':1000,'bolsas de 42.5 kg':42.5,'m³':1,'galones':1,'litros':1/3.785};
 let empF={};
 function renderEntradaMP(){const m=$('#main');const d=new Date();const hh=pad(d.getHours())+':'+pad(d.getMinutes());
