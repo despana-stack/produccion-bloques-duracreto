@@ -134,6 +134,7 @@ textarea.in-ctl{min-height:96px;resize:vertical}
 .mpct{font-size:42px;font-weight:800;line-height:1;margin:2px 0 12px}
 .mf{display:flex;justify-content:space-between;gap:10px;margin-top:12px;font-size:16px;color:var(--muted)}
 .mf b{color:var(--fg);font-size:22px}
+.tprod{display:flex;align-items:center;gap:7px;margin:-2px 0 2px;font-size:13px;color:var(--muted)}.tprod svg{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}.tprod b{color:var(--fg);font-weight:600}.tprod small{font-size:12px}.tprod i{font-style:normal;color:var(--muted);margin:0 2px}.tprod .l{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px}.tprod .it{white-space:nowrap}
 .ncsum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .ncsum div{background:var(--surface2);border-radius:12px;padding:10px;text-align:center}
 .ncsum b{display:block;font-size:22px}
@@ -1233,11 +1234,16 @@ function renderRep(){
   const parado=t=>{const pr=prolActivo();if(pr){const st={A:6,B:14,C:22}[t],p0=repDia.split('-').map(Number),s0=new Date(p0[0],p0[1]-1,p0[2],st),s1=new Date(s0.getTime()+8*3600e3);if(s0<new Date()&&s1>new Date(pr.registro.replace(' ','T')))return pr}
     return (DB.alertas||[]).filter(a=>a.turno===t&&a.estado!=='Resuelta'&&!a.reanudo&&msDesde(a.registro)<12*3600e3&&fechaTurnoAl(a)===repDia).sort((a,b)=>a.registro.localeCompare(b.registro)).pop()};
   const pilParo=a=>`<span class="pill parado" style="align-self:flex-start"><i></i>PARADO desde ${a.prol?desdeTxt(a.registro):a.registro.slice(11)} · ${hace(a.registro)}</span>${a.prol&&a.desc?`<span class="note" style="font-size:12px;margin-top:-4px">${esc(a.desc)}</span>`:''}`;
+  /* Producto(s) del turno: discreto, bajo el encabezado. Si hubo cambio de producto se muestran en orden con sus unidades. */
+  const prodTurno=(R,lc)=>{const L=[];R.slice().sort((a,b)=>a.registro.localeCompare(b.registro)).forEach(r=>{const o=L.find(x=>x.p===r.producto);if(o)o.u+=r.unidades;else L.push({p:r.producto,u:r.unidades})});
+    if(!L.length&&lc&&lc.producto)L.push({p:lc.producto,u:null});if(!L.length)return '';
+    return `<div class="tprod" title="Producto del turno"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="1.5"/><path d="M9 7v10M15 7v10"/></svg><span class="l">${L.map(x=>`<span class="it"><b>${esc(PR[x.p]?.nombre||'Producto')}</b>${L.length>1&&x.u!=null?` <small>${fmt(x.u)} u</small>`:''}</span>`).join('<i>→</i>')}</span></div>`};
   const turnoCard=t=>{const R=P.filter(r=>r.turno===t),X=VT[t],v=X.v,u=X.u,ix=X.teo?X.cy/X.teo:0,pq=R.length?null:parado(t);
     const lc=X.lc,pa=PA.filter(r=>r.turno===t).reduce((s,r)=>s+r.minutos,0);
     const gRot=()=>{const p0=repDia.split('-').map(Number),s0=new Date(p0[0],p0[1]-1,p0[2],{A:6,B:14,C:22}[t]);return Object.keys(EQ).find(id=>turnoRot(id,s0)===t)};
     const gid=(R[0]||lc||PA.find(r=>r.turno===t)||{}).equipo||(pq&&pq.prol?gRot():pq&&pq.equipo);const [c3,l3]=nivel(ix),pc=v/metaT;
     return `<section class="card s4 tcard"><div class="th"><div><b>${TURNOS[t].lbl.split(' · ')[0]}</b><div class="note">${TURNOS[t].lbl.split(' · ')[1]}</div></div>${gid?teamChip(gid):''}</div>
+     ${prodTurno(R,X.vivo?lc:null)}
      ${pq&&X.vivo?pilParo(pq):X.vivo?`<span class="pill blue" style="align-self:flex-start">En curso · según corte de las ${lc.hora}</span>`:''}
      ${R.length||X.vivo?`<div class="big num">${fmt(v)} <span class="note" style="font-size:13px;font-weight:500">de ${fmt(metaT)}</span></div>
      <div class="bar" style="height:10px"><i style="width:${Math.min(100,pc*100)}%;background:var(--${scaleCol(pc)})"></i></div>
