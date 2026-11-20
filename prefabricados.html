@@ -624,7 +624,7 @@ function negociosMenu(){const n=Object.assign({},S.negocios||{}),out=[];
   out.push({id:'prefabricados',nom:'Prefabricados',l:'P',bg:'#12130F',c:'#F9D600',cur:true});
   if(n.trituracion)out.push({id:'trituracion',nom:'Trituración',l:'T',bg:'#F49A29',c:'#12130F',prox:true});
   if(n.concreto)out.push({id:'concreto',nom:'Concreto',l:'C',bg:'#A0A19F',c:'#12130F',prox:true});
-  if(S.ruta)out.push({id:'ruta',nom:'Ruta 360',l:'R',bg:'#F49A29',c:'#12130F',ir:()=>{location.href='ruta.html'}});
+  if(S.ruta)out.push({id:'ruta',nom:'Despachos',l:'D',bg:'#F49A29',c:'#12130F',ir:()=>{location.href='ruta.html'}});
   return out}
 function render(){
   const T=tabs();if(!T.find(x=>x[0]===tab))tab=T[0][0];store.set(TABK,tab);
@@ -669,6 +669,9 @@ addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('#modal').hidden)cerra
 const plantaSel=(fn,todas=true)=>`<div class="plsel" role="group" aria-label="Planta">${D.plantas.map(p=>`<button class="${PL===p?'on':''}" data-pl="${esc(p)}">${esc(p)}</button>`).join('')}${todas?`<button class="${PL===''?'on':''}" data-pl="">Ambas</button>`:''}</div>`;
 function conectarPlanta(fn){document.querySelectorAll('[data-pl]').forEach(b=>b.onclick=()=>{PL=b.dataset.pl;store.set(PLK,PL);fn()})}
 const plTxt=()=>PL||'Ambas plantas';
+/* Rendimiento por día de un producto en una planta ('' = suma de las plantas). 0 = sin dato */
+const rendDe=(c,pl)=>!c||!c.rend?0:pl?(c.rend[pl]||0):Object.values(c.rend).reduce((s,v)=>s+v,0);
+const usoPill=u=>`<span class="pill ${u>=80?'ok':u>=65?'warn':'bad'}">${Math.round(u)}%</span>`;
 
 /* ===================== Registro ===================== */
 function renderRegistro(){
@@ -704,7 +707,7 @@ async function enviar(btn,accion,rec,ok){btn.disabled=true;const t=btn.textConte
 function formProd(){
   const pl0=plantaUsr()||PL||D.plantas[0];
   $('#main').innerHTML=`<div class="col">${formHead('Reporte de producción','Totales del día')}<form id="ff" novalidate>
-   <div class="field" data-k="fecha"><label for="fecha">Fecha de producción</label><input class="in-ctl" type="date" id="fecha" value="${D.hoy}" max="${D.hoy}" ${minFecha()?`min="${minFecha()}"`:''}><span class="hint">Cada producto queda «en curado» y pasa a disponible en Ruta 360 cuando cumple sus días de curado.</span></div>
+   <div class="field" data-k="fecha"><label for="fecha">Fecha de producción</label><input class="in-ctl" type="date" id="fecha" value="${D.hoy}" max="${D.hoy}" ${minFecha()?`min="${minFecha()}"`:''}><span class="hint">Cada producto queda «en curado» y pasa a disponible en Despachos cuando cumple sus días de curado.</span></div>
    ${campoPlanta('planta')}<div id="aviso"></div>
    <div class="field" style="margin-bottom:8px"><span class="lbl">Piezas producidas</span><span class="hint">Escriba solo lo que se produjo; lo demás se deja vacío.</span></div>
    <div id="fams"></div>
@@ -720,7 +723,7 @@ function formProd(){
     fams.sort((a,b)=>a.ins-b.ins);
     $('#fams').innerHTML=fams.map(g=>{const t=suma(g.it.map(c=>({q:vals[c.id]||0})));
       return`<details class="fam" ${t||(!prev&&g.f!=='Pretensados'&&!g.ins)?'open':''}><summary>${esc(g.f)}<span class="n">${g.ins?'insumo · no suma':t?fmt(t)+' piezas':'—'}</span><span class="chev">▾</span></summary>
-      ${g.it.map(c=>`<div class="prow ${vals[c.id]?'has':''}"><div><b>${esc(c.n)}</b>${c.sap?`<small>SAP ${esc(c.sap)}</small>`:''}</div><input class="in-ctl num" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="0" value="${vals[c.id]||''}" data-p="${c.id}" data-ins="${c.ins?1:0}" aria-label="${esc(c.n)}"></div>`).join('')}</details>`}).join('');
+      ${g.it.map(c=>`<div class="prow ${vals[c.id]?'has':''}"><div><b>${esc(c.n)}</b>${rendDe(c,pl)?`<small>Rendimiento: ${fmt(rendDe(c,pl))} por día</small>`:''}</div><input class="in-ctl num" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="0" value="${vals[c.id]||''}" data-p="${c.id}" data-ins="${c.ins?1:0}" aria-label="${esc(c.n)}"></div>`).join('')}</details>`}).join('');
     document.querySelectorAll('[data-p]').forEach(i=>i.oninput=()=>{i.value=i.value.replace(/[^0-9]/g,'');rec()});rec()};
   const rec=()=>{let t=0,k=0;document.querySelectorAll('[data-p]').forEach(i=>{const v=+i.value||0;i.closest('.prow').classList.toggle('has',v>0);if(i.dataset.ins==='0'){t+=v;if(v)k++}});
     $('#tot').textContent=fmt(t)+' piezas';$('#totk').textContent=`Total del día · ${k} producto${k===1?'':'s'}`};
@@ -790,12 +793,13 @@ function renderRep(){
   const nc=D.nc.filter(r=>r.fp===f&&enPlanta(r.pl,PL)),inc=D.inc.filter(r=>r.f===f&&enPlanta(r.pl,PL));
   const delta=prevT?Math.round(pct(tot-prevT,prevT)):null;
   const filasP=Object.keys(porP).sort((a,b)=>(M[a].o)-(M[b].o));
+  const rDia=filasP.reduce((o,id)=>{const r=rendDe(M[id],PL);if(r){o.r+=r;o.p+=porP[id]}return o},{r:0,p:0});
   const cur0=dia.length?dia[0].lib:'';
   $('#main').innerHTML=`<div class="rep">
    <div class="dnav"><button id="dprev" aria-label="Día anterior" ${i>=fechas.length-1?'disabled':''}>‹</button><select id="dsel" aria-label="Fecha del reporte">${fechas.map(x=>`<option value="${x}" ${x===f?'selected':''}>${cap1(diaN(x))} ${dmy(x)}</option>`).join('')}</select><button id="dnext" aria-label="Día siguiente" ${i<=0?'disabled':''}>›</button>
     <span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center" class="no-print">${plantaSel()}<button class="btn small ghost" id="pdf">PDF</button><button class="btn small ghost" id="wa">WhatsApp</button></span></div>
    <div class="grid">
-    <section class="card s12 kc" style="border-top-color:${tot?'var(--yellow)':'var(--line)'}"><div class="kt" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><h3>Producción del día · ${dmy(f)} · ${esc(plTxt())}</h3><span style="display:flex;gap:6px;flex-wrap:wrap">${reps.map(r=>`<span class="pill ${r.u==='historico'?'blue':'ok'}">${r.u==='historico'?'Histórico Excel':`${PL?'':corto(r.pl)+' · '}Reportado ${dm(r.ts.slice(0,10))} ${r.ts.slice(11)} · ${esc(r.n.split(' ')[0])}`}</span>`).join('')||'<span class="pill warn">Sin reporte</span>'}<span class="pill blue">Meta por definir</span></span></div>
+    <section class="card s12 kc" style="border-top-color:${tot?'var(--yellow)':'var(--line)'}"><div class="kt" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><h3>Producción del día · ${dmy(f)} · ${esc(plTxt())}</h3><span style="display:flex;gap:6px;flex-wrap:wrap">${reps.map(r=>`<span class="pill ${r.u==='historico'?'blue':'ok'}">${r.u==='historico'?'Histórico Excel':`${PL?'':corto(r.pl)+' · '}Reportado ${dm(r.ts.slice(0,10))} ${r.ts.slice(11)} · ${esc(r.n.split(' ')[0])}`}</span>`).join('')||'<span class="pill warn">Sin reporte</span>'}${rDia.r?`<span class="pill ${pct(rDia.p,rDia.r)>=80?'ok':pct(rDia.p,rDia.r)>=65?'warn':'bad'}">${Math.round(pct(rDia.p,rDia.r))}% del rendimiento</span>`:''}<span class="pill blue">Meta por definir</span></span></div>
      <div style="display:flex;flex-wrap:wrap;gap:12px 32px;align-items:flex-end;margin-top:8px">
       <div><div class="num" style="font-size:44px;font-weight:800;line-height:1">${fmt(tot)}</div><span class="note">piezas · ${filasP.length} producto${filasP.length===1?'':'s'}</span></div>
       <div class="tile-k"><span class="v num" style="font-size:22px;${delta===null?'':`color:var(--${delta>=0?'ok':'bad'})`}">${delta===null?'–':(delta>=0?'+':'')+delta+'%'}</span><span class="l">${prevF?`vs ${diaN(prevF)} ${dm(prevF)} (${fmt(prevT)})`:'sin día anterior'}</span></div>
@@ -804,12 +808,12 @@ function renderRep(){
       <div class="tile-k"><span class="v num" style="font-size:22px">${fmt(cur)}</span><span class="l">En curado al cierre</span></div>
       <div class="tile-k"><span class="v num" style="font-size:22px">${fmt(suma(nc))}</span><span class="l">Segunda y desecho</span></div></div></section>
     <section class="card s7"><h3>Producción por producto</h3><p class="cap">Lo producido este día y cuándo se libera para despacho</p>
-     ${filasP.length?`<div class="tbl"><table><thead><tr><th>Producto</th><th class="hm">Familia</th><th style="text-align:right">Piezas</th><th style="text-align:right">Libera</th></tr></thead><tbody>
-     ${filasP.map(id=>`<tr><td>${esc(M[id].n)}</td><td class="note hm">${esc(M[id].f.replace('Prefabricados menores','Menores'))}</td><td class="num" style="text-align:right"><b>${fmt(porP[id])}</b></td><td style="text-align:right">${dm(addD(f,M[id].cur))}</td></tr>`).join('')}
-     <tr><td><b>Total</b></td><td class="hm"></td><td class="num" style="text-align:right"><b>${fmt(tot)}</b></td><td></td></tr></tbody></table></div>`:'<p class="note">No hay producción reportada para este día.</p>'}
+     ${filasP.length?`<div class="tbl"><table><thead><tr><th>Producto</th><th style="text-align:right">Piezas</th><th style="text-align:right" class="hm">Rend./día</th><th style="text-align:right">Uso</th><th style="text-align:right">Libera</th></tr></thead><tbody>
+     ${filasP.map(id=>`<tr><td>${esc(M[id].n)}</td><td class="num" style="text-align:right"><b>${fmt(porP[id])}</b></td><td class="num hm" style="text-align:right">${rendDe(M[id],PL)?fmt(rendDe(M[id],PL)):'–'}</td><td style="text-align:right">${rendDe(M[id],PL)?usoPill(pct(porP[id],rendDe(M[id],PL))):'<span class="note">–</span>'}</td><td style="text-align:right">${dm(addD(f,M[id].cur))}</td></tr>`).join('')}
+     <tr><td><b>Total</b></td><td class="num" style="text-align:right"><b>${fmt(tot)}</b></td><td class="hm"></td><td style="text-align:right">${rDia.r?usoPill(pct(rDia.p,rDia.r)):''}</td><td></td></tr></tbody></table></div>`:'<p class="note">No hay producción reportada para este día.</p>'}
      ${mallas||reps.some(r=>r.obs&&r.u!=='historico')?`<p class="note" style="margin:10px 0 0">${mallas?`Mallas armadas (insumo): <b>${fmt(mallas)}</b>. `:''}${reps.filter(r=>r.obs&&r.u!=='historico').map(r=>`«${esc(r.obs)}»`).join(' ')}</p>`:''}
      ${reps.some(r=>r.foto)?`<p class="note" style="margin:6px 0 0">${reps.filter(r=>r.foto).map(r=>`<a class="lnk" href="${esc(r.foto)}" target="_blank" rel="noopener">Ver foto de la hoja${PL?'':' ('+corto(r.pl)+')'}</a>`).join(' · ')}</p>`:''}</section>
-    <section class="card s5"><h3>Liberado este día</h3><p class="cap">Pasa a disponible en Ruta 360</p>${Object.keys(libP).length?`<div class="tbl"><table><tbody>${Object.keys(libP).sort((a,b)=>M[a].o-M[b].o).map(id=>`<tr><td>${esc(M[id].n)}</td><td class="num" style="text-align:right"><b>${fmt(libP[id])}</b></td></tr>`).join('')}</tbody></table></div>`:'<p class="note">Nada se liberó este día.</p>'}</section>
+    <section class="card s5"><h3>Liberado este día</h3><p class="cap">Pasa a disponible en Despachos</p>${Object.keys(libP).length?`<div class="tbl"><table><tbody>${Object.keys(libP).sort((a,b)=>M[a].o-M[b].o).map(id=>`<tr><td>${esc(M[id].n)}</td><td class="num" style="text-align:right"><b>${fmt(libP[id])}</b></td></tr>`).join('')}</tbody></table></div>`:'<p class="note">Nada se liberó este día.</p>'}</section>
     <section class="card s6"><h3>Incidencias del día</h3><p class="cap">${inc.length} incidencia${inc.length===1?'':'s'}</p>${inc.length?inc.map(x=>`<div class="inc"><div class="h"><b>${esc(causaN(x.c))}</b><span class="pill ${x.a?'bad':'blue'}">${x.a?'Afectó la producción':'No afectó'}</span></div><p>${esc(x.t)}</p><span class="note">${esc(x.n)}${PL?'':' · '+corto(x.pl)}${x.pz?` · ${fmt(x.pz)} piezas no hechas`:''}${x.h?` · ${x.h} h`:''}${x.foto?` · <a class="lnk" href="${esc(x.foto)}" target="_blank" rel="noopener">foto</a>`:''}</span></div>`).join(''):'<p class="note">Sin incidencias reportadas.</p>'}</section>
     <section class="card s6"><h3>No conformes de este día</h3><p class="cap">Producto colado el ${dmy(f)} que se mandó a segunda o desecho</p>${nc.length?`<div class="tbl"><table><tbody>${nc.map(x=>`<tr><td>${esc((M[x.p]||{n:x.p}).n)}</td><td><span class="pill ${x.c==='Segunda'?'warn':'bad'}">${x.c}</span></td><td class="num" style="text-align:right"><b>${fmt(x.q)}</b></td><td class="note">${esc(x.n.split(' ')[0])}${x.foto?` · <a class="lnk" href="${esc(x.foto)}" target="_blank" rel="noopener">foto</a>`:''}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">Sin no conformes reportados para esta fecha.</p>'}</section>
    </div></div>`;
@@ -838,7 +842,7 @@ async function renderDash(){
   const P=X.prod.filter(r=>r.f>=DS.desde&&r.f<=DS.hasta&&enPlanta(r.pl,PL)&&M[r.id]&&enF(r.id));
   const piezas=P.filter(r=>!M[r.id].ins),mallas=P.filter(r=>M[r.id].ins);
   const tot=suma(piezas),dias=[...new Set(piezas.map(r=>r.f))].sort(),nd=dias.length;
-  const verDesp=PL!=='Tegucigalpa',desp=verDesp?X.desp.filter(r=>r.f>=DS.desde&&r.f<=DS.hasta&&enF(r.id)):[],totD=suma(desp);
+  const verDesp=true,desp=X.desp.filter(r=>r.f>=DS.desde&&r.f<=DS.hasta&&enPlanta(r.pl||'San Pedro Sula',PL)&&enF(r.id)),totD=suma(desp);
   const nc=X.nc.filter(r=>r.fp>=DS.desde&&r.fp<=DS.hasta&&enPlanta(r.pl,PL)&&enF(r.p)),seg=suma(nc.filter(r=>r.c==='Segunda')),des=suma(nc.filter(r=>r.c!=='Segunda'));
   const inc=X.inc.filter(r=>r.f>=DS.desde&&r.f<=DS.hasta&&enPlanta(r.pl,PL));
   const cur=suma(enCurado(D.hoy,PL));
@@ -855,6 +859,7 @@ async function renderDash(){
   // liberación próximos 7 días
   const cal=[];for(let k=-1;k<7;k++){const d=addD(D.hoy,k);if(dOf(d).getDay()===0&&k!==0)continue;cal.push([d,suma(liberadoEl(d,PL))])}
   const meses=mesesDisp(),fams=[...new Set(X.cat.map(c=>c.f))];
+  const rendRows=X.cat.filter(c=>!c.ins&&enF(c.id)&&rendDe(c,PL)).map(c=>{const ps=piezas.filter(r=>r.id===c.id);return{n:c.n,r:rendDe(c,PL),p:suma(ps),d:new Set(ps.map(r=>r.f)).size}});
   $('#main').innerHTML=`<div class="filters"><div class="f"><label for="fm">Mes</label><select id="fm">${meses.map(m=>`<option value="${m}" ${m===DS.mes?'selected':''}>${mesN(m)}</option>`).join('')}${DS.mes?'':'<option selected>Personalizado</option>'}</select></div>
    <div class="f"><label for="fd">Desde</label><input type="date" id="fd" value="${DS.desde}" min="${D.inicio}" max="${D.hoy}"></div><div class="f"><label for="fh">Hasta</label><input type="date" id="fh" value="${DS.hasta}" min="${D.inicio}" max="${D.hoy}"></div>
    <div class="f"><label for="fp">Planta</label><select id="fp">${D.plantas.map(p=>`<option ${PL===p?'selected':''}>${esc(p)}</option>`).join('')}<option value="" ${PL===''?'selected':''}>Ambas</option></select></div>
@@ -864,7 +869,7 @@ async function renderDash(){
    <section class="card hero s12"><div><div class="hh"><h3>Producción · ${DS.mes?mesN(DS.mes):dmy(DS.desde)+' al '+dmy(DS.hasta)}</h3><span class="pill blue">Meta por definir</span></div>
     <p class="cap" style="margin:2px 0 0">${esc(plTxt())}${DS.fam?' · '+esc(DS.fam):''} · piezas terminadas, sin mallas · del ${dmy(DS.desde)} al ${dmy(DS.hasta)}</p>
     <div class="kpi num">${fmt(tot)} <small>piezas en ${nd} día${nd===1?'':'s'} de producción</small></div></div>
-    <div class="st num"><div><b>${nd?fmt(tot/nd):'–'}</b><span>Promedio por día producido</span></div><div><b>${verDesp?fmt(totD):'–'}</b><span>${verDesp?'Despachado (Ruta 360)':'Despachado: Ruta 360 aún no separa planta'}</span></div>
+    <div class="st num"><div><b>${nd?fmt(tot/nd):'–'}</b><span>Promedio por día producido</span></div><div><b>${verDesp?fmt(totD):'–'}</b><span>Despachado según Despachos</span></div>
     <div><b style="color:${!verDesp||!totD?'inherit':tot<totD?'var(--accent-ink)':'var(--ok)'}">${verDesp&&totD?Math.round(pct(tot,totD))+'%':'–'}</b><span>Producido ÷ despachado</span></div><div><b>${fmt(cur)}</b><span>En curado hoy</span></div></div></section>
    <div class="card s3 tile-k kc"><div class="kt"><span class="l">Piezas producidas</span></div><span class="v num">${fmt(tot)}</span><span class="l">${nd} días · ${Object.keys(pp).length} productos</span></div>
    <div class="card s3 tile-k kc" style="border-top-color:${seg+des?'var(--warn)':'var(--line)'}"><div class="kt"><span class="l">Segunda y desecho</span></div><span class="v num">${tot?pct(seg+des,tot).toFixed(1):'0.0'}%</span><span class="l">${fmt(seg)} a segunda · ${fmt(des)} desecho</span></div>
@@ -876,12 +881,15 @@ async function renderDash(){
     <div class="legend"><span><i style="background:var(--fg);height:10px;width:10px"></i>Producido</span>${verDesp?'<span><i style="background:var(--orange);height:10px;width:10px"></i>Despachado</span>':''}</div>
     ${Object.keys(famT).length?Object.entries(famT).sort((a,b)=>b[1][0]-a[1][0]).map(([f,[p,d]])=>`<div class="gb"><div class="gt"><b>${esc(f.replace('Prefabricados menores','Menores'))}</b><span class="num"><b>${fmt(p)}</b>${verDesp?' / '+fmt(d):''}</span></div>
      <div class="gbar"><i style="width:${p/fx*100}%;background:var(--fg)"></i></div>${verDesp?`<div class="gbar" style="height:8px"><i style="width:${d/fx*100}%;background:var(--orange)"></i></div>`:''}</div>`).join(''):'<p class="note">Sin producción en el periodo.</p>'}</section>
-   <section class="card s7"><h3>Producido vs despachado por producto</h3><p class="cap">${verDesp?'Lo despachado de más sale del inventario que ya había (Ruta 360 no separa planta todavía)':'Despachado: Ruta 360 aún no separa Tegucigalpa'}</p>
+   <section class="card s7"><h3>Producido vs despachado por producto</h3><p class="cap">Despachado según Despachos. Lo despachado de más sale del inventario que ya había.</p>
     <div class="legend"><span><i style="background:var(--fg);height:10px;width:10px"></i>Producido</span>${verDesp?'<span><i style="background:var(--orange);height:10px;width:10px"></i>Despachado</span>':''}</div>
     ${ids.length?`<div class="pbars">${ids.map(id=>`<div class="r"><span>${esc(M[id].n)}</span><div class="tr"><i style="width:${(pp[id]||0)/px*100}%;background:var(--fg)"></i>${verDesp?`<i style="width:${(pd[id]||0)/px*100}%;background:var(--orange)"></i>`:''}</div><span class="num note" style="text-align:right">${fmt(pp[id]||0)}${verDesp?' / '+fmt(pd[id]||0):''}</span></div>`).join('')}</div>`:'<p class="note">Sin datos en el periodo.</p>'}</section>
    <section class="card s5"><div class="kt" style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><h3>Principales causas de incidencia</h3><p class="cap">Veces por causa, de mayor a menor</p></div><span class="pill bad">Rojo = 80 %</span></div>
     ${czs.length?`<div class="tbl"><table class="pareto"><tbody>${czs.map(([c,n])=>{const ini=acc;acc+=n;const roja=ini/czT<0.8;return`<tr><td>${esc(causaN(c))}</td><td class="pb"><div class="bar" style="height:10px"><i style="width:${n/czs[0][1]*100}%;background:${roja?'var(--bad)':'var(--brandgray)'}"></i></div></td><td class="num" style="text-align:right"><b>${n}</b></td></tr>`}).join('')}</tbody></table></div>`:'<p class="note">Sin incidencias en el periodo.</p>'}</section>
-   <section class="card s12"><h3>Calendario de liberación</h3><p class="cap">Piezas que pasan a disponible en Ruta 360 cada día · ${esc(plTxt())}</p>
+   ${rendRows.length?`<section class="card s12"><div class="kt" style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap"><div><h3>Uso del rendimiento por producto</h3><p class="cap">Promedio de los días en que se produjo cada producto contra su rendimiento por día · ${esc(plTxt())}</p></div><span class="pill blue">Verde ≥ 80 % · ámbar ≥ 65 %</span></div>
+    <div class="tbl"><table><thead><tr><th>Producto</th><th style="text-align:right">Rend./día</th><th style="text-align:right">Días producido</th><th style="text-align:right">Promedio/día</th><th style="text-align:right">Uso</th></tr></thead><tbody>${rendRows.map(x=>`<tr><td>${esc(x.n)}</td><td class="num" style="text-align:right">${fmt(x.r)}</td><td class="num" style="text-align:right">${x.d} de ${nd}</td><td class="num" style="text-align:right"><b>${x.d?fmt(x.p/x.d):'–'}</b></td><td style="text-align:right">${x.d?usoPill(pct(x.p/x.d,x.r)):'<span class="note">sin producción</span>'}</td></tr>`).join('')}</tbody></table></div>
+    <p class="note" style="margin:8px 0 0">Solo productos con rendimiento cargado en el catálogo. Los demás están por confirmar.</p></section>`:''}
+   <section class="card s12"><h3>Calendario de liberación</h3><p class="cap">Piezas que pasan a disponible en Despachos cada día · ${esc(plTxt())}</p>
     <div class="lib">${cal.map(([d,v])=>`<div class="${d===D.hoy?'hoy':''}"><span>${diaN(d).slice(0,3)} ${dm(d)}</span><b class="num">${fmt(v)}</b><span>${d<D.hoy?'liberado':d===D.hoy?'hoy':'en curado'}</span></div>`).join('')}</div></section>
   </div>`;
   const ir=()=>{CACHE.x=0;renderDash()};
