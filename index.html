@@ -635,7 +635,7 @@ function listo360(){const md=$('#modal');if(!md.hidden)return;
 const MOD='dc_plataforma_modulo';
 const MODULOS=[
  {id:'bloques',nom:'Bloques',letra:'B',col:'#F9D600',ink:'#12130F',listo:true},
- {id:'ruta',nom:'Ruta 360',nomLargo:'Ruta 360 · Despachos e inventario',letra:'R',col:'#F49A29',ink:'#12130F',listo:true,href:'ruta.html'},
+ {id:'ruta',nom:'Despachos',nomLargo:'Despachos · Programación, entregas e inventario',letra:'D',col:'#F49A29',ink:'#12130F',listo:true,href:'ruta.html'},
  {id:'trituracion',nom:'Trituración',nomLargo:'Trituración de agregados',letra:'T',col:'#F49A29',ink:'#12130F',listo:false,
   tit:'¡Calma, que aquí no se tritura la paciencia!',txt:'No hay prisa: Diego y su equipo están picando piedra (literalmente) para que la plataforma de Trituración de agregados esté disponible lo antes posible.'},
  {id:'concreto',nom:'Concreto',letra:'C',col:'#A0A19F',ink:'#12130F',listo:false,
@@ -652,15 +652,15 @@ function marcarFijo(){document.documentElement.classList.toggle('mnu-fijo',!!S&&
 ESCR.addEventListener&&ESCR.addEventListener('change',()=>{if(S){menuAbierto=false;document.body.style.overflow='';render()}});
 addEventListener('resize',()=>{if(S)marcarFijo()});
 function misNegocios(){const n=Object.assign({},S&&S.negocios||{});if(S&&!n.bloques&&S.rol)n.bloques=S.rol;if(S&&S.ruta)n.ruta=S.ruta.rol;return n}
-/* Ruta 360 vive en ruta.html (misma sesión). Quien solo tiene rol en Ruta 360 entra directo allí. */
+/* Despachos (antes «Ruta 360»; id 'ruta') vive en ruta.html (misma sesión). Quien solo tiene rol en Despachos entra directo allí. */
 const soloRuta=()=>!!S&&!!S.ruta&&!ROLES[S.rol];
 /* Núcleo (17-nov): se entra con rol en cualquier negocio. Sin rol en Bloques → la página de su módulo (ruta.html, prefabricados.html…).
- * Producción primero y Ruta 360 al final. Con un solo destino entra directo; con varios, elige. */
+ * Producción primero y Despachos al final. Con un solo destino entra directo; con varios, elige. */
 const sinBloques=()=>!!S&&!ROLES[S.rol];
 function destinosSinBloques(){const n=misNegocios(),L=MODULOS.filter(m=>m.listo&&m.href&&n[m.id]);return L.filter(m=>m.id!=='ruta').concat(L.filter(m=>m.id==='ruta'))}
 function inicioSinBloques(){const n=misNegocios(),d=destinosSinBloques(),prox=MODULOS.filter(m=>!m.listo&&n[m.id]);
   if(d.length===1&&!prox.length){location.replace(d[0].href);return}
-  const opt=m=>`<button class="neg-opt ${m.listo?'':'px'}" data-ir="${m.id}">${bz(m)}<span><b>${m.nom}</b><small>${m.listo?esc(n[m.id]&&ROLES[n[m.id]]?ROLES[n[m.id]].nom:(m.id==='ruta'?'Despachos e inventario':'')):'En construcción'}</small></span>${m.listo?'':'<span class="prox">Próximamente</span>'}</button>`;
+  const opt=m=>`<button class="neg-opt ${m.listo?'':'px'}" data-ir="${m.id}">${bz(m)}<span><b>${m.nom}</b><small>${m.listo?esc(n[m.id]&&ROLES[n[m.id]]?ROLES[n[m.id]].nom:(m.id==='ruta'?'Programación, entregas e inventario':'')):'En construcción'}</small></span>${m.listo?'':'<span class="prox">Próximamente</span>'}</button>`;
   $('#app').innerHTML=`${thmBtn('login-thm')}<div class="login wrap"><div class="card"><img src="${temaActual()==='dark'?LOGO_D:LOGO_L}" alt="Duracreto">
    <h1>Hola, ${esc(String(S.nombre||'').split(/\s+/)[0])}</h1><p class="eyebrow">Duracreto 360</p><p class="sub">${d.length?'¿A dónde quiere entrar?':'Su módulo todavía está en construcción.'}</p>
    <div>${d.concat(prox).map(opt).join('')}</div>
@@ -1115,7 +1115,7 @@ function calc(){
 function scaleCol(p){return p>=.85?'ok':p>=.5?'blue':p>=.25?'warn':'bad'}
 function ncIn(eq,from,to){return DB.noconf.filter(r=>r.fechaProd>=from&&r.fechaProd<=to&&(!eq||r.equipo===eq))}
 
-/* Desperdicio por tipo (planta completa, por fecha). Ripio, dañados y reposiciones: salidas que Jordi registra en Ruta 360.
+/* Desperdicio por tipo (planta completa, por fecha). Ripio, dañados y reposiciones: salidas que Jordi registra en Despachos.
    Segunda: Calidad en Duracreto 360 (no es desperdicio: se vende como otro producto). */
 function perdidas(){const din=f=>f>=F.desde&&f<=F.hasta;
   const prod=DB.produccion.filter(r=>din(r.fecha)).reduce((s,r)=>s+r.unidades,0);
@@ -1127,7 +1127,7 @@ function perdidasHTML(W){const p=v=>W.prod?pct(v/W.prod,2):'–';
   const box=(lbl,v,col,sub)=>`<div><b style="color:var(--${col})">${p(v)}</b><span><b style="display:inline;font-size:inherit;color:var(--fg)">${lbl}</b><br>${fmt(v)} u${sub?' · '+sub:''}</span></div>`;
   return `<section class="card s12"><h3>Desperdicio y segunda</h3><p class="cap">Porcentaje sobre ${fmt(W.prod)} unidades producidas en el periodo · planta completa${F.eq||F.tu?' (las salidas no se asignan a grupo ni turno)':''}</p>
    <div class="ncsum num" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">${box('Ripio / desecho',W.ripio,'bad','desperdicio')}${box('Dañados',W.dano,'bad','desperdicio')}${box('Reposiciones y reclamos',W.repo,'warn','desperdicio')}${box('Pasa a segunda',W.seg,'gold','no es desperdicio: se vende')}</div>
-   <p class="note" style="margin-top:10px">Ripio, dañados y reposiciones: salidas registradas por Jordi Pineda en Ruta 360. Segunda: Control de calidad en Duracreto 360.${W.lab?` Pruebas de laboratorio: ${fmt(W.lab)} u (no se cuentan como desperdicio).`:''}${W.cal?` Calidad registró además ${fmt(W.cal)} u de desecho o daño, que no se suman para no contarlas dos veces.`:''}</p></section>`}
+   <p class="note" style="margin-top:10px">Ripio, dañados y reposiciones: salidas registradas por Jordi Pineda en Despachos. Segunda: Control de calidad en Duracreto 360.${W.lab?` Pruebas de laboratorio: ${fmt(W.lab)} u (no se cuentan como desperdicio).`:''}${W.cal?` Calidad registró además ${fmt(W.cal)} u de desecho o daño, que no se suman para no contarlas dos veces.`:''}</p></section>`}
 function renderDash(){
   initF();const m=$('#main'),c=calc();const mesN=MESES[+c.ym.slice(5)-1];
   const pM=c.tot/c.meta,pE=c.tot/c.equi,esp=c.metaDia*c.habTrans,ratio=esp?c.tot/esp:0,pH=Math.min(1,esp/c.meta);
