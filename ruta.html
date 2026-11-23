@@ -545,6 +545,9 @@ function vProg(){
   $('#pT').innerHTML=r.length?'<table><tr><th>ID</th><th>Hora</th><th>Cliente</th><th>Asesor</th><th>Producto</th><th class="num">Programado</th><th class="num">Entregado</th><th class="num">Saldo</th><th>Transporte</th><th>Estatus</th><th></th></tr>'+r.map(x=>`<tr class="cl" onclick="detalle('${x.id}')"><td class="muted">${x.id}${x.grp?'<br><span class="tag">viaje '+x.grp+'</span>':''}</td><td>${x.h}</td><td><b>${esc(x.cli)}</b></td><td>${esc(x.ase)}</td><td>${x.prod}</td><td class="num">${fmt(x.cant)}</td><td class="num">${x.ent?fmt(x.ent):'—'}</td><td class="num">${saldo(x)?fmt(saldo(x)):'—'}</td><td>${trTxt(x)}</td><td>${st(x)}</td><td>${x.entregas.length?'':`<button class="btn sec sm" title="Eliminar programación" onclick="event.stopPropagation();eliminar('${x.id}')">🗑 Eliminar</button>`}</td></tr>`).join('')+`<tr><td colspan="5"><b>Total</b></td><td class="num"><b>${fmt(r.reduce((s,x)=>s+x.cant,0))}</b></td><td class="num"><b>${fmt(r.reduce((s,x)=>s+x.ent,0))}</b></td><td colspan="4"></td></tr></table>`:'<div class="empty">Nada programado este día.</div>'};
  $('#pAse').onchange=draw;$('#pTxt').oninput=draw;draw()}
 const nz=s=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,'');
+/* Varios productos en una misma programación (23-nov, Fernando): cada línea es un producto con su cantidad (y su tapa); comparten cliente, fecha, hora y transporte. */
+function lineaProg(idP,idC,prod,cant,n){return `<div class="pline" id="${idP}Ln">${n?`<div class="plhd"><b>Otro producto</b><button type="button" class="btn sec sm" data-del="${idP}">Quitar</button></div>`:''}<div class="two"><div class="fld"><label>Producto</label>${prodSel(idP,prod)}${tapaBox(idP)}</div><div class="fld"><label>Cantidad total (${BIZ[S.biz].u})</label><input type="number" id="${idC}" value="${cant}" min="1"></div></div></div>`}
+document.head.insertAdjacentHTML('beforeend','<style>.pline+.pline{border-top:1px dashed #cfd2c8;padding-top:10px}.plhd{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;margin-bottom:4px}</style>');
 function formProg(pre){
  const prods_=prods();const F=Object.assign({f:addD(TODAY,1),h:'07:00',tr:'P',eqT:S.biz==='B'?'Rastra 2 ejes':'Rastra',prod:prods_.includes('Bloque 6"')?'Bloque 6"':prods_[0],cant:S.biz==='B'?3400:16,cli:'',ase:'',tipo:''},pre||{});
  modal((F.reprogDe?'Reprogramar saldo de '+F.reprogDe:'Nueva programación')+' · '+BIZ[S.biz].n,`
@@ -552,8 +555,8 @@ function formProg(pre){
  <div class="fld auto"><label>Cliente</label><input id="fCli" autocomplete="off" placeholder="Escribe 2–3 letras del cliente…" value="${esc(F.cli)}"><div class="sug" id="fSug"></div><div class="h">Busca sin importar mayúsculas, tildes ni errores menores.</div></div>
  <div class="two"><div class="fld"><label>Asesor <span class="muted" style="font-weight:400">(se llena solo, puedes cambiarlo)</span></label><select id="fAse"><option value="">— Selecciona —</option>${asesAct().map(a=>`<option ${a===F.ase?'selected':''}>${a}</option>`).join('')}</select></div>
  <div class="fld"><label>Tipo de cliente</label><select id="fTipo">${['Distribuidor','Proyecto','Consumidor final'].map(t=>`<option ${t===F.tipo?'selected':''}>${t}</option>`).join('')}</select></div></div>
- <div class="two"><div class="fld"><label>Producto</label>${prodSel('fProd',F.prod)}${tapaBox('fProd')}</div>
- <div class="fld"><label>Cantidad total (${BIZ[S.biz].u})</label><input type="number" id="fCant" value="${F.cant}" min="1"></div></div>
+ <div id="fLines">${lineaProg('fProd','fCant',F.prod,F.cant,0)}</div>
+ ${F.reprogDe?'':'<button type="button" class="btn sec sm" id="fAdd" style="margin:0 0 12px">＋ Agregar otro producto para este cliente</button>'}
  ${plantaSel('fPl',F.planta)}
  <div class="fld"><label>Fecha de entrega · disponibilidad de los próximos 14 días</label><div class="mini" id="fMini"></div><div class="legend" style="margin-top:4px"><span><i style="background:#2E9B57"></i>Holgado</span><span><i style="background:#F49A29"></i>Ajustado</span><span><i style="background:#D64534"></i>Saturado</span></div></div>
  <div class="two"><div class="fld"><label>Fecha</label><input type="date" id="fFec" value="${iso(F.f)}"></div><div class="fld"><label>Hora</label><input type="time" id="fHora" value="${F.h}"></div></div>
@@ -563,45 +566,58 @@ function formProg(pre){
  <div class="fld"><label>Equipo Platino asignado <span class="muted" style="font-weight:400">(opcional · si no, lo elige el despachador)</span></label><select id="fEqC" data-tipo="${F.eqT}"><option value="">— Lo define el despachador —</option>${eqOpts(F.eqT,'')}</select></div><div id="fEqW"></div>
  <div class="trips" id="fTrips"></div></div>
  <button class="btn dk" style="width:100%" id="fSave">Programar</button>`);
- let tr=F.tr,trips=[];
+ let tr=F.tr,nL=0;const lines=[{p:'fProd',c:'fCant',trips:[]}],resetTrips=()=>lines.forEach(L=>L.trips=[]);
+ const pedDe=(i,prod,cli,pl)=>{if(F.reprogDe)return null;if(i===0&&F.pedido){const x=pedidos().find(z=>z.id===F.pedido);if(x&&x.prod===prod)return x}
+  return pedActivos().find(z=>z.prod===prod&&nz(z.cli)===nz(cli)&&(S.biz!=='P'||z.pl===pl))||null};
  if($('#fPed'))$('#fPed').onchange=e=>{const v=e.target.value;if(!v){closeModal();formProg({});return}programarPedido(v)};
  const fec=()=>fromIso($('#fFec').value);
  const mini=()=>{let h='';for(let i=0;i<14;i++){const k=addD(TODAY,i);const rt=carga(k)/cap();const d=pd(k);h+=`<div class="${k===fec()?'sel':''}" style="background:${rt?satCol(rt):'#9aa39b'}" data-k="${k}">${DIAS[d.getDay()].slice(0,2)}<small>${d.getDate()}</small><small>${pct(rt).replace(' ','')}</small></div>`}
   $('#fMini').innerHTML=h;$('#fMini').querySelectorAll('div').forEach(e=>e.onclick=()=>{$('#fFec').value=iso(e.dataset.k);upd()})};
- const upd=()=>{mini();prodSegSync('fProd');tapaSync('fProd');const prod=prodVal('fProd'),q=+$('#fCant').value||0,eqT=$('#fEqT').value,f=fec(),pl=plantaVal('fPl'),tapa=tapaDe('fProd');
-  const ped=F.pedido?pedidos().find(z=>z.id===F.pedido):null,cubre=ped&&ped.prod===prod?Math.min(q,ped.porProg):0;
-  const tPed=tapa?pedActivos().find(z=>z.prod===tapa&&nz(z.cli)===nz($('#fCli').value)&&(S.biz!=='P'||z.pl===pl)):null;
-  const libT=tapa?invLibre(tapa,f,pl)+(tPed?Math.min(q,tPed.porProg):0):Infinity,okT=q<=libT;
-  const lib=invLibre(prod,f,pl)+cubre;const c=$('#fChk');const ok=q<=lib&&okT;if(lib===Infinity){c.className='check wa';c.innerHTML='▤ <b>Inventario sin conteo inicial.</b> Todavía no se valida el inventario al programar.';$('#fSave').disabled=!$('#fCli').value||!$('#fAse').value||q<=0}else{
-  const cur=(invDe(prod,pl)||{}).cur||0;
-  c.className='check '+(ok?'ok':'no');c.innerHTML=(q<=lib?`✔ <b>Hay inventario.</b> Libre para entregar el ${f}: ${fmt(lib)} ${prod}${cur?' (cuenta solo lo que ya terminó de curar para esa fecha)':''}. Después de programar quedan ${fmt(lib-q)}.`:`✖ <b>No se puede programar: falta inventario.</b> Libre para entregar el ${f}: ${fmt(Math.max(lib,0))}${cur?' (lo que sigue en curado para esa fecha no cuenta)':''}. Programa como máximo esa cantidad o elige otra fecha.`)
-   +(tapa?(libT===Infinity?'':okT?`<br>✔ Tapa: libre ${fmt(libT)} ${esc(tapa)}.`:`<br>✖ <b>Falta tapa:</b> libre ${fmt(Math.max(libT,0))} ${esc(tapa)}. Quite «Con su tapa» o baje la cantidad.`):'');
-  $('#fSave').disabled=!ok||!$('#fCli').value||!$('#fAse').value}
-  $('#fEqBox').style.display=tr==='P'?'':'none';const cap=tr==='P'?capOf(prod,eqT):null;const n=cap?Math.ceil(q/cap):1;
-  if(trips.length!==n||trips._q!==q||trips._cap!==cap){trips=[];let rest=q;for(let i=0;i<n;i++){const c2=Math.min(cap||q,rest);rest-=c2;trips.push({c:c2,f,h:i===0?$('#fHora').value:addH($('#fHora').value,i*2)})}trips._q=q;trips._cap=cap}
-  $('#fTrips').innerHTML=cap?`<b style="font-size:12.5px">Sugerencia: ${n} viaje${n>1?'s':''} de ${eqT.toLowerCase()} (capacidad ${fmt(cap)} ${BIZ[S.biz].u} por viaje)</b>
-   <table><tr><th>Viaje</th><th>Cantidad</th><th>Fecha</th><th>Hora</th></tr>${trips.map((t,i)=>`<tr><td>${i+1}</td><td><input type="number" value="${t.c}" data-i="${i}" data-k="c"></td><td><input type="date" value="${iso(t.f)}" data-i="${i}" data-k="f"></td><td><input type="time" value="${t.h}" data-i="${i}" data-k="h"></td></tr>`).join('')}</table>
-   <div class="h muted" style="font-size:10.5px;margin-top:4px">Cada viaje queda como un despacho propio, enlazado a esta programación. Puedes repartirlos en varios días u horas.</div>`:`<span class="muted">Sin capacidad cargada para ${prod} en ${eqT}. Se programa como un solo viaje.</span>`;
-  $('#fTrips').querySelectorAll('input').forEach(e=>e.onchange=()=>{const t=trips[+e.dataset.i];t[e.dataset.k]=e.dataset.k==='f'?fromIso(e.value):e.dataset.k==='c'?+e.value:e.value})};
+ const upd=()=>{mini();const f=fec(),pl=plantaVal('fPl'),cli=$('#fCli').value,eqT=$('#fEqT').value,need={},usoPed={},msgs=[];let ok=true,okQ=true,sinConteo=false;
+  lines.forEach((L,i)=>{prodSegSync(L.p);tapaSync(L.p);L.prod=prodVal(L.p);L.q=+$('#'+L.c).value||0;L.tapa=tapaDe(L.p);if(L.q<=0)okQ=false;
+   L.ped=pedDe(i,L.prod,cli,pl);L.tPed=L.tapa?pedDe(-1,L.tapa,cli,pl):null;
+   const add=(pr,ped)=>{const n=need[pr]||(need[pr]={q:0,cubre:0,peds:[]});n.q+=L.q;if(ped){const u=usoPed[ped.id]||0,cb=Math.max(0,Math.min(L.q,ped.porProg-u));usoPed[ped.id]=u+cb;n.cubre+=cb;if(cb&&!n.peds.includes(ped.id))n.peds.push(ped.id)}};
+   add(L.prod,L.ped);if(L.tapa)add(L.tapa,L.tPed)});
+  Object.entries(need).forEach(([pr,n])=>{const lib0=invLibre(pr,f,pl);if(lib0===Infinity){sinConteo=true;return}const lib=lib0+n.cubre,cur=(invDe(pr,pl)||{}).cur||0,ap=n.peds.length?` (incluye lo apartado en ${n.peds.join(', ')})`:'';
+   if(n.q<=lib)msgs.push(`✔ <b>${esc(pr)}</b>: libre para entregar el ${f}: ${fmt(lib)}${ap}${cur?'; cuenta solo lo que ya terminó de curar para esa fecha':''}. Después de programar quedan ${fmt(lib-n.q)}.`);
+   else{ok=false;msgs.push(`✖ <b>${esc(pr)}: falta inventario.</b> Libre para entregar el ${f}: ${fmt(Math.max(lib,0))}${ap}${cur?' (lo que sigue en curado para esa fecha no cuenta)':''}; se piden ${fmt(n.q)}.`)}});
+  const c=$('#fChk');
+  if(!msgs.length){c.className='check wa';c.innerHTML='▤ <b>Inventario sin conteo inicial.</b> Todavía no se valida el inventario al programar.'}
+  else{c.className='check '+(ok?'ok':'no');c.innerHTML=(ok?'':'<b>No se puede programar:</b> baja la cantidad o elige otra fecha.<br>')+msgs.join('<br>')+(sinConteo?'<br>▤ Algún producto todavía no tiene conteo inicial: ese no se valida.':'')}
+  $('#fSave').disabled=!ok||!okQ||!cli||!$('#fAse').value;
+  $('#fEqBox').style.display=tr==='P'?'':'none';
+  lines.forEach(L=>{const cap=tr==='P'?capOf(L.prod,eqT):null,q=L.q,n=cap?Math.ceil(q/cap):1;L.cap=cap;
+   if(L.trips.length!==n||L.trips._q!==q||L.trips._cap!==cap){L.trips=[];let rest=q;for(let i=0;i<n;i++){const c2=Math.min(cap||q,rest);rest-=c2;L.trips.push({c:c2,f,h:i===0?$('#fHora').value:addH($('#fHora').value,i*2)})}L.trips._q=q;L.trips._cap=cap}});
+  const multi=lines.length>1;
+  $('#fTrips').innerHTML=lines.map((L,li)=>{const cap=L.cap,n=L.trips.length,hd=multi?`<div style="font-size:13px;margin:${li?'12px':'0'} 0 4px"><b>${esc(L.prod)}</b>${L.tapa?' <span class="muted">· con su tapa, en los mismos viajes</span>':''}</div>`:'';
+   return hd+(cap?`<b style="font-size:12.5px">Sugerencia: ${n} viaje${n>1?'s':''} de ${eqT.toLowerCase()} (capacidad ${fmt(cap)} ${BIZ[S.biz].u} por viaje)</b>
+   <table><tr><th>Viaje</th><th>Cantidad</th><th>Fecha</th><th>Hora</th></tr>${L.trips.map((t,i)=>`<tr><td>${i+1}</td><td><input type="number" value="${t.c}" data-l="${li}" data-i="${i}" data-k="c"></td><td><input type="date" value="${iso(t.f)}" data-l="${li}" data-i="${i}" data-k="f"></td><td><input type="time" value="${t.h}" data-l="${li}" data-i="${i}" data-k="h"></td></tr>`).join('')}</table>`:`<span class="muted">Sin capacidad cargada para ${esc(L.prod)} en ${eqT}. Se programa como un solo viaje.</span>`)}).join('')
+   +`<div class="h muted" style="font-size:10.5px;margin-top:4px">Cada viaje queda como un despacho propio${multi?' por producto':''}, enlazado a esta programación. Puedes repartirlos en varios días u horas.</div>`;
+  $('#fTrips').querySelectorAll('input').forEach(e=>e.onchange=()=>{const t=lines[+e.dataset.l].trips[+e.dataset.i];t[e.dataset.k]=e.dataset.k==='f'?fromIso(e.value):e.dataset.k==='c'?+e.value:e.value})};
+ const wireLine=L=>[L.p,L.p+'Seg',L.p+'Tapa',L.c].forEach(k=>{const e=$('#'+k);if(e)e.oninput=e.onchange=()=>{resetTrips();upd()}});
+ if($('#fAdd'))$('#fAdd').onclick=()=>{nL++;const L={p:'fProd'+nL,c:'fCant'+nL,trips:[]};lines.push(L);
+  $('#fLines').insertAdjacentHTML('beforeend',lineaProg(L.p,L.c,'',S.biz==='B'?3400:16,1));wireLine(L);
+  $('#fLines').querySelector(`[data-del="${L.p}"]`).onclick=()=>{$('#'+L.p+'Ln').remove();lines.splice(lines.indexOf(L),1);upd()};upd()};
  $('#fCli').oninput=()=>{const q=nz($('#fCli').value);if(q.length<2){$('#fSug').style.display='none';return}
   const r=D.cli.filter(c=>c.b.includes(S.biz)||true).filter(c=>nz(c.n).includes(q)||(c.alias&&nz(c.alias).includes(q))).slice(0,8);
   $('#fSug').innerHTML=r.map(c=>`<div data-n="${esc(c.n)}"><span>${esc(c.n)}</span><small>${esc(c.a)} · ${esc(c.t)}</small></div>`).join('')+'<div style="color:#3A6EA5">+ Agregar cliente nuevo</div>';$('#fSug').style.display='block';
   const nv=$('#fSug').lastElementChild;nv.onclick=()=>{$('#fSug').style.display='none';toast('Cliente nuevo: elige el asesor. Se agrega solo al catálogo al programar.');upd()};
   $('#fSug').querySelectorAll('div[data-n]').forEach(e=>e.onclick=()=>{const c=D.cli.find(c=>c.n===e.dataset.n);$('#fCli').value=c.n;$('#fAse').value=asesAct().includes(c.a)?c.a:'';if(!asesAct().includes(c.a))toast('El asesor de este cliente está inactivo: elige uno');$('#fTipo').value=c.t;$('#fSug').style.display='none';
-   if(c.nota)toast('Asesor actualizado: '+c.a+' ('+c.nota+')');tr=c.tr;document.querySelectorAll('#fTr button').forEach(b=>b.classList.toggle('on',b.dataset.t===tr));trips=[];upd()})};
- document.querySelectorAll('#fTr button').forEach(b=>b.onclick=()=>{tr=b.dataset.t;document.querySelectorAll('#fTr button').forEach(x=>x.classList.toggle('on',x===b));trips=[];upd()});
- ['#fProd','#fProdSeg','#fProdTapa','#fCant','#fEqT','#fFec','#fHora','#fAse'].concat(S.biz==='P'?['#fPl']:[]).forEach(s=>$(s).oninput=$(s).onchange=()=>{trips=[];upd()});$('#fCli').addEventListener('input',()=>{$('#fSave').disabled=!$('#fCli').value||!$('#fAse').value});
+   if(c.nota)toast('Asesor actualizado: '+c.a+' ('+c.nota+')');tr=c.tr;document.querySelectorAll('#fTr button').forEach(b=>b.classList.toggle('on',b.dataset.t===tr));resetTrips();upd()})};
+ document.querySelectorAll('#fTr button').forEach(b=>b.onclick=()=>{tr=b.dataset.t;document.querySelectorAll('#fTr button').forEach(x=>x.classList.toggle('on',x===b));resetTrips();upd()});
+ wireLine(lines[0]);['#fEqT','#fFec','#fHora','#fAse'].concat(S.biz==='P'?['#fPl']:[]).forEach(s=>$(s).oninput=$(s).onchange=()=>{resetTrips();upd()});$('#fCli').addEventListener('change',upd);$('#fCli').addEventListener('input',()=>{$('#fSave').disabled=!$('#fCli').value||!$('#fAse').value});
  const eqT0=$('#fEqT').onchange;$('#fEqT').onchange=()=>{$('#fEqC').dataset.tipo=$('#fEqT').value;$('#fEqC').innerHTML='<option value="">— Lo define el despachador —</option>'+eqOpts($('#fEqT').value,'');$('#fEqW').innerHTML='';$('#fEqC').dataset.ok='1';eqT0()};
  wireEq('fEqC','fEqW');
  $('#fSave').onclick=async()=>{if(tr==='P'&&$('#fEqC').value&&$('#fEqC').dataset.ok!=='1'){toast('Confirma si el equipo ya salió del taller o elige otro');return}
-  if(trips.some(t=>!(t.c>0)||!t.f||!t.h)){toast('Revisa cantidad, fecha y hora de cada viaje');return}
+  if(lines.some(L=>L.trips.some(t=>!(t.c>0)||!t.f||!t.h))){toast('Revisa cantidad, fecha y hora de cada viaje');return}
   const cli=$('#fCli').value.trim(),eqC=tr==='P'?$('#fEqC').value:'';
-  const tapa=tapaDe('fProd');
-  const base={cli,ase:$('#fAse').value,tipo:$('#fTipo').value,prod:prodVal('fProd'),tr,eqT:tr==='P'?$('#fEqT').value:'',eqC,habilitar:$('#fEqC').dataset.hab==='1',reprogDe:F.reprogDe||'',planta:plantaVal('fPl'),pedido:F.pedido&&(pedidos().find(z=>z.id===F.pedido)||{}).prod===prodVal('fProd')?F.pedido:''};
-  const viajes=trips.map(t=>Object.assign({},base,{c:t.c,f:iso(t.f),h:t.h}));
-  const j=await guardar('ruta_programar',{viajes},`Programado: ${viajes.length} viaje${viajes.length>1?'s':''} · ${esc(cli)}${tapa?' · con su tapa':''}`);if(!j)return;
-  if(tapa){const tp=pedActivos().find(z=>z.prod===tapa&&nz(z.cli)===nz(cli)&&(S.biz!=='P'||z.pl===base.planta)),vt=viajes.map(v=>Object.assign({},v,{prod:tapa,reprogDe:'',pedido:tp?tp.id:''}));if(!await guardar('ruta_programar',{viajes:vt},'Tapa programada: '+esc(tapa)))toast('Se programó la caja, pero no la tapa. Prográmela aparte.')}
-  closeModal();S.date=trips[0].f;render()};
+  const b0={cli,ase:$('#fAse').value,tipo:$('#fTipo').value,tr,eqT:tr==='P'?$('#fEqT').value:'',eqC,planta:plantaVal('fPl')},lineas=[];
+  lines.forEach((L,i)=>{const b=Object.assign({},b0,{prod:L.prod,reprogDe:i===0?(F.reprogDe||''):'',pedido:L.ped?L.ped.id:'',habilitar:i===0&&$('#fEqC').dataset.hab==='1'});
+   lineas.push({viajes:L.trips.map(t=>Object.assign({},b,{c:t.c,f:iso(t.f),h:t.h}))});
+   if(L.tapa)lineas.push({viajes:L.trips.map(t=>Object.assign({},b,{prod:L.tapa,reprogDe:'',habilitar:false,pedido:L.tPed?L.tPed.id:'',c:t.c,f:iso(t.f),h:t.h}))})});
+  const nv=lineas.reduce((s,l)=>s+l.viajes.length,0);
+  const j=await guardar('ruta_programarVarios',{lineas},`Programado: ${lineas.length>1?lineas.length+' productos · ':''}${nv} despacho${nv>1?'s':''} · ${esc(cli)}`);if(!j)return;
+  closeModal();S.date=lines[0].trips[0].f;render()};
  upd()}
 function eliminar(id){const x=recs().find(x=>x.id===id);
  modal('Eliminar programación',`<p style="margin-top:0">¿Eliminar la programación <b>${x.id}</b> de <b>${esc(x.cli)}</b> (${fmt(x.cant)} ${x.prod}, ${x.f} ${x.h})?</p><p class="muted" style="font-size:12px">Libera el inventario comprometido y desaparece de la lista de los despachadores. Queda registrado en la bitácora quién la eliminó.</p>
@@ -769,12 +785,19 @@ const PLANTAS=['San Pedro Sula','Tegucigalpa'];
 /* Inventario del negocio; en Prefabricados suma las plantas elegidas (pl = una planta o 'Ambas') */
 function invItems(pl,b){if((b||S.biz)!=='P')return D.invB||[];pl=pl||S.invPl||'Ambas';const g={};
  (D.invP||[]).filter(i=>pl==='Ambas'||i.pl===pl).forEach(i=>{const o=g[i.p]||(g[i.p]={p:i.p,base:i.base,seg:i.seg,curLib:{}});
-  ['ini','prod','cur','des','aSeg','segIn','dsp','sal','aj','rip','disp','comp','compAtr','compPed','min'].forEach(k=>o[k]=(o[k]||0)+(+i[k]||0));Object.entries(i.curLib||{}).forEach(([d,q])=>o.curLib[d]=(o.curLib[d]||0)+q)});
+  ['ini','prod','cur','des','aSeg','segIn','dsp','sal','aj','rip','disp','comp','compAtr','compPed','min','ren'].forEach(k=>o[k]=(o[k]||0)+(+i[k]||0));Object.entries(i.curLib||{}).forEach(([d,q])=>o.curLib[d]=(o.curLib[d]||0)+q)});
  return Object.values(g)}
 const invDe=(p,pl)=>invItems(pl).find(i=>i.p===p);
 function compProx(p,pl){const i=invDe(p,pl);if(i&&i.comp!=null)return i.comp;return recs().filter(x=>x.prod===p&&(x.st==='prog'||x.st==='par')&&x.req!=='rech').reduce((s,x)=>s+saldo(x),0)}
 const compCell=(i,c)=>`<td class="num" title="Todo lo pendiente de entregar: programado, parcial o solicitado (cualquier fecha) y lo apartado en pedidos sin programar">${fmt(c)}${i.compAtr?`<small class="muted" style="display:block;font-size:10.5px">${fmt(i.compAtr)} atrasado</small>`:''}${i.compPed?`<small class="muted" style="display:block;font-size:10.5px">${fmt(i.compPed)} en pedidos</small>`:''}</td>`;
 const estInv=(lib,i)=>lib<0?'<span class="pill">Faltante</span>':i&&i.min>0&&i.disp<=i.min?'<span class="pill min">Stock mínimo</span>':lib===0?'<span class="pill o">Sin existencia</span>':'<span class="pill g">OK</span>';
+/* Días de producción (23-nov): cuántos días de producción faltan para llegar al stock mínimo o, si lo comprometido es mayor, para cubrir lo comprometido.
+   Meta = el mayor entre mínimo y comprometido; falta = meta − (stock + en curado). Rendimiento: el de las secciones de producción (Prefabricados › Productos; Bloques › unidades por ciclo × ciclos por turno × turnos). */
+function diasProd(i,c){const meta=Math.max(i.min||0,c||0),falta=meta-(i.disp+i.cur);
+ if(!meta||falta<=0)return '<td class="num"><span class="muted">Cubierto</span></td>';
+ const para=(c||0)>(i.min||0)?'lo comprometido':'el mínimo';
+ if(!(i.ren>0))return `<td class="num" title="Falta cargar el rendimiento por día en la sección de producción"><span class="pill o">Sin rendimiento</span><small class="muted" style="display:block;font-size:10.5px">faltan ${fmt(falta)} para ${para}</small></td>`;
+ const d=Math.ceil(falta/i.ren);return `<td class="num" title="Rendimiento: ${fmt(i.ren)} por día"><b>${d} día${d>1?'s':''}</b><small class="muted" style="display:block;font-size:10.5px">${fmt(falta)} para ${para}</small></td>`}
 /* Stock mínimo (20-nov, Prefabricados): aviso moderado, no de urgencia */
 const enMinimo=pl=>invItems(pl).filter(i=>!i.seg&&i.min>0&&i.disp<=i.min);
 function avisoMinHTML(pl){const L=enMinimo(pl);if(!L.length)return '';
@@ -787,20 +810,21 @@ function vInv(){const b=S.biz,inv=invItems(),cont=D.conteo[b],movs=D['mov'+b]||[
 
  if(b==='P'){const pl=S.invPl||(S.invPl=D.miPl||'Ambas'),cs=D.conteosP||{};
   h=`<div class="rhead"><div><h2 style="margin:0">Inventario · Prefabricados</h2><div class="rper">Piezas · cada planta desde su conteo físico</div></div><span class="sp"></span><div class="subtabs" style="margin:0">${['San Pedro Sula','Tegucigalpa','Ambas'].map(k=>`<button class="${k===pl?'on':''}" onclick="S.invPl='${k}';render()">${k==='San Pedro Sula'?'SPS':k==='Tegucigalpa'?'TGU':'Ambas'}</button>`).join('')}</div>${herr}</div>
-  <div class="demo">Primera se alimenta de la producción liberada del módulo Prefabricados (pasa a disponible en su fecha de liberación). Lo que Calidad clasifica como <b>Segunda</b> pasa a segunda; <b>Desecho</b> se pierde. <b>Libre</b> = disponible + en curado − <b>todo lo comprometido</b>. ${PLANTAS.map(k=>cs[k]?`${k}: conteo del <b>${esc(cs[k])}</b>.`:`<b>${k}: falta el conteo físico</b> (no bloquea la programación).`).join(' ')}</div>${avisoMinHTML(pl)}`}
+  <div class="demo">Primera se alimenta de la producción liberada del módulo Prefabricados (pasa a disponible en su fecha de liberación). Lo que Calidad clasifica como <b>Segunda</b> pasa a segunda; <b>Desecho</b> se pierde. <b>Libre</b> = stock + en curado − <b>todo lo comprometido</b>. ${PLANTAS.map(k=>cs[k]?`${k}: conteo del <b>${esc(cs[k])}</b>.`:`<b>${k}: falta el conteo físico</b> (no bloquea la programación).`).join(' ')}</div>${avisoMinHTML(pl)}`}
 
  {const pri=inv.filter(i=>!i.seg),seg=inv.filter(i=>i.seg),hayMin=pri.some(i=>i.min>0),rip=seg.reduce((s,i)=>s+i.rip,0)+pri.reduce((s,i)=>s+i.rip,0);
   const mes=iso(TODAY).slice(0,7),ripMes=movs.filter(m=>m.m==='A ripio (desecho)'&&m.f.slice(0,7)===mes).reduce((s,m)=>s-m.q,0);
   const tP=pri.reduce((s,i)=>s+i.disp,0),tS=seg.reduce((s,i)=>s+i.disp,0);
   const kp=(l,v,s,c)=>`<div class="rk ${c||''}"><span>${l}</span><b>${v}</b><small>${s}</small></div>`;
   if(b==='B')h=`<div class="rhead"><div><h2 style="margin:0">Inventario · Bloques</h2><div class="rper">Unidades · desde el conteo físico inicial</div></div><span class="sp"></span>${herr}</div>
-  <div class="demo">Primera se alimenta de la producción de Duracreto 360 (pasa a disponible a los 3 días). Lo que Calidad clasifica como <b>Segunda</b> pasa de primera a segunda (vendible a menor precio); <b>Desecho</b> y <b>Daño</b> se pierden. Lo que sale <b>a ripio</b> es desecho definitivo. <b>Libre</b> = disponible + en curado − <b>todo lo comprometido</b> (programado, parcial o solicitado, de cualquier fecha, incluidos los atrasados). ${conteoTxt}</div>`;
-  h+=`  <div class="rks" style="grid-template-columns:repeat(4,1fr)">${kp('Disponible de primera',fmt(tP),pri.reduce((s,i)=>s+i.cur,0)?fmt(pri.reduce((s,i)=>s+i.cur,0))+' más en curado':'en patio','ok')}${kp('Disponible de segunda',fmt(tS),'vendible a menor precio','pe')}
+  <div class="demo">Primera se alimenta de la producción de Duracreto 360 (pasa a disponible a los 3 días). Lo que Calidad clasifica como <b>Segunda</b> pasa de primera a segunda (vendible a menor precio); <b>Desecho</b> y <b>Daño</b> se pierden. Lo que sale <b>a ripio</b> es desecho definitivo. <b>Libre</b> = stock + en curado − <b>todo lo comprometido</b> (programado, parcial o solicitado, de cualquier fecha, incluidos los atrasados). ${conteoTxt}</div>`;
+  h+=`  <div class="rks" style="grid-template-columns:repeat(4,1fr)">${kp('Stock de primera',fmt(tP),pri.reduce((s,i)=>s+i.cur,0)?fmt(pri.reduce((s,i)=>s+i.cur,0))+' más en curado':'en patio','ok')}${kp('Stock de segunda',fmt(tS),'vendible a menor precio','pe')}
    ${kp('A ripio (desecho)',fmt(rip),'desde el conteo · '+fmt(ripMes)+' este mes','al')}${kp('Pasó a segunda (Calidad)',fmt(pri.reduce((s,i)=>s+i.aSeg,0)),'desde el conteo')}</div>
-  <div class="card" style="margin-bottom:14px"><h3>Primera</h3><div style="overflow-x:auto"><table><tr><th>Producto</th><th class="num">Inicial</th><th class="num">${b==='B'?'+ Producción (D360)':'+ Producción liberada'}</th><th class="num">− Desecho y daño</th><th class="num">− Pasa a segunda</th><th class="num">− Despachado</th><th class="num">± Salidas y ajustes</th><th class="num">= Disponible</th><th class="num">En curado</th>${hayMin?'<th class="num">Stock mínimo</th>':''}<th class="num" title="Todo lo pendiente de entregar, de cualquier fecha">Comprometido</th><th class="num">Libre</th><th>Estado</th></tr>
-  ${pri.map(i=>{const c=compProx(i.p),lib=i.disp+i.cur-c;return `<tr><td><b>${esc(i.p)}</b></td><td class="num muted">${fmt(i.ini)}</td><td class="num">${fmt(i.prod)}</td><td class="num">${fmt(i.des)}</td><td class="num">${fmt(i.aSeg)}</td><td class="num">${fmt(i.dsp)}</td><td class="num">${fmt(i.sal+i.aj)}</td><td class="num"><b>${fmt(i.disp)}</b></td><td class="num">${fmt(i.cur)}</td>${hayMin?`<td class="num">${i.min?fmt(i.min):'—'}</td>`:''}${compCell(i,c)}<td class="num"><b class="${lib<0?'dn':''}">${fmt(lib)}</b></td><td>${estInv(lib,i)}</td></tr>`}).join('')}</table></div></div>
-  <div class="card" style="margin-bottom:14px"><h3>Segunda <small>vendible a menor precio · se programa y despacha como cualquier producto</small></h3><div style="overflow-x:auto"><table><tr><th>Producto</th><th class="num">Inicial</th><th class="num">+ Entra de Calidad</th><th class="num">− Despachado</th><th class="num">− A ripio</th><th class="num">± Otros movimientos</th><th class="num">= Disponible</th><th class="num" title="Todo lo pendiente de entregar, de cualquier fecha">Comprometido</th><th class="num">Libre</th><th>Estado</th></tr>
-  ${seg.map(i=>{const c=compProx(i.p),lib=i.disp-c;return `<tr><td><b>${esc(i.p)}</b></td><td class="num muted">${fmt(i.ini)}</td><td class="num">${fmt(i.segIn)}</td><td class="num">${fmt(i.dsp)}</td><td class="num ${i.rip?'dn':''}">${fmt(i.rip)}</td><td class="num">${fmt(i.sal+i.aj+i.rip)}</td><td class="num"><b>${fmt(i.disp)}</b></td>${compCell(i,c)}<td class="num"><b class="${lib<0?'dn':''}">${fmt(lib)}</b></td><td>${estInv(lib)}</td></tr>`}).join('')}</table></div></div>`;
+  <div class="card" style="margin-bottom:14px"><div class="tools" style="margin:0 0 8px"><h3 style="margin:0">Primera</h3><span class="sp"></span><label class="segsw" style="margin:0"><input type="checkbox" id="invDet" ${S.invDet?'checked':''} onchange="S.invDet=this.checked;render()"> <span>Ver detalle de movimientos</span></label></div><div style="overflow-x:auto"><table><tr><th>Producto</th>${S.invDet?`<th class="num">Inicial</th><th class="num">${b==='B'?'+ Producción (D360)':'+ Producción liberada'}</th><th class="num">− Desecho y daño</th><th class="num">− Pasa a segunda</th><th class="num">− Despachado</th><th class="num">± Salidas y ajustes</th>`:''}<th class="num" title="Disponible en patio: ya curado, sin restar lo comprometido">${S.invDet?'= ':''}Stock</th><th class="num">En curado</th>${hayMin?'<th class="num">Stock mínimo</th>':''}<th class="num" title="Todo lo pendiente de entregar (cualquier fecha) y lo apartado en pedidos. Al entregar se rebaja solo.">Comprometido</th><th class="num" title="Stock + en curado − comprometido">Libre</th><th>Estado</th><th class="num" title="Días de producción para llegar al mínimo o, si es mayor, a lo comprometido">Días de producción</th></tr>
+  ${pri.map(i=>{const c=compProx(i.p),lib=i.disp+i.cur-c;return `<tr><td><b>${esc(i.p)}</b></td>${S.invDet?`<td class="num muted">${fmt(i.ini)}</td><td class="num">${fmt(i.prod)}</td><td class="num">${fmt(i.des)}</td><td class="num">${fmt(i.aSeg)}</td><td class="num">${fmt(i.dsp)}</td><td class="num">${fmt(i.sal+i.aj)}</td>`:''}<td class="num"><b>${fmt(i.disp)}</b></td><td class="num">${i.cur?fmt(i.cur):'<span class="muted">—</span>'}</td>${hayMin?`<td class="num">${i.min?fmt(i.min):'—'}</td>`:''}${compCell(i,c)}<td class="num"><b class="${lib<0?'dn':''}">${fmt(lib)}</b></td><td>${estInv(lib,i)}</td>${diasProd(i,c)}</tr>`}).join('')}</table></div>
+  <p class="muted" style="font-size:11px;margin:6px 0 0"><b>Stock</b> = lo que hay en patio ya curado. <b>Comprometido</b> se rebaja solo cuando se registra la entrega. <b>Días de producción</b>: con el rendimiento por día de la sección de producción${b==='P'?' de cada planta':''}, para llegar al mínimo o, si lo comprometido es mayor, para cubrirlo (cuenta lo que está en curado).</p></div>
+  <div class="card" style="margin-bottom:14px"><h3>Segunda <small>vendible a menor precio · se programa y despacha como cualquier producto</small></h3><div style="overflow-x:auto"><table><tr><th>Producto</th>${S.invDet?'<th class="num">Inicial</th><th class="num">+ Entra de Calidad</th><th class="num">− Despachado</th><th class="num">− A ripio</th><th class="num">± Otros movimientos</th>':''}<th class="num">${S.invDet?'= ':''}Stock</th><th class="num" title="Todo lo pendiente de entregar, de cualquier fecha">Comprometido</th><th class="num">Libre</th><th>Estado</th></tr>
+  ${seg.filter(i=>S.invDet||i.disp||compProx(i.p)).map(i=>{const c=compProx(i.p),lib=i.disp-c;return `<tr><td><b>${esc(i.p)}</b></td>${S.invDet?`<td class="num muted">${fmt(i.ini)}</td><td class="num">${fmt(i.segIn)}</td><td class="num">${fmt(i.dsp)}</td><td class="num ${i.rip?'dn':''}">${fmt(i.rip)}</td><td class="num">${fmt(i.sal+i.aj+i.rip)}</td>`:''}<td class="num"><b>${fmt(i.disp)}</b></td>${compCell(i,c)}<td class="num"><b class="${lib<0?'dn':''}">${fmt(lib)}</b></td><td>${estInv(lib)}</td></tr>`}).join('')}</table></div>${!S.invDet&&seg.some(i=>!i.disp&&!compProx(i.p))?`<p class="muted" style="font-size:11px;margin:6px 0 0">Se ocultan ${seg.filter(i=>!i.disp&&!compProx(i.p)).length} productos de segunda sin existencia; «Ver detalle de movimientos» los muestra todos.</p>`:''}</div>`;
   if(b==='B'){const dias=[...new Set(D.prodD.map(p=>p.f))].slice(-7),pr=[...new Set(D.prodD.filter(p=>dias.includes(p.f)).map(p=>p.p))];
   h+=`<div class="card" style="margin-bottom:14px"><h3>Producción reportada en Duracreto 360 <small>últimos días con producción · unidades</small></h3><div style="overflow-x:auto"><table><tr><th>Producto</th>${dias.map(d=>`<th class="num">${d.slice(0,-5)}</th>`).join('')}<th class="num">Total</th></tr>${pr.map(p=>{const v=dias.map(d=>D.prodD.filter(x=>x.f===d&&x.p===p).reduce((s,x)=>s+x.u,0));return `<tr><td><b>${esc(p)}</b></td>${v.map(n=>`<td class="num">${n?fmt(n):'—'}</td>`).join('')}<td class="num"><b>${fmt(v.reduce((a,b)=>a+b,0))}</b></td></tr>`}).join('')}</table></div></div>`}}
  h+=`<div class="card" id="movCard"></div>`;
@@ -1013,7 +1037,8 @@ function formPedido(id){const x=id?pedidos().find(z=>z.id===id):null;
  <div class="fld auto"><label>Cliente</label><input id="pCli" autocomplete="off" value="${esc(x?x.cli:'')}" placeholder="Escribe 2–3 letras, o el nombre si es nuevo"><div class="sug" id="pSug"></div></div>
  <div class="two"><div class="fld"><label>Proyecto <span class="muted" style="font-weight:400">(opcional)</span></label><input id="pProy" value="${esc(x?x.proy:'')}"></div>
  <div class="fld"><label>Asesor</label><select id="pAse"><option value="">— Selecciona —</option>${asesAct().map(a=>`<option ${x&&a===x.ase?'selected':''}>${a}</option>`).join('')}</select></div></div>
- <div class="two"><div class="fld"><label>Producto</label>${prodSel('pProd',x?x.prod:'')}${x?'':tapaBox('pProd')}</div><div class="fld"><label>Cantidad (${BIZ[S.biz].u})</label><input type="number" id="pCant" min="1" value="${x?x.cant:''}"></div></div>
+ <div id="pLines"><div class="pline" id="pProdLn"><div class="two"><div class="fld"><label>Producto</label>${prodSel('pProd',x?x.prod:'')}${x?'':tapaBox('pProd')}</div><div class="fld"><label>Cantidad (${BIZ[S.biz].u})</label><input type="number" id="pCant" min="1" value="${x?x.cant:''}"></div></div></div></div>
+ ${x?'':'<button type="button" class="btn sec sm" id="pAdd" style="margin:0 0 12px">＋ Agregar otro producto a este pedido</button>'}
  ${plantaSel('pPl',x?x.pl:'')}
  <div class="two"><div class="fld"><label>Respaldo</label><select id="pResp">${RESPALDOS.map(r=>`<option ${x&&x.resp===r?'selected':''}>${r}</option>`).join('')}</select></div>
  <div class="fld"><label>Documento <span class="muted" style="font-weight:400">(OC, recibo, factura · opcional)</span></label><input id="pDoc" value="${esc(x?x.doc:'')}"></div></div>
@@ -1023,15 +1048,22 @@ function formPedido(id){const x=id?pedidos().find(z=>z.id===id):null;
  $('#pCli').oninput=()=>{const q=nz($('#pCli').value);if(q.length<2){$('#pSug').style.display='none';return}const r=D.cli.filter(c=>nz(c.n).includes(q)||(c.alias&&nz(c.alias).includes(q))).slice(0,8);
   $('#pSug').innerHTML=r.map(c=>`<div data-n="${esc(c.n)}"><span>${esc(c.n)}</span><small>${esc(c.a)}</small></div>`).join('')+`<div style="color:#3A6EA5">+ Cliente nuevo: «${esc($('#pCli').value)}»</div>`;$('#pSug').style.display='block';
   $('#pSug').querySelectorAll('div').forEach(e=>e.onclick=()=>{if(e.dataset.n){const c=D.cli.find(c=>c.n===e.dataset.n);$('#pCli').value=c.n;if(asesAct().includes(c.a))$('#pAse').value=c.a}$('#pSug').style.display='none'})};
- const chk=()=>{prodSegSync('pProd');if(!x)tapaSync('pProd');const pr=prodVal('pProd'),pl=plantaVal('pPl'),q=+$('#pCant').value||0,lib=invLibre(pr,addD(TODAY,365),pl)+(x&&x.prod===pr?x.porProg:0),tapa=x?'':tapaDe('pProd'),libT=tapa?invLibre(tapa,addD(TODAY,365),pl):Infinity;
-  const lin=(n,l)=>l===Infinity?'':q<=l?`<div class="check ok">✔ ${esc(n)}: hay ${fmt(l)} libres; quedan ${fmt(l-q)} después de apartar.</div>`:`<div class="check wa">⚠ ${esc(n)}: solo hay ${fmt(Math.max(l,0))} libres. Se puede apartar igual, pero quedarán ${fmt(q-Math.max(l,0))} por producir.</div>`;
-  $('#pChk').innerHTML=lin(pr,lib)+(tapa?lin(tapa,libT):'')};
- ['#pProd','#pProdSeg','#pCant'].concat($('#pProdTapa')?['#pProdTapa']:[]).concat($('#pPl')?['#pPl']:[]).forEach(k=>$(k).oninput=$(k).onchange=chk);chk();
- $('#pOk').onclick=async()=>{const rec={id:x?x.id:'',cli:$('#pCli').value.trim(),proy:$('#pProy').value.trim(),ase:$('#pAse').value||'Sin asesor',prod:prodVal('pProd'),cant:+$('#pCant').value||0,planta:plantaVal('pPl'),resp:$('#pResp').value,doc:$('#pDoc').value.trim(),fe:$('#pFe').value,com:$('#pCom').value.trim()};
-  if(!rec.cli){toast('Escriba el cliente');return}if(!(rec.cant>0)){toast('Escriba la cantidad');return}
-  const tapa=x?'':tapaDe('pProd');
-  const j=await guardar('ruta_pedido',{rec},x?'Pedido actualizado':'Inventario apartado: '+esc(rec.cli));if(!j)return;
-  if(tapa)await guardar('ruta_pedido',{rec:Object.assign({},rec,{prod:tapa})},'Tapa apartada');closeModal();render()}}
+ const lines=[{p:'pProd',c:'pCant'}];let nL=0;
+ const chk=()=>{const pl=plantaVal('pPl'),need={};
+  lines.forEach(L=>{prodSegSync(L.p);if(!x)tapaSync(L.p);L.prod=prodVal(L.p);L.q=+$('#'+L.c).value||0;L.tapa=x?'':tapaDe(L.p);
+   [L.prod].concat(L.tapa?[L.tapa]:[]).forEach(pr=>need[pr]=(need[pr]||0)+L.q)});
+  const lin=(n,q,l)=>l===Infinity?'':q<=l?`<div class="check ok">✔ ${esc(n)}: hay ${fmt(l)} libres; quedan ${fmt(l-q)} después de apartar.</div>`:`<div class="check wa">⚠ ${esc(n)}: solo hay ${fmt(Math.max(l,0))} libres. Se puede apartar igual, pero quedarán ${fmt(q-Math.max(l,0))} por producir.</div>`;
+  $('#pChk').innerHTML=Object.entries(need).map(([pr,q])=>lin(pr,q,invLibre(pr,addD(TODAY,365),pl)+(x&&x.prod===pr?x.porProg:0))).join('')};
+ const wire=L=>[L.p,L.p+'Seg',L.p+'Tapa',L.c].forEach(k=>{const e=$('#'+k);if(e)e.oninput=e.onchange=chk});
+ wire(lines[0]);if($('#pPl'))$('#pPl').onchange=chk;chk();
+ if($('#pAdd'))$('#pAdd').onclick=()=>{nL++;const L={p:'pProd'+nL,c:'pCant'+nL};lines.push(L);
+  $('#pLines').insertAdjacentHTML('beforeend',`<div class="pline" id="${L.p}Ln"><div class="plhd"><b>Otro producto</b><button type="button" class="btn sec sm" data-del="${L.p}">Quitar</button></div><div class="two"><div class="fld"><label>Producto</label>${prodSel(L.p,'')}${tapaBox(L.p)}</div><div class="fld"><label>Cantidad (${BIZ[S.biz].u})</label><input type="number" id="${L.c}" min="1"></div></div></div>`);
+  wire(L);$('#pLines').querySelector(`[data-del="${L.p}"]`).onclick=()=>{$('#'+L.p+'Ln').remove();lines.splice(lines.indexOf(L),1);chk()};chk()};
+ $('#pOk').onclick=async()=>{chk();const rec={id:x?x.id:'',cli:$('#pCli').value.trim(),proy:$('#pProy').value.trim(),ase:$('#pAse').value||'Sin asesor',planta:plantaVal('pPl'),resp:$('#pResp').value,doc:$('#pDoc').value.trim(),fe:$('#pFe').value,com:$('#pCom').value.trim()};
+  if(!rec.cli){toast('Escriba el cliente');return}if(lines.some(L=>!(L.q>0))){toast('Escriba la cantidad de cada producto');return}
+  if(x){if(await guardar('ruta_pedido',{rec:Object.assign(rec,{prod:lines[0].prod,cant:lines[0].q})},'Pedido actualizado')){closeModal();render()}return}
+  const recs=[];lines.forEach(L=>{recs.push(Object.assign({},rec,{prod:L.prod,cant:L.q}));if(L.tapa)recs.push(Object.assign({},rec,{prod:L.tapa,cant:L.q}))});
+  if(await guardar('ruta_pedidoVarios',{recs},'Inventario apartado: '+esc(rec.cli)+(recs.length>1?' · '+recs.length+' productos':''))){closeModal();render()}}}
 function cerrarPedido(id){const x=pedidos().find(z=>z.id===id);
  modal('Cerrar pedido '+x.id,`<p style="margin-top:0"><b>${esc(x.cli)}</b> · ${esc(x.prod)} · por programar <b>${fmt(x.porProg)}</b></p>
  <div class="fld"><label>¿Qué pasó?</label><select id="cE"><option value="Cerrado">Cerrado: el cliente ya no llevará el resto</option><option value="Cancelado">Cancelado: el pedido se anuló</option></select></div>
