@@ -953,9 +953,23 @@ async function renderBD(){
 }
 
 /* ===================== Arranque ===================== */
-async function recargar(){const j=await api('pref_data');if(!j.ok)throw new Error(j.error||'No se pudo leer Prefabricados');D=j;Object.keys(CACHE).forEach(k=>delete CACHE[k]);Object.keys(BDC).forEach(k=>delete BDC[k]);
+/* Rendimiento (23-nov, chat Núcleo): lo último cargado se guarda en este dispositivo (por usuario); al entrar se muestra al instante y se
+ * actualiza en segundo plano. ⟳ y recargar la página siempre traen todo del servidor. Al cerrar sesión, index.html borra este dato. */
+const PCK='dc_pref_cache_v1';
+function guardarCachePref(j){try{localStorage.setItem(PCK,JSON.stringify({u:S.u,t:Date.now(),d:j}))}catch(e){try{localStorage.removeItem(PCK)}catch(_){}}}
+function leerCachePref(){const c=store.get(PCK);return c&&S&&c.u===S.u&&c.d&&c.d.ok?c:null}
+const cargaForzada=()=>{try{const n=performance.getEntriesByType('navigation')[0];return !!n&&n.type==='reload'}catch(e){return false}};
+async function recargar(){const j=await api('pref_data');if(!j.ok)throw new Error(j.error||'No se pudo leer Prefabricados');guardarCachePref(j);D=j;Object.keys(CACHE).forEach(k=>delete CACHE[k]);Object.keys(BDC).forEach(k=>delete BDC[k]);
   if(PL===null){const g=store.get(PLK);PL=D.planta||(g!==null&&(g===''||D.plantas.includes(g))?g:D.plantas[0])}}
-async function boot(){pantallaCarga('Cargando Prefabricados…');
+function usarDatos(j){D=j;Object.keys(CACHE).forEach(k=>delete CACHE[k]);Object.keys(BDC).forEach(k=>delete BDC[k]);
+  if(PL===null){const g=store.get(PLK);PL=D.planta||(g!==null&&(g===''||D.plantas.includes(g))?g:D.plantas[0])}}
+async function refrescoFondo(){const b=$('#refb');b&&b.classList.add('spin');
+  try{await recargar();const md=$('#modal'),ae=document.activeElement,escribiendo=ae&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName);
+    if(view==='home'&&(!md||md.hidden)&&!escribiendo){const y=scrollY;render();if(!menuAbierto)scrollTo(0,y)}}
+  catch(e){}finally{const b2=$('#refb');b2&&b2.classList.remove('spin')}}
+async function boot(){const c=cargaForzada()?null:leerCachePref();
+  if(c){try{usarDatos(c.d);render();refrescoFondo();return}catch(e){D=null}}
+  pantallaCarga('Cargando Prefabricados…');
   try{await recargar();render()}
   catch(e){if(e.message!=='sesion')$('#app').innerHTML=`<div class="wrap" style="min-height:100vh;display:grid;place-items:center;text-align:center"><div><img src="${temaActual()==='dark'?LOGO_D:LOGO_L}" alt="Duracreto" style="width:200px;max-width:60vw;margin:0 auto 18px;display:block"><p>${esc(e.message)}</p><button class="btn small ghost" onclick="location.reload()">Reintentar</button> <a class="btn small ghost" href="./" style="text-decoration:none">Volver a Duracreto 360</a></div></div>`}}
 if(S&&S.token&&ROL())boot();

@@ -515,10 +515,25 @@ const API_URL=String(window.API_URL||'').trim(), ONLINE=/^https:\/\/script\.goog
 let CFG,UMBRAL,EQ,PR,CA,lastLoad=0;
 async function api(action,payload={}){let r;try{r=await fetch(API_URL,{method:'POST',body:JSON.stringify(Object.assign({action,token:S&&S.token},payload))})}catch(e){throw new Error('red')}
   const j=await r.json();if(!j.ok&&j.error==='sesion'){store.del(SS);S=null;render();throw new Error('sesion')}return j}
-async function cargarDatos(){const j=await api('data');SEED=j.seed;initCat();loadDB();lastLoad=Date.now();if(j.user){S=Object.assign({},S,j.user);store.set(SS,S)}}
+async function cargarDatos(){const j=await api('data');SEED=j.seed;initCat();loadDB();lastLoad=Date.now();if(j.user){S=Object.assign({},S,j.user);store.set(SS,S)}guardarCache(j)}
+/* Rendimiento (23-nov): lo último cargado se guarda en este dispositivo (por usuario). Al entrar o cambiar de sección se muestra al instante
+ * y se actualiza en segundo plano. ⟳, deslizar hacia abajo y recargar la página siempre traen todo del servidor (cargaForzada). */
+const CK='dc_bloques_cache_v1',CACHES=['dc_bloques_cache_v1','dc_pref_cache_v1'],FRESCO=300000;
+function guardarCache(j){if(!S||!j||!j.seed)return;try{localStorage.setItem(CK,JSON.stringify({u:S.u,t:Date.now(),seed:j.seed,user:j.user||null}))}catch(e){try{localStorage.removeItem(CK)}catch(_){}}}
+function leerCache(){const c=store.get(CK);return c&&S&&c.u===S.u&&c.seed?c:null}
+const cargaForzada=()=>{try{const n=performance.getEntriesByType('navigation')[0];return !!n&&n.type==='reload'}catch(e){return false}};
+let refrescando=false;
+async function refrescoFondo(){if(!ONLINE||refrescando||!S)return;refrescando=true;const b=$('#refb');b&&b.classList.add('spin');
+  try{await cargarDatos();
+    const ae=document.activeElement,escribiendo=ae&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName);
+    if(S&&view==='home'&&$('#modal').hidden&&!escribiendo&&!sinBloques()){const y=scrollY;render();if(!menuAbierto)scrollTo(0,y)}}
+  catch(e){}finally{refrescando=false;const b2=$('#refb');b2&&b2.classList.remove('spin')}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&S&&SEED&&ONLINE&&Date.now()-lastLoad>FRESCO)refrescoFondo()});
 function pantallaCarga(msg){$('#app').innerHTML=`<div class="wrap" style="position:fixed;inset:0;display:grid;place-items:center;z-index:70;background:var(--bg)"><div style="text-align:center"><img src="${temaActual()==='dark'?LOGO_D:LOGO_L}" alt="Duracreto" style="width:240px;max-width:60vw;margin:0 auto 20px;display:block"><p class="note" style="font-size:16px">${msg}</p></div></div>`}
 async function boot(){if(!ONLINE){if(!SEED){pantallaCarga('Falta configurar la dirección del servidor en config.js.');return}initCat();loadDB();render();return}if(!S||!S.token){S=null;render();return}
   if(sinBloques()){inicioSinBloques();return}
+  const c=cargaForzada()?null:leerCache();
+  if(c){try{SEED=c.seed;initCat();loadDB();lastLoad=c.t;if(c.user)S=Object.assign({},S,c.user);render();refrescoFondo();return}catch(e){SEED=null}}
   pantallaCarga('Cargando información…');try{await cargarDatos();render()}catch(e){if(e.message!=='sesion')pantallaCarga('No hay conexión. Revise el internet y vuelva a abrir la app.')}}
 function initCat(){CFG=SEED.config;if(CFG.descansoDespuesDe==null)CFG.descansoDespuesDe=4;UMBRAL={bueno:CFG.umbralOptimo,aceptable:CFG.umbralMejorar};EQ=Object.fromEntries(SEED.equipos.map(e=>[e.id,e]));PR=Object.fromEntries(SEED.productos.map(p=>[p.id,p]));CA=Object.fromEntries(SEED.causas.map(c=>[c.id,c]));aplicarRotacion()}
 /* Rotación semanal de turnos (lunes 6:00 am): A → B → C → A. Semana base 12-oct-2026: Grupo 1 = C, Grupo 2 = A, Grupo 3 = B */
@@ -724,7 +739,7 @@ function can(p){return !!S&&!!ROLES[S.rol]&&(ROLES[S.rol].perm.includes(p)||(S.e
 
 function render(){
   Object.values(charts).forEach(c=>c.destroy());charts={};
-  if(!S){menuAbierto=negAbierto=false;document.documentElement.classList.remove('mnu-fijo');document.body.style.overflow='';renderLogin();return}
+  if(!S){menuAbierto=negAbierto=false;document.documentElement.classList.remove('mnu-fijo');document.body.style.overflow='';CACHES.forEach(k=>store.del(k));renderLogin();return}
   if(ONLINE&&sinBloques()){inicioSinBloques();return}
   const r=ROLES[S.rol];const team=S.equipo?EQ[S.equipo].nombre:(S.cargo||r.nom);
   const tabs=[];
@@ -745,7 +760,7 @@ function render(){
   ${DEMO?`<div class="demobar wrap"><span><b>Modo demostración.</b> Lo que cargue aquí se queda solo en este dispositivo y no llega a la base de datos de la planta.</span><button id="demoReset">Reiniciar demo</button></div>`:''}<main class="wrap" id="main"></main>`;
   $('#refb').onclick=actualizarTodo;conectarMenu();
   if(DEMO)$('#demoReset').onclick=()=>{LOCAL={produccion:[],cortes:[],noconf:[],paros:[],alertas:[],consumos:[]};store.set(LS,LOCAL);loadDB();view='home';render();toast('Demostración reiniciada.')};
-  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=async()=>{menuAbierto=negAbierto=false;document.body.style.overflow='';tab=b.dataset.tab;cierreSel=null;store.set(TAB,tab);view='home';if(ONLINE&&Date.now()-lastLoad>60000){pantallaCarga('Actualizando…');try{await cargarDatos()}catch(e){if(e.message==='sesion')return}}render()});
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=async()=>{menuAbierto=negAbierto=false;document.body.style.overflow='';tab=b.dataset.tab;cierreSel=null;store.set(TAB,tab);view='home';render();if(ONLINE&&Date.now()-lastLoad>FRESCO)refrescoFondo()});
   if(tab==='registro')renderRegistro();else if(tab==='rep')renderRep();else if(tab==='dash')renderDash();else if(tab==='rank')renderRank();else if(tab==='bd')renderBD();else if(tab==='mp')renderMP();else if(tab==='plan')renderPlan();else if(tab==='cierre')renderCierre(true);else renderUsers();
   pintarAlertas();refrescarPush();pintarRecordatorio();
   marcarFijo();revisar360();
