@@ -152,7 +152,7 @@ a{color:var(--info)}body.dark a{color:#8db8ea}
 .cell{min-height:54px;padding:3px;font-size:9.5px;border-radius:7px}.cell .q{font-size:10px}.cell .muted{display:none}.calg{gap:3px}
 .kpi .v{font-size:19px}.hbar{grid-template-columns:100px 1fr 38px}.strip{top:58px}.mini{grid-template-columns:repeat(7,1fr)}
 table{display:block;overflow-x:auto}.info{grid-template-columns:1fr}}
-.ib.spin{animation:girar .8s linear infinite}@keyframes girar{to{transform:rotate(360deg)}}
+.ib .gl{display:inline-block;line-height:1}.ib.spin .gl{animation:girar .8s linear infinite}@keyframes girar{to{transform:rotate(360deg)}}
 .who{color:#cfcfc9;font-size:11.5px;text-align:right;line-height:1.25;white-space:nowrap}.who b{color:#fff;display:block;font-size:12px}
 .ib.on::after{content:"";position:absolute;right:6px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--ok)}
 .ib.off::after{content:"";position:absolute;right:6px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--bad)}
@@ -168,7 +168,7 @@ body.busy{cursor:progress}body.busy .mbox,body.busy main{opacity:.55;pointer-eve
   <nav class="nav" id="nav"></nav>
   <span class="who" id="who"></span>
   <button class="ib" id="bPush" title="Activar avisos en este dispositivo">🔔</button>
-  <button class="ib" id="bReload" title="Actualizar">⟳</button>
+  <button class="ib" id="bReload" title="Actualizar"><span class="gl">⟳</span></button>
   <button class="ib" id="bTheme" title="Modo claro / oscuro">☾</button>
   <a class="ib" id="bHome" href="./" title="Volver a Duracreto 360" style="text-decoration:none">⌂</a>
 </div>
@@ -212,11 +212,23 @@ function conv(x){const o=Object.assign({},x);o.f=isoDMY(x.f);o.cerr=x.st==='Sald
  o.entregas=(x.entregas||[]).map(e=>Object.assign({},e,{fe:isoDMY(e.fe)}));o.sol=o.st==='par'&&o.cant>o.ent;
  if(o.cal)o.cal=Object.assign({},o.cal,{fe:isoDMY(o.cal.fe)});return o}
 const letras=t=>(/bloq/i.test(t)?'B':'')+(/prefa/i.test(t)?'P':'')||'B';
+/* Rendimiento (24-nov), mismo patrón del núcleo: lo último traído se guarda en el dispositivo (por usuario) y se muestra al instante;
+   luego se actualiza en segundo plano (solo gira ⟳). ⟳, deslizar y recargar la página (F5) traen todo del servidor con pantalla de carga. */
+const CKR='dc_ruta_cache_v1';
+let CACHE_R=null;
+function leerCacheR(){const c=store.get(CKR);return c&&SES&&c.u===SES.u&&c.neg?c:null}
+function guardarCacheR(b,j){try{const c=leerCacheR()||{u:SES.u,neg:{}};c.neg[b]=j;c.t=Date.now();localStorage.setItem(CKR,JSON.stringify(c))}catch(e){store.del(CKR)}}
+const cargaForzada=()=>{try{const n=performance.getEntriesByType('navigation')[0];return !!n&&n.type==='reload'}catch(e){return false}};
+/* Vendido llega compacto: {c:[clientes],p:[productos],v:[vendedores],r:[[fecha,ic,ip,iv,planta,cant,L,docs]],desde} */
+const PLV=['','San Pedro Sula','Tegucigalpa'];
+const vendDe=V=>V&&V.r?V.r.map(x=>({f:x[0],c:V.c[x[1]],p:V.p[x[2]],v:V.v[x[3]],pl:PLV[x[4]]||'',q:x[5],l:x[6],n:x[7]})):(Array.isArray(V)?V:[]);
 async function cargarNeg(b){const j=await api('ruta_data',{neg:b});if(!j.ok)throw new Error(j.error||'No se pudo leer '+BIZ[b].n);
+ aplicarNeg(b,j);guardarCacheR(b,j)}
+function aplicarNeg(b,j){
  D[b]=j.despachos.map(conv);AUT[b]=j.autorizaciones||[];CFG=Object.assign(CFG,j.cfg||{});
  const c=j.cat;D['cap'+b]=c.capacidades;D['prod'+b]=c.productos.map(p=>p.p);D['inv'+b]=j.inventario.items;D['mov'+b]=j.movimientos||[];D.conteo[b]=j.inventario.conteo||'';
  if(b==='P'){D.conteosP=j.inventario.conteos||{};D.miPl=j.planta||'';D.P.forEach(x=>{if(!x.pl)x.pl='San Pedro Sula'});D.avisoMin=!!j.avisoMin}
- D['ped'+b]=(j.pedidos||[]).map(x=>Object.assign(x,{fd:isoDMY(x.f)}));D['vend'+b]=j.vendido||[];if(j.sapHora)D.sapHora=j.sapHora;if(j.sapDesde)D.sapDesde=j.sapDesde;(D.pedPuede=D.pedPuede||{})[b]=!!j.puedePedido;
+ D['ped'+b]=(j.pedidos||[]).map(x=>Object.assign(x,{fd:isoDMY(x.f)}));D['vend'+b]=vendDe(j.vendido);D['vendDesde'+b]=(j.vendido&&j.vendido.desde)||'';if(j.sapHora)D.sapHora=j.sapHora;if(j.sapDesde)D.sapDesde=j.sapDesde;(D.pedPuede=D.pedPuede||{})[b]=!!j.puedePedido;
  if(b==='B')D.prodD=(j.inventario.produccion||[]).map(p=>({f:isoDMY(p.f),p:p.p,u:p.u}));
  D.cli=c.clientes.map(k=>Object.assign({},k,{b:letras(k.b),k:0}));D.eqs=c.equipos;D.cau=c.causas;D.bit=c.bitacora||[];
  ASES=c.asesores.map(a=>({n:a.n,act:a.act}));
@@ -233,13 +245,17 @@ function completarCatalogos(){const todos=D.B.concat(D.P).slice().sort((a,b)=>pd
   if(c.hist){if(x.ase&&!NO_ASES.includes(nz(x.ase)))c.a=x.ase;if(x.tipo)c.t=x.tipo;c.tr=x.tr||c.tr}
   if(!c.b.includes(b))c.b+=b});
  D.cli.sort((a,b)=>a.n.localeCompare(b.n,'es'))}
-async function cargarTodo(){await Promise.all(S.user.biz.map(cargarNeg));
- completarCatalogos();
- const k={};D.B.concat(D.P).forEach(x=>{const n=nz(x.cli);k[n]=(k[n]||0)+1});D.cli.forEach(c=>c.k=k[nz(c.n)]||0);CARGADO=Date.now()}
+function trasCargar(){completarCatalogos();
+ const k={};D.B.concat(D.P).forEach(x=>{const n=nz(x.cli);k[n]=(k[n]||0)+1});D.cli.forEach(c=>c.k=k[nz(c.n)]||0)}
+/* Primero el negocio que el usuario está viendo; el otro después (en segundo plano si «otros» no se espera) */
+const bizOrden=()=>[S.biz].concat(S.user.biz.filter(b=>b!==S.biz));
+async function cargarTodo(soloActual){const [a,...otros]=bizOrden();await cargarNeg(a);trasCargar();CARGADO=Date.now();
+ const resto=Promise.all(otros.map(cargarNeg)).then(()=>{trasCargar();return true});
+ if(soloActual){resto.catch(()=>{});return {resto}}await resto}
 async function guardar(action,payload,okMsg){const b=$('#mbox button.dk,#mbox button.ok,#mbox button.no');
  document.body.classList.add('busy');try{const j=await api(action,Object.assign({neg:S.biz},payload));
   if(!j.ok){if(j.pendiente){espera(j.error)}else toast('✖ '+esc(j.error||'No se pudo guardar'));return null}
-  await cargarTodo();if(okMsg)toast(okMsg);return j}
+  const {resto}=await cargarTodo(true);resto.then(()=>{if(!$('#mod').classList.contains('on'))refrescarVista()}).catch(()=>{});if(okMsg)toast(okMsg);return j}
  catch(e){toast('✖ '+esc(e.message));return null}finally{document.body.classList.remove('busy')}}
 function espera(msg){render();modal('Debe esperar autorización',`<div class="check wa" style="font-size:13px">⏳ <b>${esc(msg)}</b></div><p class="muted" style="font-size:12px">Fernando Murillo recibió el aviso. Cuando lo apruebe le llegará una notificación: vuelva a abrir este despacho y registre la misma cantidad. Si lo rechaza, despache como máximo el saldo.</p><button class="btn dk" style="width:100%" onclick="closeModal()">Entendido</button>`)}
 const autDe=id=>AUT[S.biz].find(a=>a.desp===id);
@@ -283,7 +299,11 @@ const pillEst=e=>`<span class="rpill r-${{'Atrasado':'a','Esta semana':'s','Prog
 function resDatos(){const k=S.resP||'mes',[d1,d2]=rangoRes(k),b=S.biz,q=nz(S.resQ||'');
  return (b==='B'?D.B:D.P).filter(x=>{const t=pd(x.f);return t>=d1&&t<=d2&&x.req!=='pend'&&x.req!=='rech'&&(!q||nz(x.cli).includes(q)||nz(x.prod).includes(q)||nz(x.ase).includes(q))})}
 /* Vendido (24-nov): facturado en SAP en el período (facturas − notas de crédito válidas), con el mismo buscador */
-function resVend(){const k=S.resP||'mes',[d1,d2]=rangoRes(k),b=S.biz,q=nz(S.resQ||'');
+const VPID={};
+function pedirVendido(b,desde){const hasta=D['vendDesde'+b];if(!hasta||desde>=hasta||VPID[b+desde])return;VPID[b+desde]=1;
+ const h=fromIso(hasta),y=pd(h);y.setDate(y.getDate()-1);
+ api('ruta_vendido',{neg:b,desde,hasta:iso(fd(y))}).then(j=>{if(!j.ok)return;D['vend'+b]=vendDe(j.vendido).concat(D['vend'+b]);D['vendDesde'+b]=desde;if(S.sec==='res'&&S.biz===b)refrescarVista()}).catch(()=>{delete VPID[b+desde]})}
+function resVend(){const k=S.resP||'mes',[d1,d2]=rangoRes(k),b=S.biz,q=nz(S.resQ||'');pedirVendido(b,iso(fd(d1)));
  return (D['vend'+b]||[]).filter(v=>{const t=pd(fromIso(v.f));return t>=d1&&t<=d2&&(!q||nz(v.c).includes(q)||nz(v.p).includes(q)||nz(v.v).includes(q))})}
 /* Pendientes que quedaron de antes del período (para avisar que existen) */
 function pendAntes(){const [d1]=rangoRes(S.resP||'mes'),b=S.biz;return (b==='B'?D.B:D.P).filter(x=>pd(x.f)<d1&&abierto(x)&&saldo(x)>0&&x.req!=='pend'&&x.req!=='rech')}
@@ -462,7 +482,15 @@ function theme(x){if(x===undefined){x=!document.body.classList.contains('dark');
 $('#bTheme').onclick=()=>theme();
 /* Actualización automática (cada 2 min): trae datos nuevos sin perder filtros, fechas ni búsquedas de la pantalla.
    Si la persona está escribiendo o eligiendo algo, espera a la siguiente vuelta. */
-async function reload(silencio){
+/* Redibuja la sección actual conservando lo escrito en filtros y la posición (refresco en segundo plano) */
+function refrescarVista(){const ae=document.activeElement;if(ae&&$('#main').contains(ae)&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))return;
+ const snap=[...document.querySelectorAll('#main input[id],#main select[id]')].map(e=>[e.id,e.value]),y=window.scrollY,sec=S.sec;render();
+ if(S.sec===sec){snap.forEach(([id,v])=>{const e=document.getElementById(id);if(e&&e.value!==v&&e.type!=='file'){e.value=v;e.dispatchEvent(new Event('change'));e.dispatchEvent(new Event('input'))}});window.scrollTo(0,y)}}
+let refrescando=false;
+async function refrescoFondo(){if(refrescando)return;refrescando=true;$('#bReload').classList.add('spin');
+ try{const {resto}=await cargarTodo(true);if(!$('#mod').classList.contains('on'))refrescarVista();await resto;if(!$('#mod').classList.contains('on'))refrescarVista()}
+ catch(e){}finally{refrescando=false;$('#bReload').classList.remove('spin')}}
+async function reload(silencio){if(silencio)return refrescoFondo();
  const ae=document.activeElement;if(silencio&&ae&&$('#main').contains(ae)&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))return;
  const snap=[...document.querySelectorAll('#main input[id],#main select[id]')].map(e=>[e.id,e.value]),y=window.scrollY,sec=S.sec;
  if(!silencio)$('#main').style.opacity=.3;
@@ -1132,9 +1160,13 @@ async function editCli(n){n=decodeURIComponent(n);const c=D.cli.find(c=>c.n===n)
 async function nuevoEquipo(){const c=(prompt('Código del equipo (ej. R-12)')||'').trim().toUpperCase();if(!c)return;const t=/^CF/.test(c)?'Camión plataforma':'Rastra';
  if(await guardar('ruta_catalogo',{tabla:'equipo',rec:{c,t,e:'Activa',ejes:t==='Rastra'?2:''}},'Equipo agregado: '+esc(c)))render()}
 
-(async function boot(){try{await cargarTodo();$('#carga').remove();render()}catch(e){if(e.message!=='sesion')$('#cargaT').innerHTML=esc(e.message)+'<br><button class="btn" style="margin-top:12px" onclick="location.reload()">Reintentar</button>'}})();
-setInterval(()=>{if(document.visibilityState==='visible'&&CARGADO&&Date.now()-CARGADO>120000&&!$('#mod').classList.contains('on'))reload(1)},30000);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&CARGADO&&Date.now()-CARGADO>60000&&!$('#mod').classList.contains('on'))reload(1)});
+(async function boot(){
+ const c=cargaForzada()?null:leerCacheR();
+ if(c&&c.neg[S.biz]){try{S.user.biz.forEach(b=>{if(c.neg[b])aplicarNeg(b,c.neg[b])});trasCargar();CARGADO=c.t||1;$('#carga').remove();render();refrescoFondo();return}catch(e){console.error(e)}}
+ try{const {resto}=await cargarTodo(true);$('#carga').remove();render();await resto;if(!$('#mod').classList.contains('on'))refrescarVista()}
+ catch(e){if(e.message!=='sesion'&&$('#carga'))$('#cargaT').innerHTML=esc(e.message)+'<br><button class="btn" style="margin-top:12px" onclick="location.reload()">Reintentar</button>'}})();
+setInterval(()=>{if(document.visibilityState==='visible'&&CARGADO&&Date.now()-CARGADO>300000&&!$('#mod').classList.contains('on'))refrescoFondo()},30000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&CARGADO&&Date.now()-CARGADO>300000&&!$('#mod').classList.contains('on'))refrescoFondo()});
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
 </body></html>
