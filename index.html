@@ -518,7 +518,7 @@ async function api(action,payload={}){let r;try{r=await fetch(API_URL,{method:'P
 async function cargarDatos(){const j=await api('data');SEED=j.seed;initCat();loadDB();lastLoad=Date.now();if(j.user){S=Object.assign({},S,j.user);store.set(SS,S)}guardarCache(j)}
 /* Rendimiento (23-nov): lo último cargado se guarda en este dispositivo (por usuario). Al entrar o cambiar de sección se muestra al instante
  * y se actualiza en segundo plano. ⟳, deslizar hacia abajo y recargar la página siempre traen todo del servidor (cargaForzada). */
-const CK='dc_bloques_cache_v1',CACHES=['dc_bloques_cache_v1','dc_pref_cache_v1'],FRESCO=300000;
+const CK='dc_bloques_cache_v1',CACHES=['dc_bloques_cache_v1','dc_pref_cache_v1','dc_ruta_cache_v1'],FRESCO=300000;
 function guardarCache(j){if(!S||!j||!j.seed)return;try{localStorage.setItem(CK,JSON.stringify({u:S.u,t:Date.now(),seed:j.seed,user:j.user||null}))}catch(e){try{localStorage.removeItem(CK)}catch(_){}}}
 function leerCache(){const c=store.get(CK);return c&&S&&c.u===S.u&&c.seed?c:null}
 const cargaForzada=()=>{try{const n=performance.getEntriesByType('navigation')[0];return !!n&&n.type==='reload'}catch(e){return false}};
