@@ -671,6 +671,10 @@ function conectarPlanta(fn){document.querySelectorAll('[data-pl]').forEach(b=>b.
 const plTxt=()=>PL||'Ambas plantas';
 /* Rendimiento por día de un producto en una planta ('' = suma de las plantas). 0 = sin dato */
 const rendDe=(c,pl)=>!c||!c.rend?0:pl?(c.rend[pl]||0):Object.values(c.rend).reduce((s,v)=>s+v,0);
+/* Orden fijo de las tablas (Diego, 25-nov): menores, tubos, pretensados, mallas; dentro de cada familia, el orden del catálogo */
+const FAMR={'Prefabricados menores':0,'Tubería TCR':1,'Pretensados':2,'Armado de mallas':3};
+const famR=f=>FAMR[f]===undefined?9:FAMR[f];
+const ordId=M=>(a,b)=>(famR((M[a]||{}).f)-famR((M[b]||{}).f))||(((M[a]||{}).o||0)-((M[b]||{}).o||0));
 const usoPill=u=>`<span class="pill ${u>=80?'ok':u>=65?'warn':'bad'}">${Math.round(u)}%</span>`;
 
 /* ===================== Registro ===================== */
@@ -733,7 +737,7 @@ function formProd(){
     const items=[...document.querySelectorAll('[data-p]')].map(i=>({id:i.dataset.p,q:+i.value||0})).filter(i=>i.q>0);
     if(!items.length)return toast('Escriba al menos un producto con piezas');
     const big=items.find(i=>i.q>5000);if(big&&!confirm(`¿Seguro? ${fmt(big.q)} piezas de ${CATM()[big.id].n} en un día.`))return;
-    enviar($('#send'),'pref_prod',{fecha:f,planta:plantaForm('planta'),items,obs:$('#obs').value.trim(),foto:FOTO},j=>`Listo: ${fmt(j.piezas)} piezas del ${dmy(f)}${j.reemplaza&&j.reemplaza.length?' (reemplazó el reporte anterior)':''}.`)};
+    enviar($('#send'),'pref_prod',{fecha:f,planta:plantaForm('planta'),items,obs:$('#obs').value.trim(),foto:FOTO},j=>`Listo: ${fmt(j.piezas)} piezas del ${dmy(f)}${j.reemplaza&&j.reemplaza.length?' (reemplazó el reporte anterior)':''}${j.sheet==='ok'?' · también en el sheet':''}.`)};
 }
 let FOTO='';
 function fotoHTML(hint){FOTO='';return`<div class="photo" id="photo"><div class="btns"><label class="btn ghost small" for="fcam">Tomar foto</label><label class="btn ghost small" for="fgal">Elegir de galería</label></div>
@@ -792,34 +796,44 @@ function renderRep(){
   const lib=liberadoEl(f,PL),libP=agrupar(lib),cur=suma(enCurado(f,PL));
   const nc=D.nc.filter(r=>r.fp===f&&enPlanta(r.pl,PL)),inc=D.inc.filter(r=>r.f===f&&enPlanta(r.pl,PL));
   const delta=prevT?Math.round(pct(tot-prevT,prevT)):null;
-  const filasP=Object.keys(porP).sort((a,b)=>(M[a].o)-(M[b].o));
-  const rDia=filasP.reduce((o,id)=>{const r=rendDe(M[id],PL);if(r){o.r+=r;o.p+=porP[id]}return o},{r:0,p:0});
+  // Sheet de producción de Claudia (solo plantas enlazadas, hoy San Pedro Sula)
+  const SI=D.sheetInfo,plSh=SI&&SI.activo?SI.plantas.filter(p=>!PL||p===PL):[],est=plSh.length?(D.sheet||[]).find(x=>x.f===f&&plSh.includes(x.pl)):null;
+  const estPill=!plSh.length||!est?'':est.e==='Igual'?'<span class="pill ok">✓ Igual al sheet</span>':`<span class="pill bad">≠ Diferente al sheet</span>`;
+  const siempre=D.cat.filter(c=>c.dia&&!c.ins&&rendDe(c,PL)>0).map(c=>c.id);
+  const filasP=[...new Set(Object.keys(porP).concat(siempre))].filter(id=>M[id]).sort(ordId(M)),nProd=Object.keys(porP).length;
+  const rDia=filasP.reduce((o,id)=>{const r=rendDe(M[id],PL);if(r){o.r+=r;o.p+=porP[id]||0}return o},{r:0,p:0});
   const cur0=dia.length?dia[0].lib:'';
   $('#main').innerHTML=`<div class="rep">
    <div class="dnav"><button id="dprev" aria-label="Día anterior" ${i>=fechas.length-1?'disabled':''}>‹</button><select id="dsel" aria-label="Fecha del reporte">${fechas.map(x=>`<option value="${x}" ${x===f?'selected':''}>${cap1(diaN(x))} ${dmy(x)}</option>`).join('')}</select><button id="dnext" aria-label="Día siguiente" ${i<=0?'disabled':''}>›</button>
     <span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center" class="no-print">${plantaSel()}<button class="btn small ghost" id="pdf">PDF</button><button class="btn small ghost" id="wa">WhatsApp</button></span></div>
    <div class="grid">
-    <section class="card s12 kc" style="border-top-color:${tot?'var(--yellow)':'var(--line)'}"><div class="kt" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><h3>Producción del día · ${dmy(f)} · ${esc(plTxt())}</h3><span style="display:flex;gap:6px;flex-wrap:wrap">${reps.map(r=>`<span class="pill ${r.u==='historico'?'blue':'ok'}">${r.u==='historico'?'Histórico Excel':`${PL?'':corto(r.pl)+' · '}Reportado ${dm(r.ts.slice(0,10))} ${r.ts.slice(11)} · ${esc(r.n.split(' ')[0])}`}</span>`).join('')||'<span class="pill warn">Sin reporte</span>'}${rDia.r?`<span class="pill ${pct(rDia.p,rDia.r)>=80?'ok':pct(rDia.p,rDia.r)>=65?'warn':'bad'}">${Math.round(pct(rDia.p,rDia.r))}% de la capacidad</span>`:''}<span class="pill blue">Meta por definir</span></span></div>
+    <section class="card s12 kc" style="border-top-color:${tot?'var(--yellow)':'var(--line)'}"><div class="kt" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><h3>Producción del día · ${dmy(f)} · ${esc(plTxt())}</h3><span style="display:flex;gap:6px;flex-wrap:wrap">${reps.map(r=>`<span class="pill ${r.u==='historico'?'blue':'ok'}">${r.u==='historico'?'Histórico Excel':`${PL?'':corto(r.pl)+' · '}Reportado ${dm(r.ts.slice(0,10))} ${r.ts.slice(11)} · ${esc(r.n.split(' ')[0])}`}</span>`).join('')||'<span class="pill warn">Sin reporte</span>'}${rDia.r?`<span class="pill ${pct(rDia.p,rDia.r)>=80?'ok':pct(rDia.p,rDia.r)>=65?'warn':'bad'}">${Math.round(pct(rDia.p,rDia.r))}% de la capacidad</span>`:''}${estPill}<span class="pill blue">Meta por definir</span></span></div>
      <div style="display:flex;flex-wrap:wrap;gap:12px 32px;align-items:flex-end;margin-top:8px">
-      <div><div class="num" style="font-size:44px;font-weight:800;line-height:1">${fmt(tot)}</div><span class="note">piezas · ${filasP.length} producto${filasP.length===1?'':'s'}</span></div>
+      <div><div class="num" style="font-size:44px;font-weight:800;line-height:1">${fmt(tot)}</div><span class="note">piezas · ${nProd} producto${nProd===1?'':'s'}</span></div>
       <div class="tile-k"><span class="v num" style="font-size:22px;${delta===null?'':`color:var(--${delta>=0?'ok':'bad'})`}">${delta===null?'–':(delta>=0?'+':'')+delta+'%'}</span><span class="l">${prevF?`vs ${diaN(prevF)} ${dm(prevF)} (${fmt(prevT)})`:'sin día anterior'}</span></div>
       <div class="tile-k"><span class="v num" style="font-size:22px">${fmt(acum)}</span><span class="l">Acumulado de ${MESES[Number(ym.slice(5))-1]} · ${diasMes} días</span></div>
       <div class="tile-k"><span class="v num" style="font-size:22px">${fmt(suma(lib))}</span><span class="l">Liberado este día</span></div>
       <div class="tile-k"><span class="v num" style="font-size:22px">${fmt(cur)}</span><span class="l">En curado al cierre</span></div>
       <div class="tile-k"><span class="v num" style="font-size:22px">${fmt(suma(nc))}</span><span class="l">Segunda y desecho</span></div></div></section>
     <section class="card s7"><h3>Producción por producto</h3><p class="cap">Lo producido este día contra la capacidad por día, y cuándo se libera para despacho</p>
-     ${filasP.length?`<div class="tbl"><table><thead><tr><th>Producto</th><th style="text-align:right">Producido</th><th style="text-align:right" class="hm">Capacidad</th><th style="text-align:right">%</th><th style="text-align:right">Libera</th></tr></thead><tbody>
-     ${filasP.map(id=>`<tr><td>${esc(M[id].n)}</td><td class="num" style="text-align:right"><b>${fmt(porP[id])}</b></td><td class="num hm" style="text-align:right">${rendDe(M[id],PL)?fmt(rendDe(M[id],PL)):'–'}</td><td style="text-align:right">${rendDe(M[id],PL)?usoPill(pct(porP[id],rendDe(M[id],PL))):'<span class="note">–</span>'}</td><td style="text-align:right">${dm(addD(f,M[id].cur))}</td></tr>`).join('')}
+     ${tot||filasP.length?`<div class="tbl"><table><thead><tr><th>Producto</th><th style="text-align:right">Producido</th><th style="text-align:right" class="hm">Capacidad</th><th style="text-align:right">%</th><th style="text-align:right">Libera</th></tr></thead><tbody>
+     ${filasP.map(id=>{const q=porP[id]||0,rc=rendDe(M[id],PL);return`<tr${q?'':' style="color:var(--muted)"'}><td>${esc(M[id].n)}</td><td class="num" style="text-align:right"><b>${fmt(q)}</b></td><td class="num hm" style="text-align:right">${rc?fmt(rc):'–'}</td><td style="text-align:right">${rc?usoPill(pct(q,rc)):'<span class="note">–</span>'}</td><td style="text-align:right">${q?dm(addD(f,M[id].cur)):'–'}</td></tr>`}).join('')}
      <tr><td><b>Total</b></td><td class="num" style="text-align:right"><b>${fmt(tot)}</b></td><td class="hm"></td><td style="text-align:right">${rDia.r?usoPill(pct(rDia.p,rDia.r)):''}</td><td></td></tr></tbody></table></div>`:'<p class="note">No hay producción reportada para este día.</p>'}
      ${mallas||reps.some(r=>r.obs&&r.u!=='historico')?`<p class="note" style="margin:10px 0 0">${mallas?`Mallas armadas (insumo): <b>${fmt(mallas)}</b>. `:''}${reps.filter(r=>r.obs&&r.u!=='historico').map(r=>`«${esc(r.obs)}»`).join(' ')}</p>`:''}
      ${reps.some(r=>r.foto)?`<p class="note" style="margin:6px 0 0">${reps.filter(r=>r.foto).map(r=>`<a class="lnk" href="${esc(r.foto)}" target="_blank" rel="noopener">Ver foto de la hoja${PL?'':' ('+corto(r.pl)+')'}</a>`).join(' · ')}</p>`:''}</section>
-    <section class="card s5"><h3>Liberado este día</h3><p class="cap">Pasa a disponible en Despachos</p>${Object.keys(libP).length?`<div class="tbl"><table><tbody>${Object.keys(libP).sort((a,b)=>M[a].o-M[b].o).map(id=>`<tr><td>${esc(M[id].n)}</td><td class="num" style="text-align:right"><b>${fmt(libP[id])}</b></td></tr>`).join('')}</tbody></table></div>`:'<p class="note">Nada se liberó este día.</p>'}</section>
+    <section class="card s5"><h3>Liberado este día</h3><p class="cap">Pasa a disponible en Despachos</p>${Object.keys(libP).length?`<div class="tbl"><table><tbody>${Object.keys(libP).sort(ordId(M)).map(id=>`<tr><td>${esc(M[id].n)}</td><td class="num" style="text-align:right"><b>${fmt(libP[id])}</b></td></tr>`).join('')}</tbody></table></div>`:'<p class="note">Nada se liberó este día.</p>'}</section>
     <section class="card s6"><h3>Incidencias del día</h3><p class="cap">${inc.length} incidencia${inc.length===1?'':'s'}</p>${inc.length?inc.map(x=>`<div class="inc"><div class="h"><b>${esc(causaN(x.c))}</b><span class="pill ${x.a?'bad':'blue'}">${x.a?'Afectó la producción':'No afectó'}</span></div><p>${esc(x.t)}</p><span class="note">${esc(x.n)}${PL?'':' · '+corto(x.pl)}${x.pz?` · ${fmt(x.pz)} piezas no hechas`:''}${x.h?` · ${x.h} h`:''}${x.foto?` · <a class="lnk" href="${esc(x.foto)}" target="_blank" rel="noopener">foto</a>`:''}</span></div>`).join(''):'<p class="note">Sin incidencias reportadas.</p>'}</section>
     <section class="card s6"><h3>No conformes de este día</h3><p class="cap">Producto colado el ${dmy(f)} que se mandó a segunda o desecho</p>${nc.length?`<div class="tbl"><table><tbody>${nc.map(x=>`<tr><td>${esc((M[x.p]||{n:x.p}).n)}</td><td><span class="pill ${x.c==='Segunda'?'warn':'bad'}">${x.c}</span></td><td class="num" style="text-align:right"><b>${fmt(x.q)}</b></td><td class="note">${esc(x.n.split(' ')[0])}${x.foto?` · <a class="lnk" href="${esc(x.foto)}" target="_blank" rel="noopener">foto</a>`:''}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">Sin no conformes reportados para esta fecha.</p>'}</section>
+    ${plSh.length?`<section class="card s12 no-print kc" style="border-top-color:${est&&est.e!=='Igual'?'var(--bad)':'var(--line)'}"><div class="kt" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><div><h3>Sheet de producción (${esc(plSh.join(', '))})</h3><p class="cap">Lo que se carga en la app se escribe en el sheet, y lo que se llena en el sheet entra a la app (revisión cada 10 minutos).</p></div>
+     <span style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn small ghost" href="${esc(SI.url)}" target="_blank" rel="noopener" style="text-decoration:none">Abrir sheet</a>${can('seg')?'<button class="btn small ghost" id="shsync">Sincronizar ahora</button>':''}</span></div>
+     ${!est?'<p class="note" style="margin:0">Este día todavía no se ha comparado.</p>':est.e==='Igual'?`<p class="note" style="margin:0">✓ La app y el sheet tienen lo mismo este día.${est.d?' '+esc(est.d)+'.':''}</p>`:`<div class="warnbox" style="margin:0 0 10px">La app y el sheet no coinciden este día: ${esc(est.d)}</div>${can('seg')?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small ghost" data-shu="app">Dejar lo de la app (corrige el sheet)</button><button class="btn small ghost" data-shu="sheet">Dejar lo del sheet (corrige la app)</button></div>':'<p class="note" style="margin:0">La jefa de planta debe elegir cuál queda.</p>'}`}</section>`:''}
    </div></div>`;
   $('#dsel').onchange=e=>{repF=e.target.value;renderRep()};
   $('#dprev').onclick=()=>{repF=fechas[i+1];renderRep()};$('#dnext').onclick=()=>{repF=fechas[i-1];renderRep()};
   conectarPlanta(renderRep);$('#pdf').onclick=()=>window.print();
+  const shAcc=async(btn,rec,ok)=>{btn.disabled=true;const tx=btn.textContent;btn.textContent='Un momento…';try{const j=await api('pref_sheet',{rec});if(!j.ok)throw new Error(j.error||'No se pudo');await recargar();renderRep();toast(ok(j))}catch(e){if(e.message!=='sesion'){toast(e.message);btn.disabled=false;btn.textContent=tx}}};
+  if($('#shsync'))$('#shsync').onclick=e=>shAcc(e.target,{},j=>j.resumen||'Sincronizado');
+  document.querySelectorAll('[data-shu]').forEach(b=>b.onclick=()=>shAcc(b,{fecha:f,usar:b.dataset.shu},()=>b.dataset.shu==='app'?'Listo: el sheet quedó igual a la app':'Listo: la app quedó igual al sheet'));
   $('#wa').onclick=()=>{const txt=`*Prefabricados · ${plTxt()}*\nProducción del ${cap1(diaN(f))} ${dmy(f)}: *${fmt(tot)} piezas*\n`+filasP.map(id=>`• ${M[id].n}: ${fmt(porP[id])}`).join('\n')+`\nAcumulado del mes: ${fmt(acum)} · En curado: ${fmt(cur)}`+(inc.length?`\nIncidencias: ${inc.length}`:'')+(nc.length?`\nSegunda/desecho: ${fmt(suma(nc))}`:'');open('https://wa.me/?text='+encodeURIComponent(txt),'_blank')};
 }
 const causaN=id=>(D.causas.find(c=>c.id===id)||{n:id}).n;
@@ -852,14 +866,17 @@ async function renderDash(){
   // por familia y producto
   const famT={};piezas.forEach(r=>{const f=M[r.id].f;(famT[f]=famT[f]||[0,0])[0]+=r.q});desp.forEach(r=>{if(!M[r.id])return;const f=M[r.id].f;(famT[f]=famT[f]||[0,0])[1]+=r.q});
   const fx=Math.max(1,...Object.values(famT).flat());
-  const pp=agrupar(piezas),pd=agrupar(desp),ids=[...new Set(Object.keys(pp).concat(Object.keys(pd)))].filter(id=>M[id]).sort((a,b)=>((pp[b]||0)+(pd[b]||0))-((pp[a]||0)+(pd[a]||0)));
+  const pp=agrupar(piezas),pd=agrupar(desp),ids=[...new Set(Object.keys(pp).concat(Object.keys(pd)))].filter(id=>M[id]).sort(ordId(M));
   const px=Math.max(1,...ids.map(id=>Math.max(pp[id]||0,pd[id]||0)));
   // causas
   const cz={};inc.forEach(x=>cz[x.c]=(cz[x.c]||0)+1);const czs=Object.entries(cz).sort((a,b)=>b[1]-a[1]),czT=inc.length;let acc=0;
   // liberación próximos 7 días
   const cal=[];for(let k=-1;k<7;k++){const d=addD(D.hoy,k);if(dOf(d).getDay()===0&&k!==0)continue;cal.push([d,suma(liberadoEl(d,PL))])}
   const meses=mesesDisp(),fams=[...new Set(X.cat.map(c=>c.f))];
-  const rendRows=X.cat.filter(c=>!c.ins&&enF(c.id)&&rendDe(c,PL)).map(c=>{const ps=piezas.filter(r=>r.id===c.id);return{n:c.n,r:rendDe(c,PL),p:suma(ps),d:new Set(ps.map(r=>r.f)).size}});
+  // Resumen de producción: acumulado del periodo contra capacidad (capacidad por día × días con producción)
+  const acIds=[...new Set(X.cat.filter(c=>!c.ins&&enF(c.id)&&rendDe(c,PL)).map(c=>c.id).concat(Object.keys(pp)))].filter(id=>M[id]).sort(ordId(M));
+  const acRows=acIds.map(id=>{const ps=piezas.filter(r=>r.id===id),r=rendDe(M[id],PL);return{n:M[id].n,p:pp[id]||0,r:r,c:r*nd,d:new Set(ps.map(x=>x.f)).size}});
+  const acT=acRows.reduce((o,x)=>{o.p+=x.p;if(x.c){o.c+=x.c;o.pc+=x.p}return o},{p:0,c:0,pc:0});
   $('#main').innerHTML=`<div class="filters"><div class="f"><label for="fm">Mes</label><select id="fm">${meses.map(m=>`<option value="${m}" ${m===DS.mes?'selected':''}>${mesN(m)}</option>`).join('')}${DS.mes?'':'<option selected>Personalizado</option>'}</select></div>
    <div class="f"><label for="fd">Desde</label><input type="date" id="fd" value="${DS.desde}" min="${D.inicio}" max="${D.hoy}"></div><div class="f"><label for="fh">Hasta</label><input type="date" id="fh" value="${DS.hasta}" min="${D.inicio}" max="${D.hoy}"></div>
    <div class="f"><label for="fp">Planta</label><select id="fp">${D.plantas.map(p=>`<option ${PL===p?'selected':''}>${esc(p)}</option>`).join('')}<option value="" ${PL===''?'selected':''}>Ambas</option></select></div>
@@ -879,16 +896,16 @@ async function renderDash(){
     <div class="dcols">${serie.map(([d,v])=>`<div class="c ${v?'':'z'}" title="${dmy(d)}: ${fmt(v)}"><em class="num">${v?fmt(v):''}</em><i style="height:${v?Math.max(3,v/smx*190):3}px;${dOf(d).getDay()===0?'opacity:.35':''}"></i><span>${+d.slice(8)}</span></div>`).join('')}</div></section>
    <section class="card s5"><h3>Por familia</h3><p class="cap">Piezas en el periodo · producido / despachado</p>
     <div class="legend"><span><i style="background:var(--fg);height:10px;width:10px"></i>Producido</span>${verDesp?'<span><i style="background:var(--orange);height:10px;width:10px"></i>Despachado</span>':''}</div>
-    ${Object.keys(famT).length?Object.entries(famT).sort((a,b)=>b[1][0]-a[1][0]).map(([f,[p,d]])=>`<div class="gb"><div class="gt"><b>${esc(f.replace('Prefabricados menores','Menores'))}</b><span class="num"><b>${fmt(p)}</b>${verDesp?' / '+fmt(d):''}</span></div>
+    ${Object.keys(famT).length?Object.entries(famT).sort((a,b)=>famR(a[0])-famR(b[0])).map(([f,[p,d]])=>`<div class="gb"><div class="gt"><b>${esc(f.replace('Prefabricados menores','Menores'))}</b><span class="num"><b>${fmt(p)}</b>${verDesp?' / '+fmt(d):''}</span></div>
      <div class="gbar"><i style="width:${p/fx*100}%;background:var(--fg)"></i></div>${verDesp?`<div class="gbar" style="height:8px"><i style="width:${d/fx*100}%;background:var(--orange)"></i></div>`:''}</div>`).join(''):'<p class="note">Sin producción en el periodo.</p>'}</section>
+   <section class="card s12"><div class="kt" style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap"><div><h3>Resumen de producción · acumulado a la fecha</h3><p class="cap">${esc(plTxt())} · del ${dmy(DS.desde)} al ${dmy(DS.hasta)} · capacidad acumulada = capacidad por día × ${nd} día${nd===1?'':'s'} con producción</p></div>${acT.c?`<span class="pill ${pct(acT.pc,acT.c)>=80?'ok':pct(acT.pc,acT.c)>=65?'warn':'bad'}">${Math.round(pct(acT.pc,acT.c))}% de la capacidad</span>`:''}</div>
+    ${acRows.length?`<div class="tbl"><table><thead><tr><th>Producto</th><th style="text-align:right">Producido</th><th style="text-align:right">Capacidad acumulada</th><th style="text-align:right">%</th><th style="text-align:right" class="hm">Días producido</th></tr></thead><tbody>${acRows.map(x=>`<tr${x.p?'':' style="color:var(--muted)"'}><td>${esc(x.n)}</td><td class="num" style="text-align:right"><b>${fmt(x.p)}</b></td><td class="num" style="text-align:right">${x.c?fmt(x.c):'–'}</td><td style="text-align:right">${x.c?usoPill(pct(x.p,x.c)):'<span class="note">–</span>'}</td><td class="num hm" style="text-align:right">${x.d} de ${nd}</td></tr>`).join('')}
+    <tr><td><b>Total</b></td><td class="num" style="text-align:right"><b>${fmt(acT.p)}</b></td><td class="num" style="text-align:right"><b>${acT.c?fmt(acT.c):'–'}</b></td><td style="text-align:right">${acT.c?usoPill(pct(acT.pc,acT.c)):''}</td><td class="hm"></td></tr></tbody></table></div>`:'<p class="note">Sin producción en el periodo.</p>'}</section>
    <section class="card s7"><h3>Producido vs despachado por producto</h3><p class="cap">Despachado según Despachos. Lo despachado de más sale del inventario que ya había.</p>
     <div class="legend"><span><i style="background:var(--fg);height:10px;width:10px"></i>Producido</span>${verDesp?'<span><i style="background:var(--orange);height:10px;width:10px"></i>Despachado</span>':''}</div>
     ${ids.length?`<div class="pbars">${ids.map(id=>`<div class="r"><span>${esc(M[id].n)}</span><div class="tr"><i style="width:${(pp[id]||0)/px*100}%;background:var(--fg)"></i>${verDesp?`<i style="width:${(pd[id]||0)/px*100}%;background:var(--orange)"></i>`:''}</div><span class="num note" style="text-align:right">${fmt(pp[id]||0)}${verDesp?' / '+fmt(pd[id]||0):''}</span></div>`).join('')}</div>`:'<p class="note">Sin datos en el periodo.</p>'}</section>
    <section class="card s5"><div class="kt" style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><h3>Principales causas de incidencia</h3><p class="cap">Veces por causa, de mayor a menor</p></div><span class="pill bad">Rojo = 80 %</span></div>
     ${czs.length?`<div class="tbl"><table class="pareto"><tbody>${czs.map(([c,n])=>{const ini=acc;acc+=n;const roja=ini/czT<0.8;return`<tr><td>${esc(causaN(c))}</td><td class="pb"><div class="bar" style="height:10px"><i style="width:${n/czs[0][1]*100}%;background:${roja?'var(--bad)':'var(--brandgray)'}"></i></div></td><td class="num" style="text-align:right"><b>${n}</b></td></tr>`}).join('')}</tbody></table></div>`:'<p class="note">Sin incidencias en el periodo.</p>'}</section>
-   ${rendRows.length?`<section class="card s12"><div class="kt" style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap"><div><h3>Producido contra capacidad por producto</h3><p class="cap">Promedio de los días en que se produjo cada producto contra su capacidad por día · ${esc(plTxt())}</p></div><span class="pill blue">Verde ≥ 80 % · ámbar ≥ 65 %</span></div>
-    <div class="tbl"><table><thead><tr><th>Producto</th><th style="text-align:right">Capacidad por día</th><th style="text-align:right">Días producido</th><th style="text-align:right">Producido por día</th><th style="text-align:right">%</th></tr></thead><tbody>${rendRows.map(x=>`<tr><td>${esc(x.n)}</td><td class="num" style="text-align:right">${fmt(x.r)}</td><td class="num" style="text-align:right">${x.d} de ${nd}</td><td class="num" style="text-align:right"><b>${x.d?fmt(x.p/x.d):'–'}</b></td><td style="text-align:right">${x.d?usoPill(pct(x.p/x.d,x.r)):'<span class="note">sin producción</span>'}</td></tr>`).join('')}</tbody></table></div>
-    <p class="note" style="margin:8px 0 0">Solo productos con capacidad cargada en el catálogo. Los demás están por confirmar.</p></section>`:''}
    <section class="card s12"><h3>Calendario de liberación</h3><p class="cap">Piezas que pasan a disponible en Despachos cada día · ${esc(plTxt())}</p>
     <div class="lib">${cal.map(([d,v])=>`<div class="${d===D.hoy?'hoy':''}"><span>${diaN(d).slice(0,3)} ${dm(d)}</span><b class="num">${fmt(v)}</b><span>${d<D.hoy?'liberado':d===D.hoy?'hoy':'en curado'}</span></div>`).join('')}</div></section>
   </div>`;
@@ -899,8 +916,8 @@ async function renderDash(){
   $('#fp').onchange=e=>{PL=e.target.value;store.set(PLK,PL);ir()};$('#ff2').onchange=e=>{DS.fam=e.target.value;ir()};
   $('#fclr').onclick=()=>{DS={mes:'',desde:'',hasta:'',fam:''};ir()};
   $('#xls').onclick=()=>excel(`Prefabricados_${corto(PL||'Ambas')}_${DS.desde}_${DS.hasta}.xlsx`,[
-    ['Produccion',[['Fecha','Planta','Familia','Producto','Código SAP','Piezas','Insumo','Fecha de liberación']].concat(P.sort((a,b)=>a.f.localeCompare(b.f)||M[a.id].o-M[b.id].o).map(r=>[r.f,r.pl,M[r.id].f,M[r.id].n,M[r.id].sap,r.q,M[r.id].ins?'Sí':'No',r.lib]))],
-    ['Por producto',[['Producto','Familia','Producido',verDesp?'Despachado':'']].concat(ids.map(id=>[M[id].n,M[id].f,pp[id]||0,verDesp?pd[id]||0:'']))],
+    ['Produccion',[['Fecha','Planta','Familia','Producto','Código SAP','Piezas','Insumo','Fecha de liberación']].concat(P.sort((a,b)=>a.f.localeCompare(b.f)||ordId(M)(a.id,b.id)).map(r=>[r.f,r.pl,M[r.id].f,M[r.id].n,M[r.id].sap,r.q,M[r.id].ins?'Sí':'No',r.lib]))],
+    ['Por producto',[['Producto','Familia','Producido','Capacidad acumulada','%','Despachado']].concat(acIds.concat(ids.filter(id=>!acIds.includes(id))).sort(ordId(M)).map(id=>{const x=acRows.find(r=>r.n===M[id].n);return[M[id].n,M[id].f,pp[id]||0,x&&x.c?x.c:'',x&&x.c?Math.round(pct(x.p,x.c)):'',pd[id]||0]}))],
     ['NoConformes',[['Fecha registro','Fecha producción','Planta','Producto','Cantidad','Clasificación','Registró','Observación']].concat(nc.map(r=>[r.f,r.fp,r.pl,(M[r.p]||{n:r.p}).n,r.q,r.c,r.n,r.obs]))],
     ['Incidencias',[['Fecha','Planta','Causa','Qué pasó','Afectó','Piezas no hechas','Horas','Estado','Registró']].concat(inc.map(r=>[r.f,r.pl,causaN(r.c),r.t,r.a?'Sí':'No',r.pz||'',r.h||'',r.e,r.n]))]]);
 }
